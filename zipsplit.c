@@ -1,10 +1,10 @@
 /*
 
- Copyright (C) 1990,1991 Mark Adler, Richard B. Wales, and Jean-loup Gailly.
+ Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly,
+ Kai Uwe Rommel and Igor Mandrichenko.
  Permission is granted to any individual or institution to use, copy, or
- redistribute this software so long as all of the original files are included
- unmodified, that it is not sold for profit, and that this copyright notice
- is retained.
+ redistribute this software so long as all of the original files are included,
+ that it is not sold for profit, and that this copyright notice is retained.
 
 */
 
@@ -18,7 +18,7 @@
 #include <signal.h>
 
 #define DEFSIZ 36000L   /* Default split size (change in help() too) */
-#ifdef MSDOS
+#if defined(MSDOS) || defined(__human68k__)
 #  define NL 2          /* Number of bytes written for a \n */
 #else /* !MSDOS */
 #  define NL 1          /* Number of bytes written for a \n */
@@ -28,14 +28,13 @@
 
 /* Local functions */
 #ifdef PROTO
-   local void err(int, char *);
    local void handler(int);
    local void license(void);
    local void help(void);
    local extent simple(ulg *, extent, ulg, ulg);
-   local int descmp(voidp *, voidp *);
+   local int descmp(const voidp *, const voidp *);
    local extent greedy(ulg *, extent, ulg, ulg);
-   void main(int, char **);
+   int main(int, char **);
 #endif /* PROTO */
 
 
@@ -47,7 +46,7 @@ local char *path = NULL;        /* space for full name */
 local char *name;               /* where name goes in path[] */
 
 
-local void err(c, h)
+void err(c, h)
 int c;                  /* error code from the ZE_ class */
 char *h;                /* message about how it happened */
 /* Issue a message for the error, clean up files and memory, and exit. */
@@ -103,8 +102,10 @@ local void license()
 {
   extent i;             /* counter for copyright array */
 
-  for (i = 0; i < sizeof(copyright)/sizeof(char *); i++)
-    puts(copyright[i]);
+  for (i = 0; i < sizeof(copyright)/sizeof(char *); i++) {
+    printf(copyright[i], "zipsplit");
+    putchar('\n');
+  }
   for (i = 0; i < sizeof(disclaimer)/sizeof(char *); i++)
     puts(disclaimer[i]);
 }
@@ -118,21 +119,24 @@ local void help()
   /* help array */
   static char *text[] = {
 "",
-"ZipSplit %d.%d (%s)",
+"ZipSplit %s (%s)",
 "Usage:  zipsplit [-ti] [-n size] [-b path] zipfile",
 "  -t   report how many files it will take, but don't make them",
 "  -i   make index (zipsplit.idx) and count its size against first zip file",
 "  -n   make zip files no larger than \"size\" (default = 36000)",
 "  -b   use \"path\" for the output zip files",
+"  -p   pause between output zip files",
 "  -s   do a sequential split even if it takes more zip files",
-"  -h   show this help               -l   show software license"
+"  -h   show this help               -L   show software license"
   };
 
-  for (i = 0; i < sizeof(copyright)/sizeof(char *); i++)
-    puts(copyright[i]);
+  for (i = 0; i < sizeof(copyright)/sizeof(char *); i++) {
+    printf(copyright[i], "zipsplit");
+    putchar('\n');
+  }
   for (i = 0; i < sizeof(text)/sizeof(char *); i++)
   {
-    printf(text[i], REVISION / 10, REVISION % 10, REVDATE);
+    printf(text[i], VERSION, REVDATE);
     putchar('\n');
   }
 }
@@ -167,7 +171,7 @@ ulg d;          /* amount to deduct from first bin */
 
 
 local int descmp(a, b)
-voidp *a, *b;           /* pointers to pointers to ulg's to compare */
+const voidp *a, *b;           /* pointers to pointers to ulg's to compare */
 /* Used by qsort() in greedy() to do a descending sort. */
 {
   return **(ulg **)a < **(ulg **)b ? 1 : (**(ulg **)a > **(ulg **)b ? -1 : 0);
@@ -265,7 +269,7 @@ ulg d;          /* amount to deduct from first bin */
 }
 
 
-void main(argc, argv)
+int main(argc, argv)
 int argc;               /* number of tokens in command line */
 char **argv;            /* command line tokens */
 /* Split a zip file into several zip files less than a specified size.  See
@@ -287,10 +291,13 @@ char **argv;            /* command line tokens */
   int r;                /* temporary variable, counter */
   extent s;             /* number of bins needed */
   ulg t;                /* total of sizes, end of central directory */
+  int u;                /* flag to wait for user on output files */
   struct zlist far **w; /* malloc'ed table for zfiles linked list */
   int x;                /* if true, make an index file */
   struct zlist far *z;  /* steps through zfiles linked list */
-
+#ifdef AMIGA
+  char tailchar;         /* temporary variable used in name generation below */
+#endif
 
   /* If no args, show help */
   if (argc == 1)
@@ -299,10 +306,14 @@ char **argv;            /* command line tokens */
     exit(0);
   }
 
+  init_upper();           /* build case map table */
+
   /* Go through args */
   signal(SIGINT, handler);
+#ifdef SIGTERM                 /* Amiga has no SIGTERM */
   signal(SIGTERM, handler);
-  k = h = x = d = 0;
+#endif
+  k = h = x = d = u = 0;
   c = DEFSIZ;
   for (r = 1; r < argc; r++)
     if (*argv[r] == '-')
@@ -321,7 +332,7 @@ char **argv;            /* command line tokens */
             case 'i':   /* Make an index file */
               x = 1;
               break;
-            case 'l':   /* Show copyright and disclaimer */
+            case 'l': case 'L':  /* Show copyright and disclaimer */
               license();  exit(0);
             case 'n':   /* Specify maximum size of resulting zip files */
               if (k)
@@ -329,6 +340,8 @@ char **argv;            /* command line tokens */
               else
                 k = 2;          /* Next non-option is size */
               break;
+            case 'p':
+              u = 1;
             case 's':
               h = 1;    /* Only try simple */
               break;
@@ -336,7 +349,7 @@ char **argv;            /* command line tokens */
               d = 1;
               break;
             default:
-              err(ZE_PARMS, "unknown option");
+              err(ZE_PARMS, "Use option -h for help.");
           }
       else
         err(ZE_PARMS, "zip file cannot be stdin");
@@ -357,7 +370,7 @@ char **argv;            /* command line tokens */
       else              /* k must be 2 */
       {
         if ((c = (ulg)atol(argv[r])) < 100)     /* 100 is smallest zip file */
-          err(ZE_PARMS, "invalid size given");
+          err(ZE_PARMS, "invalid size given. Use option -h for help.");
         k = 0;
       }
   if (zipfile == NULL)
@@ -380,7 +393,7 @@ char **argv;            /* command line tokens */
     if (a != NULL)
       free((voidp *)a);
     err(ZE_MEM, "was computing split");
-    return;
+    return 1;
   }
   i = t = 0;
   for (j = 0, z = zfiles; j < zcount; j++, z = z->nxt)
@@ -426,7 +439,7 @@ char **argv;            /* command line tokens */
     free((voidp *)w);  free((voidp *)a);
     free((voidp *)zipfile);
     zipfile = NULL;
-    return;
+    exit(0);
   }
 
   /* Set up path for output files */
@@ -437,16 +450,29 @@ char **argv;            /* command line tokens */
   else
   {
     strcpy(path, tempath);
+#ifdef AMIGA
+    tailchar = path[strlen(path) - 1];  /* last character */
+    if (path[0] && (tailchar != '/') && (tailchar != ':'))
+      strcat(path, "/");
+    name = path + strlen(path);
+#else
     if (path[0] && path[strlen(path) - 1] != '/')
       strcat(path, "/");
     name = path + strlen(path);
+#endif /* ?AMIGA */
   }
 
   /* Write the index file */
+  if (u)
+  {
+    char m[10];
+    fputs("Insert first disk and hit return: ", stderr);
+    fgets(m, 10, stdin);
+  }
   if (x)
   {
     strcpy(name, INDEX);
-    printf("creating %s\n", path);
+    printf("creating: %s\n", path);
     indexmade = 1;
     if ((f = fopen(path, "w")) == NULL)
     {
@@ -471,7 +497,7 @@ char **argv;            /* command line tokens */
     err(ZE_MEM, "was computing split");
   }
   for (j = 0; j < s; j++)
-    b[j] = -1;
+    b[j] = (extent)-1;
   j = zcount;
   while (j--)
   {
@@ -489,7 +515,16 @@ char **argv;            /* command line tokens */
     free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
     err(ZE_PARMS, "way too many zip files must be made");
   }
+#ifdef VMS
+  if ((q = strrchr(zipfile, ']')) != NULL)
+#else /* !VMS */
+#  ifdef AMIGA
+  if (((q = strrchr(zipfile, '/')) != NULL)
+                       || ((q = strrchr(zipfile, ':'))) != NULL)
+#  else /* !AMIGA */
   if ((q = strrchr(zipfile, '/')) != NULL)
+#  endif /* ?AMIGA */
+#endif /* ?VMS */
     q++;
   else
     q = zipfile;
@@ -512,14 +547,21 @@ char **argv;            /* command line tokens */
   zipfile = NULL;
   for (j = 0; j < s; j++)
   {
+    if (u && j)
+    {
+      char m[10];
+      fputs("Insert next disk and hit return: ", stderr);
+      fgets(m, 10, stdin);
+    }
     sprintf(name, template, j + 1);
-    printf("creating %s\n", path);
+    printf("creating: %s\n", path);
     zipsmade = j + 1;
     if ((f = fopen(path, FOPW)) == NULL)
     {
       free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
       err(ZE_CREAT, path);
     }
+    tempzn = 0;
     for (g = b[j]; g != (extent)-1; g = (extent)a[g])
     {
       if (fseek(e, w[g]->off, SEEK_SET))
@@ -568,4 +610,5 @@ char **argv;            /* command line tokens */
 
   /* Done! */
   exit(0);
+  return 0; /* avoid warning */
 }

@@ -1,38 +1,28 @@
 /*
+   crypt.h (dummy version) by Info-ZIP.      Last revised:  26 Oct 92
 
- Copyright (C) 1990,1991 Mark Adler, Richard B. Wales, and Jean-loup Gailly.
- Permission is granted to any individual or institution to use, copy, or
- redistribute this software so long as all of the original files are included
- unmodified, that it is not sold for profit, and that this copyright notice
- is retained.
-
-*/
-
-/*
- *  crypt.h by Mark Adler.
+   This is a non-functional version of Info-ZIP's crypt.h encryption/
+   decryption header file for Zip, ZipCloak, UnZip and FUnZip.  This
+   file is not copyrighted and may be distributed without restriction.
+   See the "Where" file for sites from which to obtain the full crypt
+   sources (zcrypt20.zip or later).
  */
 
-/* Set up portability */
-#include "tailor.h"
+#ifndef __crypt_h   /* don't include more than once */
+#define __crypt_h
 
-/* Define zfwrite() and zputc() functions */
-#ifdef EXPORT
-#  define zfwrite fwrite
-#  define zputc putc
-#else /* !EXPORT */
-   extern int zfwrite OF((voidp *, extent, extent, FILE *));
-   extern int zfputc OF((int, FILE *));
-   extern char *key;
-#  define zputc(b,f) (key!=NULL?zfputc(b,f):putc(b,f))
-#endif /* ?EXPORT */
+#ifdef CRYPT
+#  undef CRYPT      /* dummy version */
+#endif
 
-/* The implode routines now use the same temporary name generator */
-char *tempname OF((int));
+#define RAND_HEAD_LEN  12    /* needed to compile funzip */
 
-/* I'm sneaking this in on Rich's code to make my compiler a bit happier */
-#ifdef NeXT
-   extern void free(voidp *);
-   extern voidp *qsort(voidp *, extent, extent, int (*)());
-   extern extent strlen(char *);
-   extern int unlink(char *);
-#endif /* NeXT */
+#define zencode
+#define zdecode
+
+#define zfwrite  fwrite
+
+#define echoff(f)
+#define echon()
+
+#endif /* !__crypt_h */

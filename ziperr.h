@@ -1,10 +1,10 @@
 /*
 
- Copyright (C) 1990,1991 Mark Adler, Richard B. Wales, and Jean-loup Gailly.
+ Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly,
+ Kai Uwe Rommel and Igor Mandrichenko.
  Permission is granted to any individual or institution to use, copy, or
- redistribute this software so long as all of the original files are included
- unmodified, that it is not sold for profit, and that this copyright notice
- is retained.
+ redistribute this software so long as all of the original files are included,
+ that it is not sold for profit, and that this copyright notice is retained.
 
 */
 
@@ -20,9 +20,10 @@
 #define ZE_EOF          2       /* unexpected end of zip file */
 #define ZE_FORM         3       /* zip file structure error */
 #define ZE_MEM          4       /* out of memory */
-#define ZE_LOGIC        5       /* internal logic error (implode) */
+#define ZE_LOGIC        5       /* internal logic error */
 #define ZE_BIG          6       /* entry too large to split */
 #define ZE_NOTE         7       /* invalid comment format */
+#define ZE_TEST         8       /* zip test (-T) failed or out of memory */
 #define ZE_ABORT        9       /* user interrupt or termination */
 #define ZE_TEMP         10      /* error using a temp file */
 #define ZE_READ         11      /* read or seek error */
@@ -45,7 +46,7 @@ char *errors[] = {
 /*  5 */  "Internal logic error",
 /*  6 */  "Entry too big to split",
 /*  7 */  "Invalid comment format",
-/*  8 */  "",
+/*  8 */  "Zip file invalid or insufficient memory",
 /*  9 */  "Interrupted",
 /* 10 */  "Temporary file failure",
 /* 11 */  "Input file read failure",

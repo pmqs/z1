@@ -1,10 +1,10 @@
 /*
 
- Copyright (C) 1990,1991 Mark Adler, Richard B. Wales, and Jean-loup Gailly.
+ Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly,
+ Kai Uwe Rommel and Igor Mandrichenko.
  Permission is granted to any individual or institution to use, copy, or
- redistribute this software so long as all of the original files are included
- unmodified, that it is not sold for profit, and that this copyright notice
- is retained.
+ redistribute this software so long as all of the original files are included,
+ that it is not sold for profit, and that this copyright notice is retained.
 
 */
 
@@ -12,7 +12,14 @@
  *  zipfile.c by Mark Adler.
  */
 
+#define NOCPYRT         /* this is not a main module */
 #include "zip.h"
+#include "revision.h"
+
+#ifdef VMS
+#  include "VMSmunch.h"
+#  include <rms.h>
+#endif
 
 
 /* Macros for converting integers in little-endian to machine format */
@@ -20,20 +27,21 @@
 #define LG(a) ((ulg)SH(a) | ((ulg)SH((a)+2) << 16))
 
 /* Macros for writing machine integers to little-endian format */
-#define PUTSH(a,f) {putc((char)(a),(f)); putc((char)((a) >> 8),(f));}
-#define PUTLG(a,f) {PUTSH(a,f) PUTSH((a) >> 16,f)}
+#define PUTSH(a,f) {putc((char)(a) & 0xff,(f)); putc((char)((a) >> 8),(f));}
+#define PUTLG(a,f) {PUTSH((a) & 0xffff,f) PUTSH((a) >> 16,f)}
 
 
 /* -- Structure of a ZIP file -- */
 
 /* Signatures for zip file information headers */
-#define LOCSIG  0x04034b50L
-#define CENSIG  0x02014b50L
-#define ENDSIG  0x06054b50L
+#define LOCSIG     0x04034b50L
+#define CENSIG     0x02014b50L
+#define ENDSIG     0x06054b50L
+#define EXTLOCSIG  0x08074b50L
 
 /* Offsets of values in headers */
 #define LOCVER  0               /* version needed to extract */
-#define LOCFLG  2               /* encrypt, implosion flags */
+#define LOCFLG  2               /* encrypt, deflate flags */
 #define LOCHOW  4               /* compression method */
 #define LOCTIM  6               /* last modified file time, DOS format */
 #define LOCDAT  8               /* last modified file date, DOS format */
@@ -43,9 +51,13 @@
 #define LOCNAM  22              /* length of filename */
 #define LOCEXT  24              /* length of extra field */
 
+#define EXTCRC  0               /* uncompressed crc-32 for file */
+#define EXTSIZ  4               /* compressed size in zip file */
+#define EXTLEN  8               /* uncompressed size */
+
 #define CENVEM  0               /* version made by */
 #define CENVER  2               /* version needed to extract */
-#define CENFLG  4               /* encrypt, implosion flags */
+#define CENFLG  4               /* encrypt, deflate flags */
 #define CENHOW  6               /* compression method */
 #define CENTIM  8               /* last modified file time, DOS format */
 #define CENDAT  10              /* last modified file date, DOS format */
@@ -70,36 +82,42 @@
 
 
 /* Local functions */
-#ifdef PROTO
-   local int zqcmp(voidp *, voidp *);
+
+local int zqcmp OF((const voidp *, const voidp *));
 #  ifndef UTIL
-     local int zbcmp(voidp *, voidp far *);
-     local char *cutpath(char *);
+     local int rqcmp OF((const voidp *, const voidp *));
+     local int zbcmp OF((const voidp *, const voidp far *));
+     local void cutpath OF((char *p));
 #  endif /* !UTIL */
-#endif /* PROTO */
 
 
 local int zqcmp(a, b)
-voidp *a, *b;           /* pointers to pointers to zip entries */
-/* Used by qsort() to compare entries in the zfile list.  */
+const voidp *a, *b;           /* pointers to pointers to zip entries */
+/* Used by qsort() to compare entries in the zfile list.
+ * Compares the internal names z->zname */
 {
-  return strcmp((*(struct zlist far **)a)->zname,
-                (*(struct zlist far **)b)->zname);
+  return namecmp((*(struct zlist far **)a)->zname,
+                 (*(struct zlist far **)b)->zname);
 }
-
 
 #ifndef UTIL
 
+local int rqcmp(a, b)
+const voidp *a, *b;           /* pointers to pointers to zip entries */
+/* Used by qsort() to compare entries in the zfile list.
+ * Compare the internal names z->zname, but in reverse order. */
+{
+  return namecmp((*(struct zlist far **)b)->zname,
+                 (*(struct zlist far **)a)->zname);
+}
+
+
 local int zbcmp(n, z)
-voidp *n;               /* string to search for */
-voidp far *z;           /* pointer to a pointer to a zip entry */
+const voidp *n;         /* string to search for */
+const voidp far *z;     /* pointer to a pointer to a zip entry */
 /* Used by search() to compare a target to an entry in the zfile list. */
 {
-#ifdef OS2
-  return stricmp((char *)n, ((struct zlist far *)z)->zname);
-#else /* !OS2 */
-  return strcmp((char *)n, ((struct zlist far *)z)->zname);
-#endif /* ?OS2 */
+  return namecmp((char *)n, ((struct zlist far *)z)->zname);
 }
 
 
@@ -118,12 +136,8 @@ char *n;                /* name to find */
 
 #endif /* !UTIL */
 
-
-#ifdef VMS
-#  define PATHCUT ']'
-#else /* !VMS */
+#ifndef VMS
 #  define PATHCUT '/'
-#endif /* VMS */
 
 char *ziptyp(s)
 char *s;                /* file name to force to zip */
@@ -138,20 +152,80 @@ char *s;                /* file name to force to zip */
   if ((t = malloc(strlen(s) + 5)) == NULL)
     return NULL;
   strcpy(t, s);
+#ifdef __human68k__
+  _toslash(t);
+#endif
 #ifdef MSDOS
   for (q = t; *q; q++)
     if (*q == '\\')
       *q = '/';
 #endif /* MSDOS */
+#ifdef AMIGA
+  if ((q = strrchr(t, '/')) == NULL)
+    q = strrchr(t, ':');
+  if (strrchr((q ? q + 1 : t), '.') == NULL)
+#else /* !AMIGA */
   if (strrchr((q = strrchr(t, PATHCUT)) == NULL ? t : q + 1, '.') == NULL)
+#endif /* ?AMIGA */
     strcat(t, ".zip");
-#ifdef MSDOS
-#ifndef OS2
-  strupr(t);
-#endif /* !OS2 */
-#endif /* MSDOS */
   return t;
 }
+
+#else /* VMS */
+
+# define PATHCUT ']'
+
+char *ziptyp(s)
+char *s;
+{   int status;
+    struct FAB fab;
+    struct NAM nam;
+    static char zero=0;
+    char result[NAM$C_MAXRSS+1],exp[NAM$C_MAXRSS+1];
+    char *p;
+
+    fab = cc$rms_fab;
+    nam = cc$rms_nam;
+
+    fab.fab$l_fna = s;
+    fab.fab$b_fns = strlen(fab.fab$l_fna);
+
+    fab.fab$l_dna = "sys$disk:[].zip";          /* Default fspec */
+    fab.fab$b_dns = strlen(fab.fab$l_dna);
+
+    fab.fab$l_nam = &nam;
+    
+    nam.nam$l_rsa = result;                     /* Put resultant name of */
+    nam.nam$b_rss = sizeof(result)-1;           /* existing zipfile here */
+
+    nam.nam$l_esa = exp;                        /* For full spec of */
+    nam.nam$b_ess = sizeof(exp)-1;              /* file to create */
+
+    status = sys$parse(&fab);
+    if( (status & 1) == 0 )
+        return &zero;
+
+    status = sys$search(&fab);
+    if( status & 1 )
+    {               /* Existing ZIP file */
+        int l;
+        if( (p=malloc( (l=nam.nam$b_rsl) + 1 )) != NULL )
+        {       result[l] = 0;
+                strcpy(p,result);
+        }
+    }
+    else
+    {               /* New ZIP file */
+        int l;
+        if( (p=malloc( (l=nam.nam$b_esl) + 1 )) != NULL )
+        {       exp[l] = 0;
+                strcpy(p,exp);
+        }
+    }
+    return p;
+}
+
+#endif  /* VMS */
 
 
 int readzipfile()
@@ -167,8 +241,10 @@ int readzipfile()
    Return an error code in the ZE_ class.
 */
 {
+  ulg a = 0L;           /* attributes returned by filetime() */
   char b[CENHEAD];      /* buffer for central headers */
   FILE *f;              /* zip file */
+  ush flg;              /* general purpose bit flag */
   int m;                /* mismatch flag */
   extent n;             /* length of name */
   ulg p;                /* current file offset */
@@ -185,60 +261,124 @@ int readzipfile()
   zcomlen = 0;                          /* zip file comment length */
 
   /* If zip file exists, read headers and check structure */
-  if ((f = fopen(zipfile, FOPR)) != NULL)
+#ifdef VMS
+  if (zipfile == NULL || !(*zipfile) || !strcmp(zipfile, "-"))
+    return ZE_OK;
   {
+    int rtype;
+    VMSmunch(zipfile, GET_RTYPE, (char *)&rtype);
+    if (rtype == FAT$C_VARIABLE) {
+      fprintf(stderr,
+     "\n     Error:  zipfile is in variable-length record format.  Please\n\
+     run \"bilf b %s\" to convert the zipfile to fixed-length\n\
+     record format.  (Bilf.exe, bilf.c and make_bilf.com are included\n\
+     in the VMS UnZip distribution.)\n\n", zipfile);
+      return ZE_FORM;
+    }
+  }
+  if ((f = fopen(zipfile, FOPR)) != NULL)
+#else /* !VMS */
+  if (zipfile != NULL && *zipfile && strcmp(zipfile, "-") &&
+      (f = fopen(zipfile, FOPR)) != NULL)
+#endif /* ?VMS */
+  {
+    /* Get any file attribute valid for this OS, to set in the central
+     * directory when fixing the archive:
+     */
+#ifndef UTIL
+    if (fix)
+      filetime(zipfile, &a, (long*)&s);
+#endif
     x = &zfiles;                        /* first link */
     p = 0;                              /* starting file offset */
     zcount = 0;                         /* number of files */
 
     /* Find start of zip structures */
-    while (fread(b, 4, 1, f) == 1 && (s = LG(b)) != LOCSIG && s != ENDSIG)
+    for (;;) {
+      while ((m = getc(f)) != EOF && m != 'P') p++;
+      b[0] = (char) m;
+      if (fread(b+1, 3, 1, f) != 1 || (s = LG(b)) == LOCSIG || s == ENDSIG)
+        break;
       if (fseek(f, -3L, SEEK_CUR))
         return ferror(f) ? ZE_READ : ZE_EOF;
-      else
-        p++;
+      p++;
+    }
     zipbeg = p;
 
     /* Read local headers */
     while (LG(b) == LOCSIG)
     {
-      /* Read local header raw to compare later with central header 
+      /* Read local header raw to compare later with central header
          (this requires that the offest of ext in the zlist structure
          be greater than or equal to LOCHEAD) */
       if ((z = (struct zlist far *)farmalloc(sizeof(struct zlist))) == NULL)
         return ZE_MEM;
-      if (fread(b, LOCHEAD, 1, f) != 1)
-        return ferror(f) ? ZE_READ : ZE_EOF;
-      t = b;  u = (char far *)z;  n = LOCHEAD;
-      do {
-        *u++ = *t++;
-      } while (--n);
-
+      if (fread(b, LOCHEAD, 1, f) != 1) {
+        if (fix)
+          break;
+        else
+          return ferror(f) ? ZE_READ : ZE_EOF;
+      }
+      if (fix) {
+        z->ver = SH(LOCVER + b);
+        z->vem = dosify ? 20 : OS_CODE + REVISION;
+        z->dosflag = dosify;
+        flg = z->flg = z->lflg = SH(LOCFLG + b);
+        z->how = SH(LOCHOW + b);
+        z->tim = LG(LOCTIM + b);          /* time and date into one long */
+        z->crc = LG(LOCCRC + b);
+        z->siz = LG(LOCSIZ + b);
+        z->len = LG(LOCLEN + b);
+        n = z->nam = SH(LOCNAM + b);
+        z->cext = z->ext = SH(LOCEXT + b);
+        z->com = 0;
+        z->dsk = 0;
+        z->att = 0;
+        z->atx = dosify ? a & 0xff : a;     /* Attributes from filetime() */
+        z->mark = 0;
+        z->trash = 0;
+        s = fix > 1 ? 0L : z->siz; /* discard compressed size with -FF */
+      } else {
+        t = b;  u = (char far *)z;  n = LOCHEAD;
+        do {
+          *u++ = *t++;
+        } while (--n);
+        z->ext = SH(LOCEXT + (uch far *)z);
+        n = SH(LOCNAM + (uch far *)z);
+        flg = SH(b+LOCFLG);
+        s = LG(LOCSIZ + (uch far *)z);
+      }
       /* Link into list */
       *x = z;
       z->nxt = NULL;
       x = &z->nxt;
 
       /* Read file name and extra field and skip data */
-      n = SH(LOCNAM + (uch far *)z);
-      z->ext = SH(LOCEXT + (uch far *)z);
-      s = LG(LOCSIZ + (uch far *)z);
       if (n == 0)
       {
         sprintf(errbuf, "%d", zcount + 1);
         warn("zero-length name for entry #", errbuf);
+#ifndef DEBUG
         return ZE_FORM;
+#endif
       }
       if ((z->zname = malloc(n+1)) ==  NULL ||
           (z->ext && (z->extra = malloc(z->ext)) == NULL))
         return ZE_MEM;
       if (fread(z->zname, n, 1, f) != 1 ||
           (z->ext && fread(z->extra, z->ext, 1, f) != 1) ||
-          fseek(f, (long)s, SEEK_CUR))
+          (s && fseek(f, (long)s, SEEK_CUR)))
         return ferror(f) ? ZE_READ : ZE_EOF;
+      /* If there is an extended local header, s is either 0 or
+       * the correct compressed size.
+       */
       z->zname[n] = 0;                  /* terminate name */
+      if (fix) {
+        z->cextra = z->extra;
+        if (noisy) fprintf(mesg, "zip: reading %s\n", z->zname);
+      }
 #ifdef UTIL
-      z->name = z->zname;
+      z->name = z->zname;               /* !!! to be checked */
 #else /* !UTIL */
       z->name = in2ex(z->zname);        /* convert to external name */
       if (z->name == NULL)
@@ -250,15 +390,97 @@ int readzipfile()
       p += 4 + LOCHEAD + n + z->ext + s;
       zcount++;
 
+      /* Skip extended local header if there is one */
+      if ((flg & 8) != 0) {
+        /* Skip the compressed data if compressed size is unknown.
+         * For safety, we should use the central directory.
+         */
+        if (s == 0) {
+          for (;;) {
+            while ((m = getc(f)) != EOF && m != 'P') ;
+            b[0] = (char) m;
+            if (fread(b+1, 15, 1, f) != 1 || LG(b) == EXTLOCSIG)
+              break;
+            if (fseek(f, -15L, SEEK_CUR))
+              return ferror(f) ? ZE_READ : ZE_EOF;
+          }
+          s = LG(4 + EXTSIZ + b);
+          p += s;
+          if ((ulg) ftell(f) != p+16L) {
+            warn("bad extended local header for ", z->zname);
+            return ZE_FORM;
+          }
+        } else {
+          /* compressed size non zero, assume that it is valid: */
+          Assert(p == ftell(f), "bad compressed size with extended header");
+    
+          if (fseek(f, p, SEEK_SET) || fread(b, 16, 1, f) != 1)
+            return ferror(f) ? ZE_READ : ZE_EOF;
+          if (LG(b) != EXTLOCSIG) {
+            warn("extended local header not found for ", z->zname);
+            return ZE_FORM;
+          }
+        }
+        /* overwrite the unknown values of the local header: */
+        if (fix) {
+            /* already in host format */
+            z->crc = LG(4 + EXTCRC + b);
+            z->siz = s;
+            z->len = LG(4 + EXTLEN + b);
+        } else {
+            /* Keep in Intel format for comparison with central header */
+            t = b+4;  u = (char far *)z+LOCCRC;  n = 12;
+            do {
+              *u++ = *t++;
+            } while (--n);
+        }
+        p += 16L;
+      }
+      else if (fix > 1) {
+        /* Don't trust the compressed size */
+        for (;;) {
+          while ((m = getc(f)) != EOF && m != 'P') p++;
+          b[0] = (char) m;
+          if (fread(b+1, 3, 1, f) != 1 || (s = LG(b)) == LOCSIG || s == CENSIG)
+            break;
+          if (fseek(f, -3L, SEEK_CUR))
+            return ferror(f) ? ZE_READ : ZE_EOF;
+          p++;
+        }
+        s = p - (z->off + 4 + LOCHEAD + n + z->ext);
+        if (s != z->siz) {
+          fprintf(stderr, " compressed size %ld, actual size %ld for %s\n",
+                  z->siz, s, z->zname);
+          z->siz = s;
+        }
+        /* next LOCSIG already read at this point, don't read it again: */
+        continue;
+      }
+
       /* Read next signature */
-      if (fread(b, 4, 1, f) != 1)
-        return ferror(f) ? ZE_READ : ZE_EOF;
+      if (fread(b, 4, 1, f) != 1) {
+        if (fix)
+          break;
+        else
+          return ferror(f) ? ZE_READ : ZE_EOF;
+      }
     }
 
     /* Point to start of header list and read central headers */
     z = zfiles;
     s = p;                              /* save start of central */
-    while (LG(b) == CENSIG)
+    if (fix) {
+      if (LG(b) != CENSIG && noisy) {
+        fprintf(mesg, "zip warning: %s %s truncated.\n", zipfile,
+                fix > 1 ? "has been" : "would be");
+
+        if (fix == 1) {
+          fprintf(mesg,
+   "Retry with option -qF to truncate, with -FF to attempt full recovery\n");
+          err(ZE_FORM, NULL);
+        }
+      }
+    } else while (LG(b) == CENSIG)
     {
       if (z == NULL)
       {
@@ -281,12 +503,13 @@ int readzipfile()
       for (m = 0, u = (char far *)z, n = 0; n < LOCHEAD - 2; n++)
         if (u[n] != b[n+2])
         {
-          if (!m)
+          if (!m && noisy)
             warn("local and central headers differ for ", z->zname);
           m = 1;
           sprintf(errbuf, " offset %d--local = %02x, central = %02x",
                   n, (uch)u[n], (uch)b[n+2]);
-          warn(errbuf, "");
+          if (noisy) warn(errbuf, "");
+          b[n+2] = u[n]; /* fix the zipfile */
         }
       if (m)
         return ZE_FORM;
@@ -307,6 +530,7 @@ int readzipfile()
       z->dsk = SH(CENDSK + b);
       z->att = SH(CENATT + b);
       z->atx = LG(CENATX + b);
+      z->dosflag = (z->vem & 0xff00) == 0;
       if (z->off != LG(CENOFF + b))
       {
         warn("local offset in central header incorrect for ", z->zname);
@@ -357,17 +581,19 @@ int readzipfile()
       /* Note oddities */
       if (verbose)
       {
-        if (z->vem != 10 && z->vem != 11 &&
-            (n = z->vem >> 8) != 3 && n != 2 && n != 6)
+        if (z->vem != 10 && z->vem != 11 && z->vem != 20 &&
+            (n = z->vem >> 8) != 3 && n != 2 && n != 6 && n != 0)
         {
           sprintf(errbuf, "made by version %d.%d on system type %d: ",
-                  (z->vem & 0xff) / 10, (z->vem & 0xff) % 10, z->vem >> 8);
+            (ush)(z->vem & 0xff) / (ush)10,
+            (ush)(z->vem & 0xff) % (ush)10, z->vem >> 8);
           warn(errbuf, z->zname);
         }
-        if (z->ver != 10 && z->ver != 11)
+        if (z->ver != 10 && z->ver != 11 && z->ver != 20)
         {
           sprintf(errbuf, "needs unzip %d.%d on system type %d: ",
-                  (z->ver & 0xff) / 10, (z->ver & 0xff) % 10, z->ver >> 8);
+            (ush)(z->ver & 0xff) / (ush)10,
+            (ush)(z->ver & 0xff) % (ush)10, z->ver >> 8);
           warn(errbuf, z->zname);
         }
         if (z->flg != z->lflg)
@@ -376,12 +602,12 @@ int readzipfile()
                   z->lflg, z->flg);
           warn(errbuf, z->zname);
         }
-        else if (z->flg & ~7)
+        else if (z->flg & ~0xf)
         {
           sprintf(errbuf, "undefined bits used in flags = 0x%04x: ", z->flg);
           warn(errbuf, z->zname);
         }
-        if (z->how > IMPLODE)
+        if (z->how > DEFLATE)
         {
           sprintf(errbuf, "unknown compression method %u: ", z->how);
           warn(errbuf, z->zname);
@@ -432,34 +658,37 @@ int readzipfile()
     }
     
     /* Read end header */
-    if (z != NULL || LG(b) != ENDSIG)
-    {
-      warn("missing end signature--probably not a zip file (did you", "");
-      warn("remember to use binary mode when you transferred it?)", "");
-      return ZE_FORM;
-    }
-    if (fread(b, ENDHEAD, 1, f) != 1)
-      return ferror(f) ? ZE_READ : ZE_EOF;
-    if (SH(ENDDSK + b) || SH(ENDBEG + b) ||
-        SH(ENDSUB + b) != SH(ENDTOT + b))
-      warn("multiple disk information ignored", "");
-    if (zcount != SH(ENDSUB + b))
-    {
-      warn("count in end of central directory incorrect", "");
-      return ZE_FORM;
-    }
-    if (LG(ENDSIZ + b) != p - s)
-    {
-      warn("central directory size is incorrect", "");
-      return ZE_FORM;
-    }
-    if (LG(ENDOFF + b) != s)
-    {
-      warn("central directory start is incorrect", "");
-      return ZE_FORM;
+    if (!fix) {
+      if (z != NULL || LG(b) != ENDSIG)
+      {
+        warn("missing end signature--probably not a zip file (did you", "");
+        warn("remember to use binary mode when you transferred it?)", "");
+        return ZE_FORM;
+      }
+      if (fread(b, ENDHEAD, 1, f) != 1)
+        return ferror(f) ? ZE_READ : ZE_EOF;
+      if (SH(ENDDSK + b) || SH(ENDBEG + b) ||
+          SH(ENDSUB + b) != SH(ENDTOT + b))
+        warn("multiple disk information ignored", "");
+      if (zcount != SH(ENDSUB + b))
+      {
+        warn("count in end of central directory incorrect", "");
+        return ZE_FORM;
+      }
+      if (LG(ENDSIZ + b) != p - s)
+      {
+        warn("central directory size is incorrect (made by stzip?)", "");
+        /* stzip 0.9 gets this wrong, so be tolerant */
+        /* return ZE_FORM; */
+      }
+      if (LG(ENDOFF + b) != s)
+      {
+        warn("central directory start is incorrect", "");
+        return ZE_FORM;
+      }
     }
     cenbeg = s;
-    zcomlen = SH(ENDCOM + b);
+    zcomlen = fix ? 0 : SH(ENDCOM + b);
     if (zcomlen)
     {
       if ((zcomment = malloc(zcomlen)) == NULL)
@@ -475,7 +704,7 @@ int readzipfile()
       sprintf(errbuf, " has a preamble of %ld bytes", zipbeg);
       warn(zipfile, errbuf);
     }
-    if (getc(f) != EOF)
+    if (!fix && getc(f) != EOF)
       warn("garbage at end of zip file ignored", "");
 
     /* Done with zip file for now */
@@ -514,11 +743,23 @@ FILE *f;                /* file to write to */
   PUTSH(z->nam, f);
   PUTSH(z->ext, f);
   if (fwrite(z->zname, 1, z->nam, f) != z->nam ||
-      z->ext && fwrite(z->extra, 1, z->ext, f) != z->ext)
+      (z->ext && fwrite(z->extra, 1, z->ext, f) != z->ext))
     return ZE_TEMP;
   return ZE_OK;
 }
 
+int putextended(z, f)
+struct zlist far *z;    /* zip entry to write local header for */
+FILE *f;                /* file to write to */
+/* Write an extended local header described by *z to file *f.
+ * Return an error code in the ZE_ class. */
+{
+  PUTLG(EXTLOCSIG, f);
+  PUTLG(z->crc, f);
+  PUTLG(z->siz, f);
+  PUTLG(z->len, f);
+  return ZE_OK;
+}
 
 int putcentral(z, f)
 struct zlist far *z;    /* zip entry to write central header for */
@@ -543,8 +784,8 @@ FILE *f;                /* file to write to */
   PUTLG(z->atx, f);
   PUTLG(z->off, f);
   if (fwrite(z->zname, 1, z->nam, f) != z->nam ||
-      z->cext && fwrite(z->cextra, 1, z->cext, f) != z->cext ||
-      z->com && fwrite(z->comment, 1, z->com, f) != z->com)
+      (z->cext && fwrite(z->cextra, 1, z->cext, f) != z->cext) ||
+      (z->com && fwrite(z->comment, 1, z->com, f) != z->com))
     return ZE_TEMP;
   return ZE_OK;
 }
@@ -552,7 +793,8 @@ FILE *f;                /* file to write to */
 
 int putend(n, s, c, m, z, f)
 int n;                  /* number of entries in central directory */
-ulg s, c;               /* size and offset of central directory */
+ulg s;                  /* size of central directory */
+ulg c;                  /* offset of central directory */
 extent m;               /* length of zip file comment (0 if none) */
 char *z;                /* zip file comment if m != 0 */
 FILE *f;                /* file to write to */
@@ -575,9 +817,11 @@ FILE *f;                /* file to write to */
 
 #ifndef UTIL
 
-local char *cutpath(p)
+local void cutpath(p)
 char *p;                /* path string */
-/* Cut the last path component off the name *p in place.  Return p. */
+/* Cut the last path component off the name *p in place.
+ * This should work on both internal and external names.
+ */
 {
   char *r;              /* pointer to last path delimiter */
 
@@ -588,22 +832,19 @@ char *p;                /* path string */
     if ((r = strrchr(p, '.')) != NULL)
     {
       *r = ']';
-      strcat(r, ".DIR");        /* this assumes a little padding--see PAD */
-    }
-    else
+      strcat(r, ".DIR;1");     /* this assumes a little padding--see PAD */
+    } else {
       *p = 0;
-  }
-  else
+    }
+  } else {
     *p = 0;
-#else /* !VMS */                /* change w/x/y/z to w/x/y */
+  }
+#endif /* ?VMS */
   if ((r = strrchr(p, '/')) != NULL)
     *r = 0;
   else
     *p = 0;
-#endif /* ?VMS */
-  return p;
 }
-
 
 int trash()
 /* Delete the compressed files and the directories that contained the deleted
@@ -611,50 +852,73 @@ int trash()
    destroy() or deletedir() is ignored. */
 {
   extent i;             /* counter on deleted names */
-  extent k;             /* number of deleted directories this pass */
-  extent n;             /* number of deleted names left to handle */
+  extent n;             /* number of directories to delete */
   struct zlist far **s; /* table of zip entries to handle, sorted */
   struct zlist far *z;  /* current zip entry */
 
-  /* Count and delete marked names */
+  /* Delete marked names and count directories */
   n = 0;
   for (z = zfiles; z != NULL; z = z->nxt)
     if (z->mark || z->trash)
     {
       z->mark = 1;
-      n++;
-      if (verbose)
-        printf("zip diagnostic: trashing file %s\n", z->name);
-      destroy(z->name);
+      if (z->zname[z->nam - 1] != '/') { /* don't unlink directory */
+        if (verbose)
+          fprintf(mesg, "zip diagnostic: trashing file %s\n", z->name);
+        destroy(z->name);
+        /* Try to delete all paths that lead up to marked names. This is
+         * necessary only without the -D option.
+         */
+        if (!dirnames) {
+          cutpath(z->name);
+          cutpath(z->zname);
+          if (z->zname[0] != '\0') {
+            strcat(z->zname, "/");
+          }
+          z->nam = strlen(z->zname);
+          if (z->nam > 0) n++;
+        }
+      } else {
+        n++;
+      }
     }
 
-  /* Try to delete all paths that lead up to marked names */
+  /* Construct the list of all marked directories. Some may be duplicated
+   * if -D was used.
+   */
   if (n)
   {
-    if ((s = (struct zlist far **)malloc((n+1)*sizeof(struct zlist far *))) ==
-        NULL ||
-        (s[0] = (struct zlist far *)farmalloc(sizeof(struct zlist))) == NULL)
+    if ((s = (struct zlist far **)malloc(n*sizeof(struct zlist far *))) ==
+        NULL)
       return ZE_MEM;
-    s[0]->name = "";
-    s++;
-    do {
-      n = k = 0;
-      for (z = zfiles; z != NULL; z = z->nxt)
-        if (z->mark)
-          s[n++] = z;
-      qsort((char *)s, n, sizeof(struct zlist far *), zqcmp);
-      for (i = 0; i < n; i++)
-        if (*cutpath(s[i]->name) && strcmp(s[i]->name, s[i-1]->name))
-        {
-          if (verbose)
-            printf("zip diagnostic: trashing directory %s\n", s[i]->name);
-          deletedir(s[i]->name);
-          k++;
+    n = 0;
+    for (z = zfiles; z != NULL; z = z->nxt) {
+      if (z->mark && z->nam > 0 && z->zname[z->nam - 1] == '/'
+          && (n == 0 || strcmp(z->zname, s[n-1]->zname) != 0)) {
+        s[n++] = z;
+      }
+    }
+    /* Sort the files in reverse order to get subdirectories first.
+     * To avoid problems with strange naming conventions as in VMS,
+     * we sort on the internal names, so x/y/z will always be removed
+     * before x/y. On VMS, x/y/z > x/y but [x.y.z] < [x.y]
+     */
+    qsort((char *)s, n, sizeof(struct zlist far *), rqcmp);
+
+    for (i = 0; i < n; i++) {
+      char *p = s[i]->name;
+      if (*p == '\0') continue;
+      if (p[strlen(p) - 1] == '/') { /* keep VMS [x.y]z.dir;1 intact */
+        p[strlen(p) - 1] = '\0';
+      }
+      if (i == 0 || strcmp(s[i]->zname, s[i-1]->zname) != 0) {
+        if (verbose) {
+          fprintf(mesg, "zip diagnostic: trashing directory %s (if empty)\n",
+                  s[i]->name);
         }
-        else
-          s[i]->mark = 0;
-    } while (k);
-    farfree((voidp far *)((--s)[0]));
+        deletedir(s[i]->name);
+      }
+    }
     free((voidp *)s);
   }
   return ZE_OK;

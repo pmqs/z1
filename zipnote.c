@@ -1,10 +1,10 @@
 /*
 
- Copyright (C) 1990,1991 Mark Adler, Richard B. Wales, and Jean-loup Gailly.
+ Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly,
+ Kai Uwe Rommel and Igor Mandrichenko.
  Permission is granted to any individual or institution to use, copy, or
- redistribute this software so long as all of the original files are included
- unmodified, that it is not sold for profit, and that this copyright notice
- is retained.
+ redistribute this software so long as all of the original files are included,
+ that it is not sold for profit, and that this copyright notice is retained.
 
 */
 
@@ -20,6 +20,8 @@
 
 /* Character to mark zip entry names in the comment file */
 #define MARK '@'
+#define MARKE " (comment above this line)"
+#define MARKZ " (zip file comment below this line)"
 
 /* Temporary zip file name and file pointer */
 local char *tempzip;
@@ -28,18 +30,17 @@ local FILE *tempzf;
 
 /* Local functions */
 #ifdef PROTO
-   local void err(int, char *);
    local void handler(int);
    local void license(void);
    local void help(void);
-   local void putclean(char *);
+   local void putclean(char *, int);
    local int catalloc(char * far *, char *);
-   void main(int, char **);
+   int main(int, char **);
 #endif /* PROTO */
 
 
 
-local void err(c, h)
+void err(c, h)
 int c;                  /* error code from the ZE_ class */
 char *h;                /* message about how it happened */
 /* Issue a message for the error, clean up files and memory, and exit. */
@@ -89,8 +90,10 @@ local void license()
 {
   extent i;             /* counter for copyright array */
 
-  for (i = 0; i < sizeof(copyright)/sizeof(char *); i++)
-    puts(copyright[i]);
+  for (i = 0; i < sizeof(copyright)/sizeof(char *); i++) {
+    printf(copyright[i], "zipnote");
+    putchar('\n');
+  }
   for (i = 0; i < sizeof(disclaimer)/sizeof(char *); i++)
     puts(disclaimer[i]);
 }
@@ -104,12 +107,12 @@ local void help()
   /* help array */
   static char *text[] = {
 "",
-"ZipNote %d.%d (%s)",
+"ZipNote %s (%s)",
 "Usage:  zipnote [-w] [-b path] zipfile",
 "  the default action is to write the comments in zipfile to stdout",
 "  -w   write the zipfile comments from stdin",
 "  -b   use \"path\" for the temporary zip file",
-"  -h   show this help               -l   show software license",
+"  -h   show this help               -L   show software license",
 "",
 "Example:",
 #ifdef VMS
@@ -127,18 +130,21 @@ local void help()
 #endif /* ?VMS */
   };
 
-  for (i = 0; i < sizeof(copyright)/sizeof(char *); i++)
-    puts(copyright[i]);
+  for (i = 0; i < sizeof(copyright)/sizeof(char *); i++) {
+    printf(copyright[i], "zipnote");
+    putchar('\n');
+  }
   for (i = 0; i < sizeof(text)/sizeof(char *); i++)
   {
-    printf(text[i], REVISION / 10, REVISION % 10, REVDATE);
+    printf(text[i], VERSION, REVDATE);
     putchar('\n');
   }
 }
 
 
-local void putclean(s)
+local void putclean(s, n)
 char *s;                /* string to write to stdout */
+int n;                  /* length of string */
 /* Write the string s to stdout, filtering out control characters that are
    not tab or newline (mainly to remove carriage returns), and prefix MARK's
    and backslashes with a backslash.  Also, terminate with a newline if
@@ -148,12 +154,13 @@ char *s;                /* string to write to stdout */
   int e;                /* last character written */
 
   e = '\n';                     /* if empty, write nothing */
-  while ((c = *s++) != 0)
+  while (n--)
   {
+    c = *(uch *)s++;
     if (c == MARK || c == '\\')
       putchar('\\');
     if (c >= ' ' || c == '\t' || c == '\n')
-      putchar(e = c);
+      { e=c; putchar(e); }
   }
   if (e != '\n')
     putchar('\n');
@@ -182,7 +189,7 @@ char *s;                /* string to concatenate on a */
 }
 
 
-void main(argc, argv)
+int main(argc, argv)
 int argc;               /* number of tokens in command line */
 char **argv;            /* command line tokens */
 /* Write the comments in the zipfile to stdout, or read them from stdin. */
@@ -206,11 +213,15 @@ char **argv;            /* command line tokens */
     exit(0);
   }
 
+  init_upper();           /* build case map table */
+
   /* Go through args */
   zipfile = tempzip = NULL;
   tempzf = NULL;
   signal(SIGINT, handler);
+#ifdef SIGTERM              /* AMIGA has no SIGTERM */
   signal(SIGTERM, handler);
+#endif
   k = w = 0;
   for (r = 1; r < argc; r++)
     if (*argv[r] == '-')
@@ -226,7 +237,7 @@ char **argv;            /* command line tokens */
               break;
             case 'h':   /* Show help */
               help();  exit(0);
-            case 'l':   /* Show copyright and disclaimer */
+            case 'l':  case 'L':  /* Show copyright and disclaimer */
               license();  exit(0);
             case 'w':
               w = 1;  break;
@@ -258,19 +269,17 @@ char **argv;            /* command line tokens */
   if (zfiles == NULL)
     err(ZE_NAME, zipfile);
 
-  /* Put comments to stdout, if not -u */
+  /* Put comments to stdout, if not -w */
   if (!w)
   {
     for (z = zfiles; z != NULL; z = z->nxt)
     {
       printf("%c %s\n", MARK, z->zname);
-      if (z->com)
-        putclean(z->comment);
-      putchar(MARK);  putchar('\n');
+      putclean(z->comment, z->com);
+      printf("%c%s\n", MARK, MARKE);
     }
-    putchar(MARK);  putchar('\n');
-    if (zcomlen)
-      putclean(zcomment);
+    printf("%c%s\n", MARK, MARKZ);
+    putclean(zcomment, zcomlen);
     exit(ZE_OK);
   }
 
@@ -281,31 +290,35 @@ char **argv;            /* command line tokens */
   t = getfileattr(zipfile);
 
   /* Process stdin, replacing comments */
-  for (z = zfiles; z != NULL; z = z->nxt)
-  {
-    if (gets(a) == NULL || a[0] != MARK || a[1] != ' ' ||
-        strcmp(a + 2, z->zname))
-      err(ZE_NOTE, "missing entry name");
-    if (z->com)
+  z = zfiles;
+  while (gets(a) != NULL && (a[0] != MARK || strcmp(a + 1, MARKZ)))
+  {                                     /* while input and not file comment */
+    if (a[0] != MARK || a[1] != ' ')    /* better be "@ name" */
+      err(ZE_NOTE, "unexpected input");
+    while (z != NULL && strcmp(a + 2, z->zname))
+      z = z->nxt;                       /* allow missing entries in order */
+    if (z == NULL)
+      err(ZE_NOTE, "unknown entry name");
+    if (z->com)                         /* change zip entry comment */
       free((voidp *)z->comment);
     z->comment = malloc(1);  *(z->comment) = 0;
     while (gets(a) != NULL && *a != MARK)
       if ((r = catalloc(&(z->comment), a)) != ZE_OK)
         err(r, "was building new comments");
-    if (a[1])
-      err(ZE_NOTE, "missing comment end line");
     z->com = strlen(z->comment);
+    z = z->nxt;                         /* point to next entry */
   }
-  if (gets(a) == NULL || a[0] != MARK || a[1])
-    err(ZE_NOTE, "missing zip file comment marker line");
-  zcomment = malloc(1);  *zcomment = 0;
-  while (gets(a) != NULL)
-    if ((r = catalloc(&zcomment, a)) != ZE_OK)
-      err(r, "was building new comments");
-  zcomlen = strlen(zcomment);
+  if (a != NULL)                        /* change zip file comment */
+  {
+    zcomment = malloc(1);  *zcomment = 0;
+    while (gets(a) != NULL)
+      if ((r = catalloc(&zcomment, a)) != ZE_OK)
+        err(r, "was building new comments");
+    zcomlen = strlen(zcomment);
+  }
 
   /* Open output zip file for writing */
-  if ((tempzf = y = fopen(tempzip = tempname('Z'), FOPW)) == NULL)
+  if ((tempzf = y = fopen(tempzip = tempname(zipfile), FOPW)) == NULL)
     err(ZE_TEMP, tempzip);
 
   /* Open input zip file again, copy preamble if any */
@@ -349,4 +362,5 @@ char **argv;            /* command line tokens */
 
   /* Done! */
   exit(ZE_OK);
+  return 0; /* avoid warning */
 }

@@ -1,5 +1,9 @@
 /* Not copyrighted 1990 Mark Adler */
 
+#ifndef lint
+static char rcsid[] = "$Id: makecrc.c,v 1.4 1993/08/21 13:57:41 jloup Exp $";
+#endif
+
 #include <stdio.h>
 
 main()
@@ -37,7 +41,7 @@ main()
   /* terms of polynomial defining this crc (except x^32): */
   static int p[] = {0,1,2,4,5,7,8,10,11,12,16,22,23,26};
 
-  /* Make exclusive-or pattern from polynomial */
+  /* Make exclusive-or pattern from polynomial (0xedb88320) */
   e = 0;
   for (i = 0; i < sizeof(p)/sizeof(int); i++)
     e |= 1L << (31 - p[i]);
@@ -46,13 +50,12 @@ main()
   printf("  0x00000000L");
   for (i = 1; i < 256; i++)
   {
-    c = 0;
-    for (k = i | 256; k != 1; k >>= 1)
-    {
+    c = i;
+    /* The idea to initialize the register with the byte instead of
+     * zero was stolen from Haruhiko Okumura's ar002
+     */
+    for (k = 8; k; k--)
       c = c & 1 ? (c >> 1) ^ e : c >> 1;
-      if (k & 1)
-        c ^= e;
-    }
     printf(i % 5 ? ", 0x%08lxL" : ",\n  0x%08lxL", c);
   }
   putchar('\n');

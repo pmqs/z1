@@ -1,10 +1,10 @@
 /*
 
- Copyright (C) 1990,1991 Mark Adler, Richard B. Wales, and Jean-loup Gailly.
+ Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly,
+ Kai Uwe Rommel and Igor Mandrichenko.
  Permission is granted to any individual or institution to use, copy, or
- redistribute this software so long as all of the original files are included
- unmodified, that it is not sold for profit, and that this copyright notice
- is retained.
+ redistribute this software so long as all of the original files are included,
+ that it is not sold for profit, and that this copyright notice is retained.
 
 */
 
@@ -13,26 +13,37 @@
  */
 
 #include "zip.h"
+#include <ctype.h>
+
+#if defined(MSDOS) && !defined(OS2) && !defined(__GO32__) && !defined(WIN32)
+#  include <dos.h>
+#endif
+
+uch upper[256], lower[256];
+/* Country-dependent case map table */
+
+
+#ifndef UTIL /* UTIL picks out namecmp code (all utils) */
 
 /* Local functions */
-#ifdef PROTO
-  local int recmatch(char *, char *);
-#endif /* PROTO */
+local int recmatch OF((uch *, uch *));
 
+#if (defined(MSDOS) && !defined(OS2) && !defined(__GO32__) && !defined(WIN32))
+  local unsigned ident OF((unsigned chr));
+#endif
 
 char *isshexp(p)
 char *p;                /* candidate sh expression */
 /* If p is a sh expression, a pointer to the first special character is
    returned.  Otherwise, NULL is returned. */
 {
-  int c;
-
-  c = -1;
   for (; *p; p++)
+    if (*p == '\\' && *(p+1))
+      p++;
 #ifdef VMS
-    if (c != '\\' && (*p == '%' || *p == '*'))
+    else if (*p == '%' || *p == '*')
 #else /* !VMS */
-    if (c != '\\' && (*p == '?' || *p == '*' || *p == '['))
+    else if (*p == '?' || *p == '*' || *p == '[')
 #endif /* ?VMS */
       return p;
   return NULL;
@@ -40,14 +51,14 @@ char *p;                /* candidate sh expression */
 
 
 local int recmatch(p, s)
-char *p;                /* sh pattern to match */
-char *s;                /* string to match it to */
+uch *p;       /* sh pattern to match */
+uch *s;       /* string to match it to */
 /* Recursively compare the sh pattern p with the string s and return 1 if
    they match, and 0 or 2 if they don't or if there is a syntax error in the
    pattern.  This routine recurses on itself no deeper than the number of
    characters in the pattern. */
 {
-  int c;                /* pattern char or start of range in [-] loop */ 
+  unsigned int c;       /* pattern char or start of range in [-] loop */ 
 
   /* Get first character, the pattern for new recmatch calls follows */
   c = *p++;
@@ -65,6 +76,10 @@ char *s;                /* string to match it to */
     return *s ? recmatch(p, s + 1) : 0;
 
   /* '*' matches any number of characters, including zero */
+#ifdef AMIGA
+  if (c == '#' && *p == '?')            /* "#?" is Amiga-ese for "*" */
+    c = '*', p++;
+#endif /* AMIGA */
   if (c == '*')
   {
     if (*p == 0)
@@ -80,12 +95,12 @@ char *s;                /* string to match it to */
   if (c == '[')
   {
     int e;              /* flag true if next char to be taken literally */
-    char *q;            /* pointer to end of [-] group */
+    uch *q;   /* pointer to end of [-] group */
     int r;              /* flag true to match anything but the range */
 
     if (*s == 0)                        /* need a character to match */
       return 0;
-    p += (r = *p == '!');               /* see if reverse */
+    p += (r = (*p == '!' || *p == '^')); /* see if reverse */
     for (q = p, e = 0; *q; q++)         /* find closing bracket */
       if (e)
         e = 0;
@@ -104,13 +119,10 @@ char *s;                /* string to match it to */
         c = *(p-1);
       else
       {
+        unsigned int cc = case_map(*s);
         if (*(p+1) != '-')
           for (c = c ? c : *p; c <= *p; c++)    /* compare range */
-#ifdef OS2
-            if (tolower(c) == tolower(*s))
-#else /* !OS2 */
-            if (c == *s)
-#endif /* ?OS2 */
+            if (case_map(c) == cc)
               return r ? 0 : recmatch(q + 1, s + 1);
         c = e = 0;                      /* clear range, escape flags */
       }
@@ -125,11 +137,7 @@ char *s;                /* string to match it to */
       return 0;
 
   /* Just a character--compare it */
-#ifdef OS2
-  return tolower(c) == tolower(*s) ? recmatch(p, ++s) : 0;
-#else /* !OS2 */
-  return c == *s++ ? recmatch(p, s) : 0;        /* compare one character */
-#endif /* ?OS2 */
+  return case_map(c) == case_map(*s) ? recmatch(p, ++s) : 0;
 }
 
 
@@ -139,11 +147,11 @@ char *s;                /* string to match it to */
 /* Compare the sh pattern p with the string s and return true if they match,
    false if they don't or if there is a syntax error in the pattern. */
 {
-  return recmatch(p, s) == 1;
+  return recmatch((uch *) p, (uch *) s) == 1;
 }
 
 
-#ifdef MSDOS
+#if defined(MSDOS) && !defined(WIN32)
 
 int dosmatch(p, s)
 char *p;                /* dos pattern to match */
@@ -177,15 +185,14 @@ char *s;                /* string to match it to */
   free((voidp *)s1);
   return r;
 }
-
 #endif /* MSDOS */
-
 
 voidp far **search(b, a, n, cmp)
 voidp *b;               /* pointer to value to search for */
 voidp far **a;          /* table of pointers to values, sorted */
 extent n;               /* number of pointers in a[] */
-int (*cmp) OF((voidp *, voidp far *));  /* comparison function for search */
+int (*cmp) OF((const voidp *, const voidp far *)); /* comparison function */
+
 /* Search for b in the pointer list a[0..n-1] using the compare function
    cmp(b, c) where c is an element of a[i] and cmp() returns negative if
    *b < *c, zero if *b == *c, or positive if *b > *c.  If *b is found,
@@ -201,7 +208,7 @@ int (*cmp) OF((voidp *, voidp far *));  /* comparison function for search */
 
   l = (voidp far **)a;  u = l + (n-1);
   while (u >= l)
-    if ((r = (*cmp)(b, *(i = l + ((u - l) >> 1)))) < 0)
+    if ((r = (*cmp)(b, *(i = l + ((unsigned)(u - l) >> 1)))) < 0)
       u = i - 1;
     else if (r > 0)
       l = i + 1;
@@ -210,10 +217,11 @@ int (*cmp) OF((voidp *, voidp far *));  /* comparison function for search */
   return NULL;          /* If b were in list, it would belong at l */
 }
 
+#endif /* !UTIL */
 
 
 /* Table of CRC-32's of all single byte values (made by makecrc.c) */
-local ulg crctab[] = {
+ulg crc_32_tab[] = {
   0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
   0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
   0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
@@ -269,14 +277,7 @@ local ulg crctab[] = {
 };
 
 
-ulg crc32(c, b)
-ulg c;                  /* current contents of crc shift register */
-int b;                  /* byte (eight bits) to run through */
-/* Return the CRC-32 c updated with the eight bits in b. */
-{
-  return crctab[((int)c ^ b) & 0xff] ^ (c >> 8);
-}
-
+#ifndef UTIL /* UTIL picks out namecmp code (all utils) */
 
 ulg updcrc(s, n)
 char *s;                /* pointer to bytes to pump through */
@@ -295,8 +296,90 @@ extent n;               /* number of bytes in s[] */
   {
     c = crc;
     while (n--)
-      c = crctab[((int)c ^ (*s++)) & 0xff] ^ (c >> 8);
+      c = CRC32(c, *s++);
   }
   crc = c;
   return c ^ 0xffffffffL;       /* (instead of ~c for 64-bit machines) */
+}
+
+#endif /* !UTIL */
+
+
+#if (defined(MSDOS) && !defined(OS2) && !defined(__GO32__) && !defined(WIN32))
+
+local unsigned ident(unsigned chr)
+{
+   return chr; /* in al */
+}
+
+void init_upper()
+{
+  static struct country {
+    uch ignore[18];
+    int (far *casemap)(int);
+    uch filler[16];
+  } country_info;
+
+  struct country far *info = &country_info;
+  union REGS regs;
+  struct SREGS sregs;
+  int c;
+
+  regs.x.ax = 0x3800; /* get country info */
+  regs.x.dx = FP_OFF(info);
+  sregs.ds  = FP_SEG(info);
+  intdosx(&regs, &regs, &sregs);
+  for (c = 0; c < 128; c++) {
+    upper[c] = (uch) toupper(c);
+    lower[c] = (uch) c;
+  }
+  for (; c < sizeof(upper); c++) {
+    upper[c] = (uch) (*country_info.casemap)(ident(c));
+    /* ident() required because casemap takes its parameter in al */
+    lower[c] = (uch) c;
+  }
+  for (c = 0; c < sizeof(upper); c++ ) {
+    int u = upper[c];
+    if (u != c && lower[u] == (uch) u) {
+      lower[u] = (uch)c;
+    }
+  }
+  for (c = 'A'; c <= 'Z'; c++) {
+    lower[c] = (uch) (c - 'A' + 'a');
+  }
+}
+#else
+#  ifndef OS2
+
+void init_upper()
+{
+  int c;
+  for (c = 0; c < sizeof(upper); c++) upper[c] = lower[c] = c;
+  for (c = 'a'; c <= 'z';        c++) upper[c] = c - 'a' + 'A';
+  for (c = 'A'; c <= 'Z';        c++) lower[c] = c - 'A' + 'a';
+}
+#  endif /* OS2 */
+
+#endif /* MSDOS && !__GO32__ && !OS2 && !WIN32 */
+
+int namecmp(string1, string2)
+  char *string1, *string2;
+/* Compare the two strings ignoring case, and correctly taking into
+ * account national language characters. For operating systems with
+ * case sensitive file names, this function is equivalent to strcmp.
+ */
+{
+  int d;
+
+  for (;;)
+  {
+    d = (int) (uch) case_map(*string1)
+      - (int) (uch) case_map(*string2);
+    
+    if (d || *string1 == 0 || *string2 == 0)
+      return d;
+      
+    string1++;
+    string2++;
+  }
 }
