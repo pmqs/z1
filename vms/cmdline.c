@@ -1,10 +1,10 @@
 /*
-  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2005 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  See the accompanying file LICENSE, version 2004-May-22 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, both of these files are missing, the Info-ZIP license
-  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
+  also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
 */
 #define module_name VMS_ZIP_CMDLINE
 #define module_ident "02-006"
@@ -153,6 +153,7 @@ $DESCRIPTOR(cli_verbose,        "VERBOSE");             /* -v */
 $DESCRIPTOR(cli_verbose_more,   "VERBOSE.MORE");        /* -vv */
 $DESCRIPTOR(cli_verbose_debug,  "VERBOSE.DEBUG");       /* -vvv */
 $DESCRIPTOR(cli_vms,            "VMS");                 /* -V */
+$DESCRIPTOR(cli_vms_all,        "VMS.ALL");             /* -VV */
 
 $DESCRIPTOR(cli_yyz,            "YYZ_ZIP");
 
@@ -519,11 +520,17 @@ vms_zip_cmdline (int *argc_p, char ***argv_p)
         *ptr++ = 'X';
 
     /*
-    **  Save the VMS file attributes.
+    **  Save the VMS file attributes (and all allocated blocks?).
     */
     status = cli$present(&cli_vms);
-    if (status & 1)
+    if (status & 1) {
+        /* /VMS */
         *ptr++ = 'V';
+        if ((status = cli$present(&cli_vms_all)) & 1) {
+            /* /VMS = ALL */
+            *ptr++ = 'V';
+        }
+    }
 
     /*
     **  Keep the VMS version number as part of the file name when stored.

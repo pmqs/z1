@@ -1,10 +1,10 @@
 /*
-  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2005 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  See the accompanying file LICENSE, version 2004-May-22 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, both of these files are missing, the Info-ZIP license
-  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
+  also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
 */
 #define fhow "r","mbc=60"
 #define fbad NULL
@@ -16,7 +16,7 @@ typedef void *ftype;
 #define zstdin stdin
 
 ftype vms_open OF((char *));
-int vms_read OF((ftype, char *, int));
+size_t vms_read OF((ftype, char *, size_t));
 int vms_close OF((ftype));
 int vms_error OF((ftype));
 #ifdef VMS_PK_EXTRA

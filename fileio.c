@@ -1,10 +1,10 @@
 /*
-  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2005 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  See the accompanying file LICENSE, version 2004-May-22 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, both of these files are missing, the Info-ZIP license
-  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
+  also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
 */
 /*
  *  fileio.c by Mark Adler
@@ -721,6 +721,7 @@ int a;                  /* attributes returned by getfileattr() */
 #endif
 }
 
+#ifndef VMS /* VMS-specific function is in VMS.C. */
 
 char *tempname(zip)
 char *zip;              /* path name of zip file to generate temp name for */
@@ -865,6 +866,7 @@ char *zip;              /* path name of zip file to generate temp name for */
 #endif /* CMS_MVS */
 }
 
+#endif /* ndef VMS */
 
 int fcopy(f, g, n)
 FILE *f, *g;            /* source and destination files */

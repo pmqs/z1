@@ -1,10 +1,10 @@
 /*
-  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2005 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  See the accompanying file LICENSE, version 2004-May-22 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, both of these files are missing, the Info-ZIP license
-  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
+  also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
 */
 #ifndef VMS
 #  define VMS 1
@@ -67,7 +67,40 @@
 #define EXIT(exit_code) vms_exit(exit_code)
 #define RETURN(exit_code) return (vms_exit(exit_code), 1)
 
-/* File operations--use "b" for binary if allowed or fixed length 512 on VMS */
-#define FOPR  "rb","ctx=stm","mbc=64"
-#define FOPM  "r+b","ctx=stm","rfm=fix","mrs=512","mbc=64"
-#define FOPW  "wb","ctx=stm","rfm=fix","mrs=512","mbc=64"
+#ifdef __DECC
+
+/* File open callback ID values. */
+
+#  define FOPM_ID 1
+#  define FOPR_ID 2
+#  define FOPW_ID 3
+
+/* File open callback ID storage. */
+
+extern int fopm_id;
+extern int fopr_id;
+extern int fopw_id;
+
+/* File open callback ID function. */
+
+extern int acc_cb();
+
+/* Option macros for zfopen().
+ * General: Stream access
+ * Output: fixed-length, 512-byte records.
+ *
+ * Callback function (DEC C only) sets deq, mbc, mbf, rah, wbh, ...
+ */
+
+#  define FOPM "r+b", "ctx=stm", "rfm=fix", "mrs=512", "acc", acc_cb, &fopm_id
+#  define FOPR "rb",  "ctx=stm", "acc", acc_cb, &fopr_id
+#  define FOPW "wb",  "ctx=stm", "rfm=fix", "mrs=512", "acc", acc_cb, &fopw_id
+
+#else /* def __DECC */ /* (So, GNU C, VAX C, ...)*/
+
+#  define FOPM "r+b", "ctx=stm", "rfm=fix", "mrs=512"
+#  define FOPR "rb",  "ctx=stm"
+#  define FOPW "wb",  "ctx=stm", "rfm=fix", "mrs=512"
+
+#endif /* def __DECC */
+
