@@ -1,12 +1,20 @@
+;===========================================================================
+; Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
+;
+; See the accompanying file LICENSE, version 1999-Oct-05 or later
+; (the contents of which are also included in zip.h) for terms of use.
+; If, for some reason, both of these files are missing, the Info-ZIP license
+; also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
+;===========================================================================
 ; This is a 68000 assembly language version of the Zip function
 ; longest_match().  It is written for any 680x0 based computer, but at this
 ; time the feature for runtime testing of CPU type is only supported for the
 ; Amiga.  Hopefully a similar test for the Macintosh is possible, and for any
 ; other system that supports both 68000 and 68020+ CPUs.  This is written by
 ; Paul Kienitz, partially derived from a simpler version by Carsten Steger,
-; derived in turn from a 386 assembly function by Jean-loup Gailly and Uwe
-; Rommel... but also based directly on the C original.  No rights reserved.
-; 
+; derived in turn from a 386 assembly function by Jean-loup Gailly and Kai Uwe
+; Rommel... but also based directly on the C original.
+;
 ; The main difference of this from other longest_match() implementations is
 ; that it includes both byte based and word based versions of the function,
 ; and various symbols can be defined to select whether to use one routine or
@@ -21,6 +29,10 @@
 ;               tells it to let a0/a1/d1 be clobbered by functions.
 ;   ATSIGN     define entry symbols in @foo form as well as _foo, with
 ;               @longest_match taking its parm in d0 instead of on the stack.
+;   WSIZE      if defined, determines the sliding window size for deflate;
+;               the default is 32K. If you have reduced WSIZE for the C code,
+;               make sure that this module is assembled with an equivalent
+;               "-dWSIZE=<whatever>" (or "-e...") switch.
 ;
 ; NOTE: no provision is made for 16 bit ints.  All external int variables are
 ; treated as 32 bit values.  This also assumes that longest_match's result is
@@ -49,7 +61,7 @@ CPU000  equ     1
         xdef    @match_init         ; for SAS assembler
         xdef    @longest_match      ; ditto
         ENDC
-        
+
 ; flag variable for remembering CPU type:
         IFD     CPUTEST
         section cpuflag,data
@@ -72,7 +84,7 @@ _match_init:
         INCLUDE       'exec/execbase.i'
         LIST
 
-        clr.w   is020           ; default value is 68000 
+        clr.w   is020           ; default value is 68000
         move.l  _SysBase,a0
         btst    #AFB_68020,AttnFlags+1(a0)
         beq.s   cheap
@@ -110,7 +122,9 @@ Match_Ini       equr    a5
 
 MAX_MATCH       equ     258
 MIN_MATCH       equ     3
+        IFND    WSIZE
 WSIZE           equ     32768
+        ENDC
 MAX_DIST        equ     WSIZE-MAX_MATCH-MIN_MATCH-1
 
 _longest_match:
@@ -205,7 +219,7 @@ bscan_loop:
         ENDC ; !CPU020
 
         IFND    CPU000
-        
+
 ; for 68020 or higher, use word operations even on odd addresses:
 WORD_match:
         move.w  (Scan_Ini),Scan_Start

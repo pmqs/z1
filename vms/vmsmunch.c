@@ -1,14 +1,28 @@
 /*
+  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
+
+  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  (the contents of which are also included in zip.h) for terms of use.
+  If, for some reason, both of these files are missing, the Info-ZIP license
+  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
+*/
+#define module_name     VMSMUNCH
+#define module_version  "V1.3-4"
+/*
  *  Modified by:
  *
- *    v1.3            Hunter Goatley          14-SEP-1992 08:51
+ *    v1.3.1        O.v.d.Linden, C. Spieler            04-JUL-1998 14:35
+ *            Modified check that decides on the type of definitions for
+ *            FIB$W_FID etc. to support GNU C.
+ *
+ *    v1.3          Hunter Goatley                      14-SEP-1992 08:51
  *            Added definitions of FIB$W_FID, FIB$W_DID, and
  *            FIB$L_ACCTL to allow for the fact that fibdef
  *            contains variant_unions under Alpha.
  */
 /*---------------------------------------------------------------------------
 
-  VMSmunch.c                    version 1.2                     28 Apr 1992
+  vmsmunch.c                    version 1.2                     28 Apr 1992
 
   This routine is a blatant and unrepentent appropriation of all the nasty
   and difficult-to-do and complicated VMS shenanigans which Joe Meadows has
@@ -23,6 +37,20 @@
   by UnZip (and Zip, possibly), not least among them the utime() function.
   Read on for details...
 
+        01-SEP-1994     Richard Levitte <levitte@e.kth.se>
+                        If one of the fields given to VMSmunch are NULL,
+                        do not update the corresponding daytime.
+
+        18-JUL-1994     Hunter Goatley <goathunter@WKU.EDU>
+                        Fixed IO$_ACCESS call.
+
+        18-Jul-1994     Richard Levitte levitte@e.kth.se
+                        Changed VMSmunch() to deassign the channel before
+                        returning when an error has occured.
+
+        02-Apr-1994     Jamie Hanrahan  jeh@cmkrnl.com
+                        Moved definition of VMStimbuf struct from here
+                        to vmsmunch.h
   ---------------------------------------------------------------------------
 
   Usage (i.e., "interface," in geek-speak):
@@ -36,14 +64,15 @@
   The possible values for the action argument are as follows:
 
      GET_TIMES      get the creation and revision dates of filename; ptr
-                    must point to an empty VMStimbuf struct, as defined below
+                    must point to an empty VMStimbuf struct, as defined
+                    in vmsmunch.h
                     (with room for at least 24 characters, including term.)
      SET_TIMES      set the creation and revision dates of filename (utime
                     option); ptr must point to a valid VMStimbuf struct,
-                    as defined below
+                    as defined in vmsmunch.h
      GET_RTYPE      get the record type of filename; ptr must point to an
                     integer which, on return, is set to the type (as defined
-                    in VMSmunch.h:  FAT$C_* defines)
+                    in vmsdefs.h:  FAT$C_* defines)
      CHANGE_RTYPE   change the record type to that specified by the integer
                     to which ptr points; save the old record type (later
                     saves overwrite earlier ones)
@@ -59,54 +88,59 @@
      BITNET: JOE@FHCRCVAX
      PHONE: (206) 467-4970
 
-     There are no restrictions on this code, you may sell it, include it 
-     with any commercial package, or feed it to a whale.. However, I would 
+     There are no restrictions on this code, you may sell it, include it
+     with any commercial package, or feed it to a whale.. However, I would
      appreciate it if you kept this comment in the source code so that anyone
-     receiving this code knows who to contact in case of problems. Note that 
+     receiving this code knows who to contact in case of problems. Note that
      I do not demand this condition..
 
   ---------------------------------------------------------------------------*/
 
 
 
+#if defined(__DECC) || defined(__GNUC__)
+#pragma module module_name module_version
+#else
+#module module_name module_version
+#endif
 
 /*****************************/
 /*  Includes, Defines, etc.  */
 /*****************************/
 
+#include <stdio.h>
+#include <string.h>
 #include <descrip.h>
 #include <rms.h>
-#include <stdio.h>
 #include <iodef.h>
+#include <starlet.h>
 #include <atrdef.h>   /* this gets created with the c3.0 compiler */
 #include <fibdef.h>   /* this gets created with the c3.0 compiler */
 
-#include "VMSmunch.h"  /* GET/SET_TIMES, RTYPE, fatdef.h, etc. */
-
-#define RTYPE     fat$r_rtype_overlay.fat$r_rtype_bits
-#define RATTRIB   fat$r_rattrib_overlay.fat$r_rattrib_bits
-
 /*
- *  Under Alpha, the FIB unions are declared as variant_unions.
- *  FIBDEF.H includes the definition of __union, which we check
- *  below to make sure we access the structure correctly.
+ *  Under Alpha (DEC C in VAXC mode) and under `good old' VAXC, the FIB unions
+ *  are declared as variant_unions.  DEC C (Alpha) in ANSI modes and third
+ *  party compilers which do not support `variant_union' define preprocessor
+ *  symbols to `hide' the "intermediate union/struct" names from the
+ *  programmer's API.
+ *  We check the presence of these defines and for DEC's FIBDEF.H defining
+ *  __union as variant_union to make sure we access the structure correctly.
  */
-#if defined(__union) && (__union == variant_union)
-#define FIB$W_FID     fib$w_fid
-#define FIB$W_DID     fib$w_did
-#define FIB$L_ACCTL   fib$l_acctl
+#if defined(fib$w_did) || (defined(__union) && (__union == variant_union))
+#  define FIB$W_DID     fib$w_did
+#  define FIB$W_FID     fib$w_fid
+#  define FIB$L_ACCTL   fib$l_acctl
 #else
-#define FIB$W_FID     fib$r_fid_overlay.fib$w_fid
-#define FIB$W_DID     fib$r_did_overlay.fib$w_did
-#define FIB$L_ACCTL   fib$r_acctl_overlay.fib$l_acctl
-#endif        /* #if __union == variant_union */
-static void asctim();
-static void bintim();
+#  define FIB$W_DID     fib$r_did_overlay.fib$w_did
+#  define FIB$W_FID     fib$r_fid_overlay.fib$w_fid
+#  define FIB$L_ACCTL   fib$r_acctl_overlay.fib$l_acctl
+#endif
 
-struct VMStimbuf {      /* VMSmunch */
-    char *actime;       /* VMS revision date, ASCII format */
-    char *modtime;      /* VMS creation date, ASCII format */
-};
+#include "vmsmunch.h"  /* GET/SET_TIMES, RTYPE, etc. */
+#include "vmsdefs.h"   /* fatdef.h, etc. */
+
+static void asctim(char *time, long int binval[2]);
+static void bintim(char *time, long int binval[2]);
 
 /* from <ssdef.h> */
 #ifndef SS$_NORMAL
@@ -122,9 +156,10 @@ struct VMStimbuf {      /* VMSmunch */
 /*  Function VMSmunch()  */
 /*************************/
 
-int VMSmunch( filename, action, ptr )
-    char  *filename, *ptr;
-    int   action;
+int VMSmunch(
+    char  *filename,
+    int   action,
+    char  *ptr )
 {
 
     /* original file.c variables */
@@ -134,7 +169,7 @@ int VMSmunch( filename, action, ptr )
     static struct fibdef Fib; /* short fib */
 
     static struct dsc$descriptor FibDesc =
-      {sizeof(Fib),DSC$K_DTYPE_Z,DSC$K_CLASS_S,&Fib};
+      {sizeof(Fib),DSC$K_DTYPE_Z,DSC$K_CLASS_S,(char *)&Fib};
     static struct dsc$descriptor_s DevDesc =
       {0,DSC$K_DTYPE_T,DSC$K_CLASS_S,&Nam.nam$t_dvi[1]};
     static struct fatdef Fat;
@@ -146,6 +181,10 @@ int VMSmunch( filename, action, ptr )
     static long int Cdate[2],Rdate[2],Edate[2],Bdate[2];
     static short int revisions;
     static unsigned long uic;
+#if defined(__DECC) || defined(__DECCXX)
+#pragma __member_alignment __save
+#pragma __nomember_alignment
+#endif /* __DECC || __DECCXX */
     static union {
       unsigned short int value;
       struct {
@@ -155,6 +194,9 @@ int VMSmunch( filename, action, ptr )
         unsigned world : 4;
       } bits;
     } prot;
+#if defined(__DECC) || defined(__DECCXX)
+#pragma __member_alignment __restore
+#endif /* __DECC || __DECCXX */
 
     static struct atrdef Atr[] = {
       {sizeof(Fat),ATR$C_RECATTR,&Fat},        /* record attributes */
@@ -199,9 +241,9 @@ int VMSmunch( filename, action, ptr )
     Fab.fab$b_fns = strlen(filename);
     Fab.fab$l_nam = &Nam; /* FAB has an associated NAM */
     Nam = cc$rms_nam;
-    Nam.nam$l_esa = &EName; /* expanded filename */
+    Nam.nam$l_esa = EName; /* expanded filename */
     Nam.nam$b_ess = sizeof(EName);
-    Nam.nam$l_rsa = &RName; /* resultant filename */
+    Nam.nam$l_rsa = RName; /* resultant filename */
     Nam.nam$b_rss = sizeof(RName);
 
     /* do $PARSE and $SEARCH here */
@@ -224,19 +266,20 @@ int VMSmunch( filename, action, ptr )
         FileName.dsc$w_length = Nam.nam$b_name+Nam.nam$b_type+Nam.nam$b_ver;
 
         /* Initialize the FIB */
-        for (i=0;i<3;i++)
+        for (i=0;i<3;i++) {
             Fib.FIB$W_FID[i]=Nam.nam$w_fid[i];
-        for (i=0;i<3;i++)
             Fib.FIB$W_DID[i]=Nam.nam$w_did[i];
+        }
 
         /* Use the IO$_ACCESS function to return info about the file */
         /* Note, used this way, the file is not opened, and the expiration */
         /* and revision dates are not modified */
         status = sys$qiow(0,DevChan,IO$_ACCESS,&iosb,0,0,
                           &FibDesc,&FileName,0,0,&Atr,0);
-        if (!(status & 1)) return(status);
-        status = iosb[0];
-        if (!(status & 1)) return(status);
+        if (!(status & 1) || !((status = iosb[0]) & 1)) {
+            sys$dassgn(DevChan);
+            return(status);
+        }
 
     /*-----------------------------------------------------------------------
         We have the current information from the file:  now see what user
@@ -245,35 +288,41 @@ int VMSmunch( filename, action, ptr )
 
         switch (action) {
 
-          case GET_TIMES:
+          case GET_TIMES:   /* non-modifying */
               asctim(((struct VMStimbuf *)ptr)->modtime, Cdate);
               asctim(((struct VMStimbuf *)ptr)->actime, Rdate);
+              sys$dassgn(DevChan);
+              return RMS$_NORMAL;     /* return to user */
               break;
 
           case SET_TIMES:
-              bintim(((struct VMStimbuf *)ptr)->modtime, Cdate);
-              bintim(((struct VMStimbuf *)ptr)->actime, Rdate);
+              if (((struct VMStimbuf *)ptr)->modtime != (char *)NULL)
+                  bintim(((struct VMStimbuf *)ptr)->modtime, Cdate);
+              if (((struct VMStimbuf *)ptr)->actime != (char *)NULL)
+                  bintim(((struct VMStimbuf *)ptr)->actime, Rdate);
               break;
 
           case GET_RTYPE:   /* non-modifying */
-              *(int *)ptr = Fat.RTYPE.fat$v_rtype;
+              *(int *)ptr = Fat.fat$v_rtype;
+              sys$dassgn(DevChan);
               return RMS$_NORMAL;     /* return to user */
               break;
 
           case CHANGE_RTYPE:
-              old_rtype = Fat.RTYPE.fat$v_rtype;         /* save current one */
-              if ((*(int *)ptr < FAT$C_UNDEFINED) || 
+              old_rtype = Fat.fat$v_rtype;              /* save current one */
+              if ((*(int *)ptr < FAT$C_UNDEFINED) ||
                   (*(int *)ptr > FAT$C_STREAMCR))
-                  Fat.RTYPE.fat$v_rtype = FAT$C_STREAMLF;  /* Unix I/O happy */
+                  Fat.fat$v_rtype = FAT$C_STREAMLF;       /* Unix I/O happy */
               else
-                  Fat.RTYPE.fat$v_rtype = *(int *)ptr;
+                  Fat.fat$v_rtype = *(int *)ptr;
               break;
 
           case RESTORE_RTYPE:
-              Fat.RTYPE.fat$v_rtype = old_rtype;
+              Fat.fat$v_rtype = old_rtype;
               break;
 
           default:
+              sys$dassgn(DevChan);
               return SS$_BADPARAM;   /* anything better? */
         }
 
@@ -283,10 +332,10 @@ int VMSmunch( filename, action, ptr )
 
         /* note, part of the FIB was cleared by earlier QIOW, so reset it */
         Fib.FIB$L_ACCTL = FIB$M_NORECORD;
-        for (i=0;i<3;i++)
+        for (i=0;i<3;i++) {
             Fib.FIB$W_FID[i]=Nam.nam$w_fid[i];
-        for (i=0;i<3;i++)
             Fib.FIB$W_DID[i]=Nam.nam$w_did[i];
+        }
 
         /* Use the IO$_MODIFY function to change info about the file */
         /* Note, used this way, the file is not opened, however this would */
@@ -294,10 +343,10 @@ int VMSmunch( filename, action, ptr )
         /* Using FIB$M_NORECORD prohibits this from happening. */
         status = sys$qiow(0,DevChan,IO$_MODIFY,&iosb,0,0,
                           &FibDesc,&FileName,0,0,&Atr,0);
-        if (!(status & 1)) return(status);
-
-        status = iosb[0];
-        if (!(status & 1)) return(status);
+        if (!(status & 1) || !((status = iosb[0]) & 1)) {
+            sys$dassgn(DevChan);
+            return(status);
+        }
 
         status = sys$dassgn(DevChan);
         if (!(status & 1)) return(status);
@@ -305,6 +354,7 @@ int VMSmunch( filename, action, ptr )
         /* look for next file, if none, no big deal.. */
         status = sys$search(&Fab);
     }
+    return(status);
 } /* end function VMSmunch() */
 
 
@@ -312,16 +362,16 @@ int VMSmunch( filename, action, ptr )
 
 
 /***********************/
-/*  Function bintim()  */
+/*  Function asctim()  */
 /***********************/
 
-void asctim(time,binval)   /* convert 64-bit binval to string, put in time */
-    char *time;
-    long int binval[2];
+static void asctim(        /* convert 64-bit binval to string, put in time */
+    char *time,
+    long int binval[2] )
 {
     static struct dsc$descriptor date_str={23,DSC$K_DTYPE_T,DSC$K_CLASS_S,0};
       /* dsc$w_length, dsc$b_dtype, dsc$b_class, dsc$a_pointer */
- 
+
     date_str.dsc$a_pointer = time;
     sys$asctim(0, &date_str, binval, 0);
     time[23] = '\0';
@@ -335,9 +385,9 @@ void asctim(time,binval)   /* convert 64-bit binval to string, put in time */
 /*  Function bintim()  */
 /***********************/
 
-void bintim(time,binval)   /* convert time string to 64 bits, put in binval */
-    char *time;
-    long int binval[2];
+static void bintim(        /* convert time string to 64 bits, put in binval */
+    char *time,
+    long int binval[2] )
 {
     static struct dsc$descriptor date_str={0,DSC$K_DTYPE_T,DSC$K_CLASS_S,0};
 

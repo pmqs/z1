@@ -3,10 +3,11 @@
  *
  *  A public domain implementation of BSD directory routines for
  *  MS-DOS.  Written by Michael Rendell ({uunet,utai}michael@garfield),
- *  August 1897
+ *  August 1987
+ *
  *  Ported to OS/2 by Kai Uwe Rommel
- *  December 1989, February 1990
- *  Change for HPFS support, October 1990
+ *  Addition of other OS/2 file system specific code
+ *  Placed into the public domain
  */
 
 /* does also contain EA access code for use in ZIP */
@@ -34,17 +35,11 @@
 #include <os2.h>
 
 #include "os2zip.h"
+#include "os2acl.h"
 
 
 #ifndef max
 #define max(a, b) ((a) < (b) ? (b) : (a))
-#endif
-
-#define EAID     0x0009
-
-
-#ifdef __WATCOMC__
-unsigned char __near _osmode = OS2_MODE;
 #endif
 
 
@@ -92,8 +87,7 @@ static USHORT count;
 static FILEFINDBUF find;
 #endif
 
-
-DIR *opendir(char *name)
+DIR *opendir(const char *name)
 {
   struct stat statb;
   DIR *dirp;
@@ -106,20 +100,26 @@ DIR *opendir(char *name)
   attributes = hidden_files ? (_A_DIR | _A_HIDDEN | _A_SYSTEM) : _A_DIR;
 
   strcpy(nbuf, name);
-  len = strlen (nbuf);
-  s = nbuf + len;
+  if ((len = strlen(nbuf)) == 0)
+    return NULL;
 
-  if ( ((c = nbuf[strlen(nbuf) - 1]) == '\\' || c == '/') &&
-       (strlen(nbuf) > 1) )
+  if (((c = nbuf[len - 1]) == '\\' || c == '/') && (len > 1))
   {
-    nbuf[strlen(nbuf) - 1] = 0;
+    nbuf[len - 1] = 0;
+    --len;
 
-    if ( nbuf[strlen(nbuf) - 1] == ':' )
-      strcat(nbuf, "\\.");
+    if (nbuf[len - 1] == ':')
+    {
+      strcpy(nbuf+len, "\\.");
+      len += 2;
+    }
   }
   else
-    if ( nbuf[strlen(nbuf) - 1] == ':' )
-      strcat(nbuf, ".");
+    if (nbuf[len - 1] == ':')
+    {
+      strcpy(nbuf+len, ".");
+      ++len;
+    }
 
 #ifndef __BORLANDC__
   /* when will we ever see a Borland compiler that can properly stat !!! */
@@ -127,17 +127,18 @@ DIR *opendir(char *name)
     return NULL;
 #endif
 
-  if ( (dirp = malloc(sizeof(DIR))) == NULL )
+  if ((dirp = malloc(sizeof(DIR))) == NULL)
     return NULL;
 
-  if ( nbuf[strlen(nbuf) - 1] == '.' )
-    strcpy(nbuf + strlen(nbuf) - 1, "*.*");
+  if (nbuf[len - 1] == '.' && (len == 1 || nbuf[len - 2] != '.'))
+    strcpy(nbuf+len-1, "*.*");
   else
-    if ( ((c = nbuf[strlen(nbuf) - 1]) == '\\' || c == '/') &&
-         (strlen(nbuf) == 1) )
-      strcat(nbuf, "*.*");
+    if (((c = nbuf[len - 1]) == '\\' || c == '/') && (len == 1))
+      strcpy(nbuf+len, "*");
     else
-      strcat(nbuf, "\\*.*");
+      strcpy(nbuf+len, "\\*");
+
+  /* len is no longer correct (but no longer needed) */
 
   dirp -> dd_loc = 0;
   dirp -> dd_contents = dirp -> dd_cp = NULL;
@@ -180,17 +181,15 @@ DIR *opendir(char *name)
   return dirp;
 }
 
-
 void closedir(DIR * dirp)
 {
   free_dircontents(dirp -> dd_contents);
   free(dirp);
 }
 
-
-struct direct *readdir(DIR * dirp)
+struct dirent *readdir(DIR * dirp)
 {
-  static struct direct dp;
+  static struct dirent dp;
 
   if (dirp -> dd_cp == NULL)
     return NULL;
@@ -211,7 +210,6 @@ struct direct *readdir(DIR * dirp)
   return &dp;
 }
 
-
 void seekdir(DIR * dirp, long off)
 {
   long i = off;
@@ -226,12 +224,10 @@ void seekdir(DIR * dirp, long off)
   }
 }
 
-
 long telldir(DIR * dirp)
 {
   return dirp -> dd_loc;
 }
-
 
 static void free_dircontents(struct _dircontents * dp)
 {
@@ -246,7 +242,6 @@ static void free_dircontents(struct _dircontents * dp)
     free(odp);
   }
 }
-
 
 static char *getdirent(char *dir)
 {
@@ -265,7 +260,7 @@ static char *getdirent(char *dir)
 
   if (done == 0)
   {
-    if ( lower )
+    if (lower)
       StringLower(find.achName);
     return find.achName;
   }
@@ -276,14 +271,14 @@ static char *getdirent(char *dir)
   }
 }
 
-
 /* FAT / HPFS detection */
 
 int IsFileSystemFAT(char *dir)
 {
   static USHORT nLastDrive = -1, nResult;
   ULONG lMap;
-  BYTE bData[64], bName[3];
+  BYTE bData[64];
+  char bName[3];
 #ifdef __32BIT__
   ULONG nDrive, cbData;
   PFSQBUFFER2 pData = (PFSQBUFFER2) bData;
@@ -292,39 +287,33 @@ int IsFileSystemFAT(char *dir)
   PFSQBUFFER pData = (PFSQBUFFER) bData;
 #endif
 
-  if ( _osmode == DOS_MODE )
-    return TRUE;
+  /* We separate FAT and HPFS+other file systems here.
+     at the moment I consider other systems to be similar to HPFS,
+     i.e. support long file names and being case sensitive */
+
+  if (isalpha(dir[0]) && (dir[1] == ':'))
+    nDrive = to_up(dir[0]) - '@';
   else
-  {
-    /* We separate FAT and HPFS+other file systems here.
-       at the moment I consider other systems to be similar to HPFS,
-       i.e. support long file names and beeing case sensitive */
+    DosQueryCurrentDisk(&nDrive, &lMap);
 
-    if ( isalpha(dir[0]) && (dir[1] == ':') )
-      nDrive = to_up(dir[0]) - '@';
-    else
-      DosQueryCurrentDisk(&nDrive, &lMap);
-
-    if ( nDrive == nLastDrive )
-      return nResult;
-
-    bName[0] = (char) (nDrive + '@');
-    bName[1] = ':';
-    bName[2] = 0;
-
-    nLastDrive = nDrive;
-    cbData = sizeof(bData);
-
-    if ( !DosQueryFSAttach(bName, 0, FSAIL_QUERYNAME, (PVOID) pData, &cbData) )
-      nResult = !strcmp(pData -> szFSDName + pData -> cbName, "FAT");
-    else
-      nResult = FALSE;
-
-    /* End of this ugly code */
+  if (nDrive == nLastDrive)
     return nResult;
-  }
-}
 
+  bName[0] = (char) (nDrive + '@');
+  bName[1] = ':';
+  bName[2] = 0;
+
+  nLastDrive = nDrive;
+  cbData = sizeof(bData);
+
+  if (!DosQueryFSAttach(bName, 0, FSAIL_QUERYNAME, (PVOID) pData, &cbData))
+    nResult = !strcmp((char *) pData -> szFSDName + pData -> cbName, "FAT");
+  else
+    nResult = FALSE;
+
+  /* End of this ugly code */
+  return nResult;
+}
 
 /* access mode bits and time stamp */
 
@@ -339,7 +328,7 @@ int GetFileMode(char *name)
 #endif
 }
 
-long GetFileTime(char *name)
+ulg GetFileTime(char *name)
 {
 #ifdef __32BIT__
   FILESTATUS3 fs;
@@ -347,9 +336,21 @@ long GetFileTime(char *name)
   FILESTATUS fs;
 #endif
   USHORT nDate, nTime;
+  DATETIME dtCurrent;
 
-  if ( DosQueryPathInfo(name, 1, (PBYTE) &fs, sizeof(fs)) )
-    return -1;
+  if (strcmp(name, "-") == 0)
+  {
+    DosGetDateTime(&dtCurrent);
+    fs.fdateLastWrite.day     = dtCurrent.day;
+    fs.fdateLastWrite.month   = dtCurrent.month;
+    fs.fdateLastWrite.year    = dtCurrent.year - 1980;
+    fs.ftimeLastWrite.hours   = dtCurrent.hours;
+    fs.ftimeLastWrite.minutes = dtCurrent.minutes;
+    fs.ftimeLastWrite.twosecs = dtCurrent.seconds / 2;
+  }
+  else
+    if (DosQueryPathInfo(name, 1, (PBYTE) &fs, sizeof(fs)))
+      return -1;
 
   nDate = * (USHORT *) &fs.fdateLastWrite;
   nTime = * (USHORT *) &fs.ftimeLastWrite;
@@ -357,14 +358,12 @@ long GetFileTime(char *name)
   return ((ULONG) nDate) << 16 | nTime;
 }
 
-void SetFileTime(char *path, long stamp)
+void SetFileTime(char *path, ulg stamp)
 {
   FILESTATUS fs;
   USHORT fd, ft;
-  USHORT nLength;
-  char szName[CCHMAXPATH];
 
-  if ( DosQueryPathInfo(path, FIL_STANDARD, (PBYTE) &fs, sizeof(fs)) )
+  if (DosQueryPathInfo(path, FIL_STANDARD, (PBYTE) &fs, sizeof(fs)))
     return;
 
   fd = (USHORT) (stamp >> 16);
@@ -377,18 +376,20 @@ void SetFileTime(char *path, long stamp)
 
 /* read volume label */
 
-char *getVolumeLabel(int drive, unsigned long *vtime, unsigned long *vmode)
+char *getVolumeLabel(int drive, unsigned long *vtime, unsigned long *vmode,
+                     time_t *utim)
 {
   static FSINFO fi;
 
-  if ( DosQueryFSInfo(drive ? drive - 'A' + 1 : 0, 
-                      FSIL_VOLSER, (PBYTE) &fi, sizeof(fi)) )
+  if (DosQueryFSInfo(drive ? drive - 'A' + 1 : 0,
+                     FSIL_VOLSER, (PBYTE) &fi, sizeof(fi)))
     return NULL;
 
-  *vtime = (unsigned long) time(NULL);
-  *vmode = _A_VOLID;
+  time(utim);
+  *vtime = unix2dostime(utim);
+  *vmode = _A_VOLID | _A_ARCHIVE;
 
-  return fi.vol.szVolLabel;
+  return (fi.vol.cch > 0) ? fi.vol.szVolLabel : NULL;
 }
 
 /* FAT / HPFS name conversion stuff */
@@ -402,8 +403,8 @@ int IsFileNameValid(char *name)
   USHORT uAction;
 #endif
 
-  switch( DosOpen(name, &hf, &uAction, 0, 0, FILE_OPEN,
-                  OPEN_ACCESS_READONLY | OPEN_SHARE_DENYNONE, 0) )
+  switch(DosOpen(name, &hf, &uAction, 0, 0, FILE_OPEN,
+                 OPEN_ACCESS_READONLY | OPEN_SHARE_DENYNONE, 0))
   {
   case ERROR_INVALID_NAME:
   case ERROR_FILENAME_EXCED_RANGE:
@@ -415,77 +416,75 @@ int IsFileNameValid(char *name)
   }
 }
 
-
 void ChangeNameForFAT(char *name)
 {
   char *src, *dst, *next, *ptr, *dot, *start;
   static char invalid[] = ":;,=+\"[]<>| \t";
 
-  if ( isalpha(name[0]) && (name[1] == ':') )
+  if (isalpha(name[0]) && (name[1] == ':'))
     start = name + 2;
   else
     start = name;
 
   src = dst = start;
-  if ( (*src == '/') || (*src == '\\') )
+  if ((*src == '/') || (*src == '\\'))
     src++, dst++;
 
-  while ( *src )
+  while (*src)
   {
-    for ( next = src; *next && (*next != '/') && (*next != '\\'); next++ );
+    for (next = src; *next && (*next != '/') && (*next != '\\'); next++);
 
-    for ( ptr = src, dot = NULL; ptr < next; ptr++ )
-      if ( *ptr == '.' )
+    for (ptr = src, dot = NULL; ptr < next; ptr++)
+      if (*ptr == '.')
       {
         dot = ptr; /* remember last dot */
         *ptr = '_';
       }
 
-    if ( dot == NULL )
-      for ( ptr = src; ptr < next; ptr++ )
-        if ( *ptr == '_' )
+    if (dot == NULL)
+      for (ptr = src; ptr < next; ptr++)
+        if (*ptr == '_')
           dot = ptr; /* remember last _ as if it were a dot */
 
-    if ( dot && (dot > src) &&
-         ((next - dot <= 4) ||
-          ((next - src > 8) && (dot - src > 3))) )
+    if (dot && (dot > src) &&
+        ((next - dot <= 4) ||
+         ((next - src > 8) && (dot - src > 3))))
     {
-      if ( dot )
+      if (dot)
         *dot = '.';
 
-      for ( ptr = src; (ptr < dot) && ((ptr - src) < 8); ptr++ )
+      for (ptr = src; (ptr < dot) && ((ptr - src) < 8); ptr++)
         *dst++ = *ptr;
 
-      for ( ptr = dot; (ptr < next) && ((ptr - dot) < 4); ptr++ )
+      for (ptr = dot; (ptr < next) && ((ptr - dot) < 4); ptr++)
         *dst++ = *ptr;
     }
     else
     {
-      if ( dot && (next - src == 1) )
+      if (dot && (next - src == 1))
         *dot = '.';           /* special case: "." as a path component */
 
-      for ( ptr = src; (ptr < next) && ((ptr - src) < 8); ptr++ )
+      for (ptr = src; (ptr < next) && ((ptr - src) < 8); ptr++)
         *dst++ = *ptr;
     }
 
     *dst++ = *next; /* either '/' or 0 */
 
-    if ( *next )
+    if (*next)
     {
       src = next + 1;
 
-      if ( *src == 0 ) /* handle trailing '/' on dirs ! */
+      if (*src == 0) /* handle trailing '/' on dirs ! */
         *dst = 0;
     }
     else
       break;
   }
 
-  for ( src = start; *src != 0; ++src )
-    if ( (strchr(invalid, *src) != NULL) || (*src == ' ') )
+  for (src = start; *src != 0; ++src)
+    if ((strchr(invalid, *src) != NULL) || (*src == ' '))
       *src = '_';
 }
-
 
 /* .LONGNAME EA code */
 
@@ -516,22 +515,19 @@ typedef struct
 }
 GEALST;
 
-
 char *GetLongNameEA(char *name)
 {
   EAOP eaop;
   GEALST gealst;
   static FEALST fealst;
-
-  if ( _osmode == DOS_MODE )
-    return NULL;
+  char *ptr;
 
   eaop.fpGEAList = (PGEALIST) &gealst;
   eaop.fpFEAList = (PFEALIST) &fealst;
   eaop.oError = 0;
 
-  strcpy(gealst.szName, ".LONGNAME");
-  gealst.cbName  = (BYTE) strlen(gealst.szName);
+  strcpy((char *) gealst.szName, ".LONGNAME");
+  gealst.cbName  = (BYTE) strlen((char *) gealst.szName);
 #ifdef __32BIT__
   gealst.oNext   = 0;
 #endif
@@ -539,19 +535,23 @@ char *GetLongNameEA(char *name)
   gealst.cbList  = sizeof(gealst);
   fealst.cbList  = sizeof(fealst);
 
-  if ( DosQueryPathInfo(name, FIL_QUERYEASFROMLIST,
-                        (PBYTE) &eaop, sizeof(eaop)) )
+  if (DosQueryPathInfo(name, FIL_QUERYEASFROMLIST,
+                       (PBYTE) &eaop, sizeof(eaop)))
     return NULL;
 
-  if ( fealst.cbValue > 4 && fealst.eaType == 0xFFFD )
+  if (fealst.cbValue > 4 && fealst.eaType == 0xFFFD)
   {
     fealst.szValue[fealst.eaSize] = 0;
-    return fealst.szValue;
+
+    for (ptr = fealst.szValue; *ptr; ptr++)
+      if (*ptr == '/' || *ptr == '\\')
+        *ptr = '!';
+
+    return (char *) fealst.szValue;
   }
 
   return NULL;
 }
-
 
 char *GetLongPathEA(char *name)
 {
@@ -562,11 +562,11 @@ char *GetLongPathEA(char *name)
   nbuf[0] = 0;
   next = name;
 
-  while ( *next )
+  while (*next)
   {
     comp = next;
 
-    while ( *next != '\\' && *next != '/' && *next != 0 )
+    while (*next != '\\' && *next != '/' && *next != 0)
       next++;
 
     sep = *next;
@@ -578,7 +578,7 @@ char *GetLongPathEA(char *name)
 
     *next = sep;
 
-    if ( *next )
+    if (*next)
     {
       strcat(nbuf, "\\");
       next++;
@@ -588,7 +588,6 @@ char *GetLongPathEA(char *name)
   return (nbuf[0] != 0) && bFound ? nbuf : NULL;
 }
 
-
 /* general EA code */
 
 typedef struct
@@ -597,8 +596,7 @@ typedef struct
   USHORT nSize;
   ULONG lSize;
 }
-EAHEADER, *PEAHEADER;
-
+EFHEADER, *PEFHEADER;
 
 #ifdef __32BIT__
 
@@ -631,7 +629,7 @@ void GetEAs(char *path, char **bufptr, size_t *size,
   PGEA2 pGEA;
   PGEA2LIST pGEAlist;
   PFEA2LIST pFEAlist;
-  PEAHEADER pEAblock;
+  PEFHEADER pEAblock;
   ULONG ulAttributes, ulMemoryBlock;
   ULONG nLength;
   ULONG nBlock;
@@ -639,37 +637,35 @@ void GetEAs(char *path, char **bufptr, size_t *size,
 
   *size = *csize = 0;
 
-  if ( _osmode == DOS_MODE )
-    return;
-
   strcpy(szName, path);
   nLength = strlen(szName);
-  if ( szName[nLength - 1] == '/' )
+  if (szName[nLength - 1] == '/')
     szName[nLength - 1] = 0;
 
-  if ( DosQueryPathInfo(szName, FIL_QUERYEASIZE, (PBYTE) &fs, sizeof(fs)) )
+  if (DosQueryPathInfo(szName, FIL_QUERYEASIZE, (PBYTE) &fs, sizeof(fs)))
     return;
   nBlock = max(fs.cbList, 65535);
-  if ( (pDENA = alloc((size_t) nBlock)) == NULL )
+  if ((pDENA = alloc((size_t) nBlock)) == NULL)
     return;
 
   ulAttributes = -1;
 
-  if ( DosEnumAttribute(ENUMEA_REFTYPE_PATH, szName, 1, pDENA, nBlock,
-                        &ulAttributes, ENUMEA_LEVEL_NO_VALUE)
+  if (DosEnumAttribute(ENUMEA_REFTYPE_PATH, szName, 1, pDENA, nBlock,
+                       &ulAttributes, ENUMEA_LEVEL_NO_VALUE)
     || ulAttributes == 0
-    || (pGEAlist = alloc((size_t) nBlock)) == NULL )
+    || (pGEAlist = alloc((size_t) nBlock)) == NULL)
   {
     unalloc(pDENA);
     return;
   }
 
   pGEA = pGEAlist -> list;
+  memset(pGEAlist, 0, nBlock);
   pFound = pDENA;
 
-  while ( ulAttributes-- )
+  while (ulAttributes--)
   {
-    if ( !(strcmp(pFound -> szName, ".LONGNAME") == 0 && use_longname_ea) )
+    if (!(strcmp(pFound -> szName, ".LONGNAME") == 0 && use_longname_ea))
     {
       pGEA -> cbName = pFound -> cbName;
       strcpy(pGEA -> szName, pFound -> szName);
@@ -684,7 +680,7 @@ void GetEAs(char *path, char **bufptr, size_t *size,
     pFound = (PDENA2) ((PCH) pFound + pFound -> oNextEntryOffset);
   }
 
-  if ( pGEA == pGEAlist -> list ) /* no attributes to save */
+  if (pGEA == pGEAlist -> list) /* no attributes to save */
   {
     unalloc(pDENA);
     unalloc(pGEAlist);
@@ -700,8 +696,8 @@ void GetEAs(char *path, char **bufptr, size_t *size,
   eaop.fpFEA2List = pFEAlist;
   eaop.oError = 0;
 
-  if ( DosQueryPathInfo(szName, FIL_QUERYEASFROMLIST,
-                        (PBYTE) &eaop, sizeof(eaop)) )
+  if (DosQueryPathInfo(szName, FIL_QUERYEASFROMLIST,
+                       (PBYTE) &eaop, sizeof(eaop)))
   {
     unalloc(pDENA);
     unalloc(pGEAlist);
@@ -714,9 +710,9 @@ void GetEAs(char *path, char **bufptr, size_t *size,
 
   ulAttributes = pFEAlist -> cbList;
   ulMemoryBlock = ulAttributes + sizeof(USHORT) + sizeof(ULONG);
-  pEAblock = (PEAHEADER) malloc(sizeof(EAHEADER) + ulMemoryBlock);
+  pEAblock = (PEFHEADER) malloc(sizeof(EFHEADER) + ulMemoryBlock);
 
-  if ( pEAblock == NULL )
+  if (pEAblock == NULL)
   {
     unalloc(pDENA);
     unalloc(pGEAlist);
@@ -724,9 +720,9 @@ void GetEAs(char *path, char **bufptr, size_t *size,
   }
 
   *bufptr = (char *) pEAblock;
-  *size = sizeof(EAHEADER);
+  *size = sizeof(EFHEADER);
 
-  pEAblock -> nID = EAID;
+  pEAblock -> nID = EF_OS2EA;
   pEAblock -> nSize = sizeof(pEAblock -> lSize);
   pEAblock -> lSize = ulAttributes; /* uncompressed size */
 
@@ -735,7 +731,7 @@ void GetEAs(char *path, char **bufptr, size_t *size,
   *size += nLength;
   pEAblock -> nSize += nLength;
 
-  if ( (pEAblock = (PEAHEADER) malloc(sizeof(EAHEADER))) == NULL )
+  if ((pEAblock = (PEFHEADER) malloc(sizeof(EFHEADER))) == NULL)
   {
     unalloc(pDENA);
     unalloc(pGEAlist);
@@ -743,13 +739,13 @@ void GetEAs(char *path, char **bufptr, size_t *size,
   }
 
   *cbufptr = (char *) pEAblock;
-  *csize = sizeof(EAHEADER);
+  *csize = sizeof(EFHEADER);
 
-  pEAblock -> nID = EAID;
+  pEAblock -> nID = EF_OS2EA;
   pEAblock -> nSize = sizeof(pEAblock -> lSize);
   pEAblock -> lSize = ulAttributes;
 
-  if ( noisy )
+  if (noisy)
     printf(" (%ld bytes EA's)", ulAttributes);
 
   unalloc(pDENA);
@@ -787,35 +783,32 @@ void GetEAs(char *path, char **bufptr, size_t *size,
   PFEA pFEA;
   PFEA2LIST pFEA2list;
   PFEA2 pFEA2;
-  EAHEADER *pEAblock;
+  EFHEADER *pEAblock;
   ULONG ulAttributes;
   USHORT nLength, nMaxSize;
   char szName[CCHMAXPATH];
 
   *size = *csize = 0;
 
-  if ( _osmode == DOS_MODE )
-    return;
-
   strcpy(szName, path);
   nLength = strlen(szName);
-  if ( szName[nLength - 1] == '/' )
+  if (szName[nLength - 1] == '/')
     szName[nLength - 1] = 0;
 
-  if ( DosQueryPathInfo(szName, FIL_QUERYEASIZE, (PBYTE) &fs, sizeof(fs))
-    || fs.cbList <= 2 * sizeof(ULONG) )
+  if (DosQueryPathInfo(szName, FIL_QUERYEASIZE, (PBYTE) &fs, sizeof(fs))
+      || fs.cbList <= 2 * sizeof(ULONG))
     return;
 
   ulAttributes = -1;
   nMaxSize = (USHORT) min(fs.cbList * 2, 65520L);
 
-  if ( (pDENA = malloc((size_t) nMaxSize)) == NULL )
+  if ((pDENA = malloc((size_t) nMaxSize)) == NULL)
     return;
 
-  if ( DosEnumAttribute(ENUMEA_REFTYPE_PATH, szName, 1, pDENA, fs.cbList,
-                        &ulAttributes, ENUMEA_LEVEL_NO_VALUE)
+  if (DosEnumAttribute(ENUMEA_REFTYPE_PATH, szName, 1, pDENA, fs.cbList,
+                       &ulAttributes, ENUMEA_LEVEL_NO_VALUE)
     || ulAttributes == 0
-    || (pGEAlist = malloc(nMaxSize)) == NULL )
+    || (pGEAlist = malloc(nMaxSize)) == NULL)
   {
     free(pDENA);
     return;
@@ -824,22 +817,24 @@ void GetEAs(char *path, char **bufptr, size_t *size,
   pGEA = pGEAlist -> list;
   pFound = pDENA;
 
-  while ( ulAttributes-- )
+  while (ulAttributes--)
   {
     nLength = strlen(pFound -> szName);
 
-    if ( !(strcmp(pFound -> szName, ".LONGNAME") == 0 && use_longname_ea) )
+    if (!(strcmp(pFound -> szName, ".LONGNAME") == 0 && use_longname_ea))
     {
       pGEA -> cbName = pFound -> cbName;
       strcpy(pGEA -> szName, pFound -> szName);
 
-      pGEA = (PGEA) ((PCH) (pGEA++) + nLength);
+      pGEA++;
+      pGEA = (PGEA) (((PCH) pGEA) + nLength);
     }
 
-    pFound = (PDENA1) ((PCH) (pFound++) + nLength);
+    pFound++;
+    pFound = (PDENA1) (((PCH) pFound) + nLength);
   }
 
-  if ( pGEA == pGEAlist -> list )
+  if (pGEA == pGEAlist -> list)
   {
     free(pDENA);
     free(pGEAlist);
@@ -856,8 +851,8 @@ void GetEAs(char *path, char **bufptr, size_t *size,
   eaop.fpFEAList = pFEAlist;
   eaop.oError = 0;
 
-  if ( DosQueryPathInfo(szName, FIL_QUERYEASFROMLIST,
-                    (PBYTE) &eaop, sizeof(eaop)) )
+  if (DosQueryPathInfo(szName, FIL_QUERYEASFROMLIST,
+                       (PBYTE) &eaop, sizeof(eaop)))
   {
     free(pDENA);
     free(pGEAlist);
@@ -869,7 +864,7 @@ void GetEAs(char *path, char **bufptr, size_t *size,
   pFEA2list = (PFEA2LIST) pGEAlist;  /* reuse buffer */
   pFEA2 = pFEA2list -> list;
 
-  while ( (PCH) pFEA - (PCH) pFEAlist < pFEAlist -> cbList )
+  while ((PCH) pFEA - (PCH) pFEAlist < pFEAlist -> cbList)
   {
     nLength = sizeof(FEA) + pFEA -> cbName + 1 + pFEA -> cbValue;
     memcpy((PCH) pFEA2 + sizeof(pFEA2 -> oNextEntryOffset), pFEA, nLength);
@@ -887,45 +882,167 @@ void GetEAs(char *path, char **bufptr, size_t *size,
   pFEA2list -> cbList = (PCH) pFEA2 - (PCH) pFEA2list;
   ulAttributes = pFEA2list -> cbList;
 
-  pEAblock = (PEAHEADER) pDENA; /* reuse buffer */
+  pEAblock = (PEFHEADER) pDENA; /* reuse buffer */
 
   *bufptr = (char *) pEAblock;
-  *size = sizeof(EAHEADER);
+  *size = sizeof(EFHEADER);
 
-  pEAblock -> nID = EAID;
+  pEAblock -> nID = EF_OS2EA;
   pEAblock -> nSize = sizeof(pEAblock -> lSize);
   pEAblock -> lSize = ulAttributes; /* uncompressed size */
 
   nLength = (USHORT) memcompress((char *) (pEAblock + 1),
-    nMaxSize - sizeof(EAHEADER), (char *) pFEA2list, ulAttributes);
+    nMaxSize - sizeof(EFHEADER), (char *) pFEA2list, ulAttributes);
 
   *size += nLength;
   pEAblock -> nSize += nLength;
 
-  pEAblock = (PEAHEADER) pGEAlist;
+  pEAblock = (PEFHEADER) pGEAlist;
 
   *cbufptr = (char *) pEAblock;
-  *csize = sizeof(EAHEADER);
+  *csize = sizeof(EFHEADER);
 
-  pEAblock -> nID = EAID;
+  pEAblock -> nID = EF_OS2EA;
   pEAblock -> nSize = sizeof(pEAblock -> lSize);
   pEAblock -> lSize = ulAttributes;
 
-  if ( noisy )
+  if (noisy)
     printf(" (%ld bytes EA's)", ulAttributes);
 }
 
 #endif /* __32BIT__ */
 
-int set_extra_field(struct zlist *z)
+void GetACL(char *path, char **bufptr, size_t *size,
+                        char **cbufptr, size_t *csize)
 {
-  GetEAs(z->name, &z->extra, &z->ext, &z->cextra, &z->cext);
-  /* store data in local header, and size only in central headers */
-  return 0;
+  static char *buffer;
+  char *cbuffer;
+  long bytes, cbytes;
+  PEFHEADER pACLblock;
+
+  if (buffer == NULL) /* avoid frequent allocation (for every file) */
+    if ((buffer = malloc(ACL_BUFFERSIZE)) == NULL)
+      return;
+
+  if (acl_get(NULL, path, buffer))
+    return; /* this will be the most likely case */
+
+  bytes = strlen(buffer);
+
+  cbytes = bytes + sizeof(USHORT) + sizeof(ULONG);
+  if ((*bufptr = realloc(*bufptr, *size + sizeof(EFHEADER) + cbytes)) == NULL)
+    return;
+
+  pACLblock = (PEFHEADER) (*bufptr + *size);
+
+  cbuffer = (char *) (pACLblock + 1);
+  cbytes = memcompress(cbuffer, cbytes, buffer, bytes);
+
+  *size += sizeof(EFHEADER) + cbytes;
+
+  pACLblock -> nID = EF_ACL;
+  pACLblock -> nSize = sizeof(pACLblock -> lSize) + cbytes;
+  pACLblock -> lSize = bytes; /* uncompressed size */
+
+  if ((*cbufptr = realloc(*cbufptr, *csize + sizeof(EFHEADER))) == NULL)
+    return;
+
+  pACLblock = (PEFHEADER) (*cbufptr + *csize);
+  *csize += sizeof(EFHEADER);
+
+  pACLblock -> nID = EF_ACL;
+  pACLblock -> nSize = sizeof(pACLblock -> lSize);
+  pACLblock -> lSize = bytes;
+
+  if (noisy)
+    printf(" (%ld bytes ACL)", bytes);
 }
 
-#endif /* UTIL */
+#ifdef USE_EF_UT_TIME
 
+int GetExtraTime(struct zlist far *z, iztimes *z_utim)
+{
+  int eb_c_size = EB_HEADSIZE + EB_UT_LEN(1);
+  int eb_l_size = eb_c_size;
+  char *eb_c_ptr;
+  char *eb_l_ptr;
+  unsigned long ultime;
+
+#ifdef IZ_CHECK_TZ
+  if (!zp_tz_is_valid) return ZE_OK;    /* skip silently no correct tz info */
+#endif
+
+  eb_c_ptr = realloc(z->cextra, (z->cext + eb_c_size));
+  if (eb_c_ptr == NULL)
+    return ZE_MEM;
+  z->cextra = eb_c_ptr;
+  eb_c_ptr += z->cext;
+  z->cext += eb_c_size;
+
+  eb_c_ptr[0]  = 'U';
+  eb_c_ptr[1]  = 'T';
+  eb_c_ptr[2]  = EB_UT_LEN(1);          /* length of data part of e.f. */
+  eb_c_ptr[3]  = 0;
+  eb_c_ptr[4]  = EB_UT_FL_MTIME;
+  ultime = (unsigned long) z_utim->mtime;
+  eb_c_ptr[5]  = (char)(ultime);
+  eb_c_ptr[6]  = (char)(ultime >> 8);
+  eb_c_ptr[7]  = (char)(ultime >> 16);
+  eb_c_ptr[8]  = (char)(ultime >> 24);
+
+  if (z_utim->mtime != z_utim->atime || z_utim->mtime != z_utim->ctime)
+  {
+    eb_c_ptr[4]  = EB_UT_FL_MTIME | EB_UT_FL_ATIME | EB_UT_FL_CTIME;
+    eb_l_size = EB_HEADSIZE + EB_UT_LEN(3); /* only on HPFS they can differ */
+  /* so only then it makes sense to store all three time stamps */
+  }
+
+  eb_l_ptr = realloc(z->extra, (z->ext + eb_l_size));
+  if (eb_l_ptr == NULL)
+    return ZE_MEM;
+  z->extra = eb_l_ptr;
+  eb_l_ptr += z->ext;
+  z->ext += eb_l_size;
+
+  memcpy(eb_l_ptr, eb_c_ptr, eb_c_size);
+
+  if (eb_l_size > eb_c_size)
+  {
+    eb_l_ptr[2]  = EB_UT_LEN(3);
+    ultime = (unsigned long) z_utim->atime;
+    eb_l_ptr[9]  = (char)(ultime);
+    eb_l_ptr[10] = (char)(ultime >> 8);
+    eb_l_ptr[11] = (char)(ultime >> 16);
+    eb_l_ptr[12] = (char)(ultime >> 24);
+    ultime = (unsigned long) z_utim->ctime;
+    eb_l_ptr[13] = (char)(ultime);
+    eb_l_ptr[14] = (char)(ultime >> 8);
+    eb_l_ptr[15] = (char)(ultime >> 16);
+    eb_l_ptr[16] = (char)(ultime >> 24);
+  }
+
+  return ZE_OK;
+}
+
+#endif /* USE_EF_UT_TIME */
+
+int set_extra_field(struct zlist far *z, iztimes *z_utim)
+{
+  /* store EA data in local header, and size only in central headers */
+  GetEAs(z->name, &z->extra, &z->ext, &z->cextra, &z->cext);
+
+  /* store ACL data in local header, and size only in central headers */
+  GetACL(z->name, &z->extra, &z->ext, &z->cextra, &z->cext);
+
+#ifdef USE_EF_UT_TIME
+  /* store extended time stamps in both headers */
+  return GetExtraTime(z, z_utim);
+#else /* !USE_EF_UT_TIME */
+  return ZE_OK;
+#endif /* ?USE_EF_UT_TIME */
+}
+
+#endif /* !UTIL */
 
 /* Initialize the table of uppercase characters including handling of
    country dependent characters. */
@@ -935,32 +1052,30 @@ void init_upper()
   COUNTRYCODE cc;
   unsigned nCnt, nU;
 
-  for ( nCnt = 0; nCnt < sizeof(upper); nCnt++ )
+  for (nCnt = 0; nCnt < sizeof(upper); nCnt++)
     upper[nCnt] = lower[nCnt] = (unsigned char) nCnt;
 
   cc.country = cc.codepage = 0;
   DosMapCase(sizeof(upper), &cc, (PCHAR) upper);
 
-  for ( nCnt = 0; nCnt < 256; nCnt++ )
+  for (nCnt = 0; nCnt < 256; nCnt++)
   {
     nU = upper[nCnt];
     if (nU != nCnt && lower[nU] == (unsigned char) nU)
       lower[nU] = (unsigned char) nCnt;
   }
 
-  for ( nCnt = 'A'; nCnt <= 'Z'; nCnt++ )
+  for (nCnt = 'A'; nCnt <= 'Z'; nCnt++)
     lower[nCnt] = (unsigned char) (nCnt - 'A' + 'a');
 }
-
 
 char *StringLower(char *szArg)
 {
   unsigned char *szPtr;
-  for ( szPtr = szArg; *szPtr; szPtr++ )
+  for (szPtr = (unsigned char *) szArg; *szPtr; szPtr++)
     *szPtr = lower[*szPtr];
   return szArg;
 }
-
 
 #if defined(__IBMC__) && defined(__DEBUG_ALLOC__)
 void DebugMalloc(void)
@@ -969,5 +1084,120 @@ void DebugMalloc(void)
 }
 #endif
 
+
+/******************************/
+/*  Function version_local()  */
+/******************************/
+
+void version_local()
+{
+    static ZCONST char CompiledWith[] = "Compiled with %s%s for %s%s%s%s.\n\n";
+#if defined(__IBMC__) || defined(__WATCOMC__) || defined(_MSC_VER)
+    char buf[80];
+#endif
+
+    printf(CompiledWith,
+
+#ifdef __GNUC__
+#  ifdef __EMX__  /* __EMX__ is defined as "1" only (sigh) */
+      "emx+gcc ", __VERSION__,
+#  else
+      "gcc/2 ", __VERSION__,
+#  endif
+#elif defined(__IBMC__)
+      "IBM ",
+#  if (__IBMC__ < 200)
+      (sprintf(buf, "C Set/2 %d.%02d", __IBMC__/100,__IBMC__%100), buf),
+#  elif (__IBMC__ < 300)
+      (sprintf(buf, "C Set++ %d.%02d", __IBMC__/100,__IBMC__%100), buf),
+#  else
+      (sprintf(buf, "Visual Age C++ %d.%02d", __IBMC__/100,__IBMC__%100), buf),
+#  endif
+#elif defined(__WATCOMC__)
+      "Watcom C", (sprintf(buf, " (__WATCOMC__ = %d)", __WATCOMC__), buf),
+#elif defined(__TURBOC__)
+#  ifdef __BORLANDC__
+      "Borland C++",
+#    if (__BORLANDC__ < 0x0460)
+        " 1.0",
+#    elif (__BORLANDC__ == 0x0460)
+        " 1.5",
+#    else
+        " 2.0",
+#    endif
+#  else
+      "Turbo C",
+#    if (__TURBOC__ >= 661)
+       "++ 1.0 or later",
+#    elif (__TURBOC__ == 661)
+       " 3.0?",
+#    elif (__TURBOC__ == 397)
+       " 2.0",
+#    else
+       " 1.0 or 1.5?",
+#    endif
+#  endif
+#elif defined(MSC)
+      "Microsoft C ",
+#  ifdef _MSC_VER
+      (sprintf(buf, "%d.%02d", _MSC_VER/100, _MSC_VER%100), buf),
+#  else
+      "5.1 or earlier",
+#  endif
+#else
+      "unknown compiler", "",
+#endif /* __GNUC__ */
+
+      "OS/2",
+
+/* GRR:  does IBM C/2 identify itself as IBM rather than Microsoft? */
+#if (defined(MSC) || (defined(__WATCOMC__) && !defined(__386__)))
+#  if defined(M_I86HM) || defined(__HUGE__)
+      " (16-bit, huge)",
+#  elif defined(M_I86LM) || defined(__LARGE__)
+      " (16-bit, large)",
+#  elif defined(M_I86MM) || defined(__MEDIUM__)
+      " (16-bit, medium)",
+#  elif defined(M_I86CM) || defined(__COMPACT__)
+      " (16-bit, compact)",
+#  elif defined(M_I86SM) || defined(__SMALL__)
+      " (16-bit, small)",
+#  elif defined(M_I86TM) || defined(__TINY__)
+      " (16-bit, tiny)",
+#  else
+      " (16-bit)",
+#  endif
+#else
+      " 2.x/3.x (32-bit)",
+#endif
+
+#ifdef __DATE__
+      " on ", __DATE__
+#else
+      "", ""
+#endif
+    );
+
+    /* temporary debugging code for Borland compilers only */
+#ifdef __TURBOC__
+    printf("\t(__TURBOC__ = 0x%04x = %d)\n", __TURBOC__, __TURBOC__);
+#ifdef __BORLANDC__
+    printf("\t(__BORLANDC__ = 0x%04x)\n",__BORLANDC__);
+#else
+    printf("\tdebug(__BORLANDC__ not defined)\n");
+#endif
+#ifdef __TCPLUSPLUS__
+    printf("\t(__TCPLUSPLUS__ = 0x%04x)\n", __TCPLUSPLUS__);
+#else
+    printf("\tdebug(__TCPLUSPLUS__ not defined)\n");
+#endif
+#ifdef __BCPLUSPLUS__
+    printf("\t(__BCPLUSPLUS__ = 0x%04x)\n\n", __BCPLUSPLUS__);
+#else
+    printf("\tdebug(__BCPLUSPLUS__ not defined)\n\n");
+#endif
+#endif /* __TURBOC__ */
+
+} /* end function version_local() */
 
 #endif /* OS2 */

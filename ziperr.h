@@ -1,15 +1,13 @@
 /*
+  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
 
- Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly,
- Kai Uwe Rommel and Igor Mandrichenko.
- Permission is granted to any individual or institution to use, copy, or
- redistribute this software so long as all of the original files are included,
- that it is not sold for profit, and that this copyright notice is retained.
-
+  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  (the contents of which are also included in zip.h) for terms of use.
+  If, for some reason, both of these files are missing, the Info-ZIP license
+  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
 */
-
 /*
- *  ziperr.h by Mark Adler.
+ *  ziperr.h by Mark Adler
  */
 
 /* Error return values.  The values 0..4 and 12..18 follow the conventions
@@ -33,12 +31,15 @@
 #define ZE_CREAT        15      /* couldn't open to write */
 #define ZE_PARMS        16      /* bad command line */
 #define ZE_OPEN         18      /* could not open a specified file to read */
+
+#define ZE_MAXERR       18      /* the highest error number */
+
 /* Macro to determine whether to call perror() or not */
 #define PERR(e) (e==ZE_READ||e==ZE_WRITE||e==ZE_CREAT||e==ZE_TEMP||e==ZE_OPEN)
 
 #ifdef GLOBALS
-/* Error messages for the err() function in the zip programs */
-char *errors[] = {
+/* Error messages for the ziperr() function in the zip programs */
+char *errors[ZE_MAXERR] = {
 /*  1 */  "",
 /*  2 */  "Unexpected end of zip file",
 /*  3 */  "Zip file structure invalid",
@@ -46,7 +47,7 @@ char *errors[] = {
 /*  5 */  "Internal logic error",
 /*  6 */  "Entry too big to split",
 /*  7 */  "Invalid comment format",
-/*  8 */  "Zip file invalid or insufficient memory",
+/*  8 */  "Zip file invalid or could not spawn unzip",
 /*  9 */  "Interrupted",
 /* 10 */  "Temporary file failure",
 /* 11 */  "Input file read failure",
@@ -56,8 +57,11 @@ char *errors[] = {
 /* 15 */  "Could not create output file",
 /* 16 */  "Invalid command arguments",
 /* 17 */  "",
-/* 18 */  "File not found or no read permission",
+/* 18 */  "File not found or no read permission"
+#  ifdef AZTEC_C
+          ,     /* extremely lame compiler bug workaround */
+#  endif
 };
 #else /* !GLOBALS */
-extern char *errors[];          /* Error messages for err() */
+extern char *errors[ZE_MAXERR]; /* Error messages for ziperr() */
 #endif /* ?GLOBALS */

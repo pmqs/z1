@@ -1,52 +1,138 @@
 /*
+  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
 
- Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly,
- Kai Uwe Rommel and Igor Mandrichenko.
- Permission is granted to any individual or institution to use, copy, or
- redistribute this software so long as all of the original files are included,
- that it is not sold for profit, and that this copyright notice is retained.
-
+  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  (the contents of which are also included in zip.h) for terms of use.
+  If, for some reason, both of these files are missing, the Info-ZIP license
+  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
 */
-
 /*
  *  zipsplit.c by Mark Adler.
  */
+#define __ZIPSPLIT_C
 
+#ifndef UTIL
 #define UTIL
-#include "revision.h"
+#endif
 #include "zip.h"
+#define DEFCPYRT        /* main module: enable copyright string defines! */
+#include "revision.h"
 #include <signal.h>
 
 #define DEFSIZ 36000L   /* Default split size (change in help() too) */
-#if defined(MSDOS) || defined(__human68k__)
+#ifdef MSDOS
 #  define NL 2          /* Number of bytes written for a \n */
 #else /* !MSDOS */
 #  define NL 1          /* Number of bytes written for a \n */
 #endif /* ?MSDOS */
-#define INDEX "zipsplit.idx"    /* Name of index file */
+#ifdef RISCOS
+#  define INDEX "zipspl/idx"      /* Name of index file */
+#  define TEMPL_FMT "%%0%dld"
+#  define TEMPL_SIZ 13
+#  define ZPATH_SEP '.'
+#else
+#ifdef QDOS
+#  define ZPATH_SEP '_'
+#  define INDEX "zipsplit_idx"    /* Name of index file */
+#  define TEMPL_FMT "%%0%dld_zip"
+#  define TEMPL_SIZ 17
+#  define exit(p1) QDOSexit()
+#else
+#ifdef VM_CMS
+#  define INDEX "zipsplit.idx"    /* Name of index file */
+#  define TEMPL_FMT "%%0%dld.zip"
+#  define TEMPL_SIZ 21
+#  define ZPATH_SEP '.'
+#else
+#  define INDEX "zipsplit.idx"    /* Name of index file */
+#  define TEMPL_FMT "%%0%dld.zip"
+#  define TEMPL_SIZ 17
+#  define ZPATH_SEP '.'
+#endif /* VM_CMS */
+#endif /* QDOS */
+#endif /* RISCOS */
 
+#ifdef MACOS
+#define ziperr(c, h)    zipspliterr(c, h)
+#define zipwarn(a, b)   zipsplitwarn(a, b)
+void zipsplitwarn(char *c,char *h);
+void zipspliterr(int c,char *h);
+#endif /* MACOS */
 
 /* Local functions */
-#ifdef PROTO
-   local void handler(int);
-   local void license(void);
-   local void help(void);
-   local extent simple(ulg *, extent, ulg, ulg);
-   local int descmp(const voidp *, const voidp *);
-   local extent greedy(ulg *, extent, ulg, ulg);
-   int main(int, char **);
-#endif /* PROTO */
+local zvoid *talloc OF((extent));
+local void tfree OF((zvoid *));
+local void tfreeall OF((void));
+local void handler OF((int));
+local void license OF((void));
+local void help OF((void));
+local void version_info OF((void));
+local extent simple OF((ulg *, extent, ulg, ulg));
+local int descmp OF((ZCONST zvoid *, ZCONST zvoid *));
+local extent greedy OF((ulg *, extent, ulg, ulg));
+local int retry OF((void));
+int main OF((int, char **));
 
 
 /* Output zip files */
-local char template[16];        /* name template for output files */
+local char template[TEMPL_SIZ]; /* name template for output files */
 local int zipsmade = 0;         /* number of zip files made */
 local int indexmade = 0;        /* true if index file made */
 local char *path = NULL;        /* space for full name */
 local char *name;               /* where name goes in path[] */
 
 
-void err(c, h)
+/* The talloc() and tree() routines extend malloc() and free() to keep
+   track of all allocated memory.  Then the tfreeall() routine uses this
+   information to free all allocated memory before exiting. */
+
+#define TMAX 6          /* set intelligently by examining the code */
+zvoid *talls[TMAX];     /* malloc'ed pointers to track */
+int talln = 0;          /* number of entries in talls[] */
+
+
+local zvoid *talloc(s)
+extent s;
+/* does a malloc() and saves the pointer to free later (does not check
+   for an overflow of the talls[] list) */
+{
+  zvoid *p;
+
+  if ((p = (zvoid *)malloc(s)) != NULL)
+    talls[talln++] = p;
+  return p;
+}
+
+
+local void tfree(p)
+zvoid *p;
+/* does a free() and also removes the pointer from the talloc() list */
+{
+  int i;
+
+  free(p);
+  i = talln;
+  while (i--)
+    if (talls[i] == p)
+      break;
+  if (i >= 0)
+  {
+    while (++i < talln)
+      talls[i - 1] = talls[i];
+    talln--;
+  }
+}
+
+
+local void tfreeall()
+/* free everything talloc'ed and not tfree'd */
+{
+  while (talln)
+    free(talls[--talln]);
+}
+
+
+void ziperr(c, h)
 int c;                  /* error code from the ZE_ class */
 char *h;                /* message about how it happened */
 /* Issue a message for the error, clean up files and memory, and exit. */
@@ -64,32 +150,26 @@ char *h;                /* message about how it happened */
     sprintf(name, template, zipsmade);
     destroy(path);
   }
-  if (path != NULL)
-    free((voidp *)path);
+  tfreeall();
   if (zipfile != NULL)
-    free((voidp *)zipfile);
-#ifdef VMS
-  exit(0);
-#else /* !VMS */
-  exit(c);
-#endif /* ?VMS */
+    free((zvoid *)zipfile);
+  EXIT(c);
 }
-
 
 
 local void handler(s)
 int s;                  /* signal number (ignored) */
-/* Upon getting a user interrupt, abort cleanly using err(). */
+/* Upon getting a user interrupt, abort cleanly using ziperr(). */
 {
 #ifndef MSDOS
   putc('\n', stderr);
 #endif /* !MSDOS */
-  err(ZE_ABORT, "aborting");
+  ziperr(ZE_ABORT, "aborting");
   s++;                                  /* keep some compilers happy */
 }
 
 
-void warn(a, b)
+void zipwarn(a, b)
 char *a, *b;            /* message strings juxtaposed in output */
 /* Print a warning message to stderr and return. */
 {
@@ -106,8 +186,8 @@ local void license()
     printf(copyright[i], "zipsplit");
     putchar('\n');
   }
-  for (i = 0; i < sizeof(disclaimer)/sizeof(char *); i++)
-    puts(disclaimer[i]);
+  for (i = 0; i < sizeof(swlicense)/sizeof(char *); i++)
+    puts(swlicense[i]);
 }
 
 
@@ -117,17 +197,30 @@ local void help()
   extent i;             /* counter for help array */
 
   /* help array */
-  static char *text[] = {
+  static ZCONST char *text[] = {
 "",
 "ZipSplit %s (%s)",
-"Usage:  zipsplit [-ti] [-n size] [-b path] zipfile",
+#ifdef VM_CMS
+"Usage:  zipsplit [-tips] [-n size] [-r room] [-b fm] zipfile",
+#else
+"Usage:  zipsplit [-tips] [-n size] [-r room] [-b path] zipfile",
+#endif
 "  -t   report how many files it will take, but don't make them",
+#ifdef RISCOS
+"  -i   make index (" INDEX ") and count its size against first zip file",
+#else
 "  -i   make index (zipsplit.idx) and count its size against first zip file",
+#endif
 "  -n   make zip files no larger than \"size\" (default = 36000)",
+"  -r   leave room for \"room\" bytes on the first disk (default = 0)",
+#ifdef VM_CMS
+"  -b   use \"fm\" as the filemode for the output zip files",
+#else
 "  -b   use \"path\" for the output zip files",
+#endif
 "  -p   pause between output zip files",
 "  -s   do a sequential split even if it takes more zip files",
-"  -h   show this help               -L   show software license"
+"  -h   show this help    -v   show version info    -L   show software license"
   };
 
   for (i = 0; i < sizeof(copyright)/sizeof(char *); i++) {
@@ -139,6 +232,44 @@ local void help()
     printf(text[i], VERSION, REVDATE);
     putchar('\n');
   }
+}
+
+
+local void version_info()
+/* Print verbose info about program version and compile time options
+   to stdout. */
+{
+  extent i;             /* counter in text arrays */
+
+  /* Options info array */
+  static ZCONST char *comp_opts[] = {
+#ifdef DEBUG
+    "DEBUG",
+#endif
+    NULL
+  };
+
+  for (i = 0; i < sizeof(copyright)/sizeof(char *); i++)
+  {
+    printf(copyright[i], "zipsplit");
+    putchar('\n');
+  }
+
+  for (i = 0; i < sizeof(versinfolines)/sizeof(char *); i++)
+  {
+    printf(versinfolines[i], "ZipSplit", VERSION, REVDATE);
+    putchar('\n');
+  }
+
+  version_local();
+
+  puts("ZipSplit special compilation options:");
+  for (i = 0; (int)i < (int)(sizeof(comp_opts)/sizeof(char *) - 1); i++)
+  {
+    printf("\t%s\n",comp_opts[i]);
+  }
+  if (i == 0)
+      puts("\t[none]");
 }
 
 
@@ -171,7 +302,7 @@ ulg d;          /* amount to deduct from first bin */
 
 
 local int descmp(a, b)
-const voidp *a, *b;           /* pointers to pointers to ulg's to compare */
+ZCONST zvoid *a, *b;          /* pointers to pointers to ulg's to compare */
 /* Used by qsort() in greedy() to do a descending sort. */
 {
   return **(ulg **)a < **(ulg **)b ? 1 : (**(ulg **)a > **(ulg **)b ? -1 : 0);
@@ -215,8 +346,8 @@ ulg d;          /* amount to deduct from first bin */
       (s = (ulg **)malloc(n * sizeof(ulg *))) == NULL)
   {
     if (e != NULL)
-      free((voidp *)e);
-    err(ZE_MEM, "was trying a smart split");
+      free((zvoid *)e);
+    ziperr(ZE_MEM, "was trying a smart split");
     return 0;                           /* only to make compiler happy */
   }
   memcpy((char *)e, (char *)a, n * sizeof(ulg));
@@ -230,9 +361,9 @@ ulg d;          /* amount to deduct from first bin */
     /* Increment the number of bins, allocate and initialize bins */
     if ((b = (ulg *)malloc(++m * sizeof(ulg))) == NULL)
     {
-      free((voidp *)s);
-      free((voidp *)e);
-      err(ZE_MEM, "was trying a smart split");
+      free((zvoid *)s);
+      free((zvoid *)e);
+      ziperr(ZE_MEM, "was trying a smart split");
     }
     b[0] = c - d;                       /* leave space in first bin */
     for (j = 1; j < m; j++)
@@ -257,19 +388,33 @@ ulg d;          /* amount to deduct from first bin */
     }
 
     /* Clean up */
-    free((voidp *)b);
+    free((zvoid *)b);
 
     /* Do until all items put in a bin */
   } while (i < n);
 
   /* Done--clean up and return the number of bins needed */
-  free((voidp *)s);
-  free((voidp *)e);
+  free((zvoid *)s);
+  free((zvoid *)e);
   return m;
 }
 
 
+local int retry()
+{
+  char m[10];
+  fputs("Error writing to disk--redo entire disk? ", stderr);
+  fgets(m, 10, stdin);
+  return *m == 'y' || *m == 'Y';
+}
+
+
+#ifndef USE_ZIPSPLITMAIN
 int main(argc, argv)
+#else
+int zipsplitmain(argc, argv)
+#endif
+
 int argc;               /* number of tokens in command line */
 char **argv;            /* command line tokens */
 /* Split a zip file into several zip files less than a specified size.  See
@@ -283,9 +428,10 @@ char **argv;            /* command line tokens */
   FILE *f;              /* output index and zip files */
   extent g;             /* number of bins from greedy(), entry to write */
   int h;                /* how to split--true means simple split, counter */
-  ulg i;                /* size of index file or zero if none */
+  ulg i = 0;            /* size of index file plus room to leave */
   extent j;             /* steps through zip entries, bins */
   int k;                /* next argument type */
+  extent *n = NULL;     /* next item in bin list (heads in b) */
   ulg *p;               /* malloc'ed list of sizes, dest bins for greedy() */
   char *q;              /* steps through option characters */
   int r;                /* temporary variable, counter */
@@ -299,11 +445,15 @@ char **argv;            /* command line tokens */
   char tailchar;         /* temporary variable used in name generation below */
 #endif
 
+#ifdef THEOS
+  setlocale(LC_CTYPE, "I");
+#endif
+
   /* If no args, show help */
   if (argc == 1)
   {
     help();
-    exit(0);
+    EXIT(0);
   }
 
   init_upper();           /* build case map table */
@@ -317,85 +467,100 @@ char **argv;            /* command line tokens */
   c = DEFSIZ;
   for (r = 1; r < argc; r++)
     if (*argv[r] == '-')
+    {
       if (argv[r][1])
         for (q = argv[r]+1; *q; q++)
-          switch(*q)
+          switch (*q)
           {
             case 'b':   /* Specify path for output files */
               if (k)
-                err(ZE_PARMS, "options are separate and precede zip file");
+                ziperr(ZE_PARMS, "options are separate and precede zip file");
               else
                 k = 1;          /* Next non-option is path */
               break;
             case 'h':   /* Show help */
-              help();  exit(0);
+              help();  EXIT(0);
             case 'i':   /* Make an index file */
               x = 1;
               break;
             case 'l': case 'L':  /* Show copyright and disclaimer */
-              license();  exit(0);
+              license();  EXIT(0);
             case 'n':   /* Specify maximum size of resulting zip files */
               if (k)
-                err(ZE_PARMS, "options are separate and precede zip file");
+                ziperr(ZE_PARMS, "options are separate and precede zip file");
               else
                 k = 2;          /* Next non-option is size */
               break;
             case 'p':
               u = 1;
+              break;
+            case 'r':
+              if (k)
+                ziperr(ZE_PARMS, "options are separate and precede zip file");
+              else
+                k = 3;          /* Next non-option is room to leave */
+              break;
             case 's':
               h = 1;    /* Only try simple */
               break;
             case 't':   /* Just report number of disks */
               d = 1;
               break;
+            case 'v':   /* Show version info */
+              version_info();  EXIT(0);
             default:
-              err(ZE_PARMS, "Use option -h for help.");
+              ziperr(ZE_PARMS, "Use option -h for help.");
           }
       else
-        err(ZE_PARMS, "zip file cannot be stdin");
+        ziperr(ZE_PARMS, "zip file cannot be stdin");
+    }
     else
-      if (k == 0)
-        if (zipfile == NULL)
-        {
-          if ((zipfile = ziptyp(argv[r])) == NULL)
-            err(ZE_MEM, "was processing arguments");
-        }
-        else
-          err(ZE_PARMS, "can only specify one zip file");
-      else if (k == 1)
+      switch (k)
       {
-        tempath = argv[r];
-        k = 0;
-      }
-      else              /* k must be 2 */
-      {
-        if ((c = (ulg)atol(argv[r])) < 100)     /* 100 is smallest zip file */
-          err(ZE_PARMS, "invalid size given. Use option -h for help.");
-        k = 0;
+        case 0:
+          if (zipfile == NULL)
+          {
+            if ((zipfile = ziptyp(argv[r])) == NULL)
+              ziperr(ZE_MEM, "was processing arguments");
+          }
+          else
+            ziperr(ZE_PARMS, "can only specify one zip file");
+          break;
+        case 1:
+          tempath = argv[r];
+          k = 0;
+          break;
+        case 2:
+          if ((c = (ulg)atol(argv[r])) < 100)   /* 100 is smallest zip file */
+            ziperr(ZE_PARMS, "invalid size given. Use option -h for help.");
+          k = 0;
+          break;
+        default:        /* k must be 3 */
+          i = (ulg)atol(argv[r]);
+          k = 0;
+          break;
       }
   if (zipfile == NULL)
-    err(ZE_PARMS, "need to specify zip file");
+    ziperr(ZE_PARMS, "need to specify zip file");
 
 
   /* Read zip file */
   if ((r = readzipfile()) != ZE_OK)
-    err(r, zipfile);
+    ziperr(r, zipfile);
   if (zfiles == NULL)
-    err(ZE_NAME, zipfile);
+    ziperr(ZE_NAME, zipfile);
 
   /* Make a list of sizes and check against capacity.  Also compute the
      size of the index file. */
   c -= ENDHEAD + 4;                     /* subtract overhead/zipfile */
-  if ((a = (ulg *)malloc(zcount * sizeof(ulg))) == NULL ||
-      (w = (struct zlist far **)malloc(zcount * sizeof(struct zlist far *))) ==
+  if ((a = (ulg *)talloc(zcount * sizeof(ulg))) == NULL ||
+      (w = (struct zlist far **)talloc(zcount * sizeof(struct zlist far *))) ==
        NULL)
   {
-    if (a != NULL)
-      free((voidp *)a);
-    err(ZE_MEM, "was computing split");
+    ziperr(ZE_MEM, "was computing split");
     return 1;
   }
-  i = t = 0;
+  t = 0;
   for (j = 0, z = zfiles; j < zcount; j++, z = z->nxt)
   {
     w[j] = z;
@@ -404,10 +569,7 @@ char **argv;            /* command line tokens */
     t += a[j] = 8 + LOCHEAD + CENHEAD +
            2 * (ulg)z->nam + 2 * (ulg)z->ext + z->com + z->siz;
     if (a[j] > c)
-    {
-      free((voidp *)w);  free((voidp *)a);
-      err(ZE_BIG, z->zname);
-    }
+      ziperr(ZE_BIG, z->zname);
   }
 
   /* Decide on split to use, report number of files */
@@ -415,94 +577,77 @@ char **argv;            /* command line tokens */
     s = simple(a, zcount, c, i);
   else
   {
-    if ((p = (ulg *)malloc(zcount * sizeof(ulg))) == NULL)
-    {
-      free((voidp *)w);  free((voidp *)a);
-      err(ZE_MEM, "was computing split");
-    }
+    if ((p = (ulg *)talloc(zcount * sizeof(ulg))) == NULL)
+      ziperr(ZE_MEM, "was computing split");
     memcpy((char *)p, (char *)a, zcount * sizeof(ulg));
     s = simple(a, zcount, c, i);
     g = greedy(p, zcount, c, i);
     if (s <= g)
-      free((voidp *)p);
+      tfree((zvoid *)p);
     else
     {
-      free((voidp *)a);
+      tfree((zvoid *)a);
       a = p;
       s = g;
     }
   }
-  printf("%d zip files w%s be made (%d%% efficiency)\n",
-         s, d ? "ould" : "ill", ((200 * ((t + c - 1)/c)) / s + 1) >> 1);
+  printf("%ld zip files w%s be made (%ld%% efficiency)\n",
+         (ulg)s, d ? "ould" : "ill", ((200 * ((t + c - 1)/c)) / s + 1) >> 1);
   if (d)
   {
-    free((voidp *)w);  free((voidp *)a);
-    free((voidp *)zipfile);
+    tfreeall();
+    free((zvoid *)zipfile);
     zipfile = NULL;
-    exit(0);
+    EXIT(0);
   }
 
   /* Set up path for output files */
-  if ((path = malloc(tempath == NULL ? 13 : strlen(tempath) + 14)) == NULL)
-    err(ZE_MEM, "was making output file names");
+  /* Point "name" past the path, where the filename should go */
+  if ((path = (char *)talloc(tempath == NULL ? 13 : strlen(tempath) + 14)) ==
+      NULL)
+    ziperr(ZE_MEM, "was making output file names");
   if (tempath == NULL)
      name = path;
   else
   {
+#ifndef VM_CMS
+    /* Copy the output path to the target */
     strcpy(path, tempath);
+#endif
 #ifdef AMIGA
     tailchar = path[strlen(path) - 1];  /* last character */
     if (path[0] && (tailchar != '/') && (tailchar != ':'))
       strcat(path, "/");
     name = path + strlen(path);
 #else
+#  ifdef RISCOS
+    if (path[0] && path[strlen(path) - 1] != '.')
+      strcat(path, ".");
+    name = path + strlen(path);
+#  else /* !RISCOS */
+#   ifndef QDOS
     if (path[0] && path[strlen(path) - 1] != '/')
       strcat(path, "/");
+#   else
+    if (path[0] && path[strlen(path) - 1] != '_')
+      strcat(path, "_");
+#   endif
     name = path + strlen(path);
+#  endif
 #endif /* ?AMIGA */
   }
 
-  /* Write the index file */
-  if (u)
-  {
-    char m[10];
-    fputs("Insert first disk and hit return: ", stderr);
-    fgets(m, 10, stdin);
-  }
-  if (x)
-  {
-    strcpy(name, INDEX);
-    printf("creating: %s\n", path);
-    indexmade = 1;
-    if ((f = fopen(path, "w")) == NULL)
-    {
-      free((voidp *)w);  free((voidp *)a);
-      err(ZE_CREAT, path);
-    }
-    for (j = 0; j < zcount; j++)
-      fprintf(f, "%5ld %s\n", a[j] + 1, w[j]->zname);
-    if ((j = ferror(f)) != 0 || fclose(f))
-    {
-      if (j)
-        fclose(f);
-      free((voidp *)w);  free((voidp *)a);
-      err(ZE_WRITE, path);
-    }
-  }
-
   /* Make linked lists of results */
-  if ((b = (extent *)malloc(s * sizeof(extent))) == NULL)
-  {
-    free((voidp *)w);  free((voidp *)a);
-    err(ZE_MEM, "was computing split");
-  }
+  if ((b = (extent *)talloc(s * sizeof(extent))) == NULL ||
+      (n = (extent *)talloc(zcount * sizeof(extent))) == NULL)
+    ziperr(ZE_MEM, "was computing split");
   for (j = 0; j < s; j++)
     b[j] = (extent)-1;
   j = zcount;
   while (j--)
   {
     g = (extent)a[j];
-    a[j] = b[g];
+    n[j] = b[g];
     b[g] = j;
   }
 
@@ -511,104 +656,155 @@ char **argv;            /* command line tokens */
   for (k = 1, j = s; j >= 10; j /= 10)
     k++;
   if (k > 7)
-  {
-    free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
-    err(ZE_PARMS, "way too many zip files must be made");
-  }
+    ziperr(ZE_PARMS, "way too many zip files must be made");
+/*
+ * XXX, ugly ....
+ */
+/* Find the final "path" separator character */
+#ifdef QDOS
+  q = LastDir(zipfile);
+#else
 #ifdef VMS
   if ((q = strrchr(zipfile, ']')) != NULL)
-#else /* !VMS */
-#  ifdef AMIGA
+#else
+#ifdef AMIGA
   if (((q = strrchr(zipfile, '/')) != NULL)
                        || ((q = strrchr(zipfile, ':'))) != NULL)
-#  else /* !AMIGA */
+#else
+#ifdef RISCOS
+  if ((q = strrchr(zipfile, '.')) != NULL)
+#else
+#ifdef MVS
+  if ((q = strrchr(zipfile, '.')) != NULL)
+#else
   if ((q = strrchr(zipfile, '/')) != NULL)
-#  endif /* ?AMIGA */
-#endif /* ?VMS */
+#endif /* MVS */
+#endif /* RISCOS */
+#endif /* AMIGA */
+#endif /* VMS */
     q++;
   else
     q = zipfile;
+#endif /* QDOS */
+
   r = 0;
-  while ((g = *q++) != 0 && g != '.' && r < 8 - k)
+  while ((g = *q++) != '\0' && g != ZPATH_SEP && r < 8 - k)
     template[r++] = (char)g;
   if (r == 0)
     template[r++] = '_';
   else if (g >= '0' && g <= '9')
     template[r - 1] = (char)(template[r - 1] == '_' ? '-' : '_');
-  sprintf(template + r, "%%0%dd.zip", k);
+  sprintf(template + r, TEMPL_FMT, k);
+#ifdef VM_CMS
+  /* For CMS, add the "path" as the filemode at the end */
+  if (tempath)
+  {
+     strcat(template,".");
+     strcat(template,tempath);
+  }
+#endif
 
   /* Make the zip files from the linked lists of entry numbers */
   if ((e = fopen(zipfile, FOPR)) == NULL)
-  {
-    free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
-    err(ZE_NAME, zipfile);
-  }
-  free((voidp *)zipfile);
+    ziperr(ZE_NAME, zipfile);
+  free((zvoid *)zipfile);
   zipfile = NULL;
   for (j = 0; j < s; j++)
   {
-    if (u && j)
+    /* jump here on a disk retry */
+   redobin:
+
+    /* prompt if requested */
+    if (u)
     {
       char m[10];
-      fputs("Insert next disk and hit return: ", stderr);
+      fprintf(stderr, "Insert disk #%ld of %ld and hit return: ",
+              (ulg)j + 1, (ulg)s);
       fgets(m, 10, stdin);
     }
-    sprintf(name, template, j + 1);
+
+    /* write index file on first disk if requested */
+    if (j == 0 && x)
+    {
+      strcpy(name, INDEX);
+      printf("creating: %s\n", path);
+      indexmade = 1;
+      if ((f = fopen(path, "w")) == NULL)
+      {
+        if (u && retry()) goto redobin;
+        ziperr(ZE_CREAT, path);
+      }
+      for (j = 0; j < zcount; j++)
+        fprintf(f, "%5ld %s\n", a[j] + 1, w[j]->zname);
+      if ((j = ferror(f)) != 0 || fclose(f))
+      {
+        if (j)
+          fclose(f);
+        if (u && retry()) goto redobin;
+        ziperr(ZE_WRITE, path);
+      }
+    }
+
+    /* create output zip file j */
+    sprintf(name, template, j + 1L);
     printf("creating: %s\n", path);
     zipsmade = j + 1;
     if ((f = fopen(path, FOPW)) == NULL)
     {
-      free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
-      err(ZE_CREAT, path);
+      if (u && retry()) goto redobin;
+      ziperr(ZE_CREAT, path);
     }
     tempzn = 0;
-    for (g = b[j]; g != (extent)-1; g = (extent)a[g])
+
+    /* write local headers and copy compressed data */
+    for (g = b[j]; g != (extent)-1; g = (extent)n[g])
     {
       if (fseek(e, w[g]->off, SEEK_SET))
-      {
-        free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
-        err(ferror(e) ? ZE_READ : ZE_EOF, zipfile);
-      }
+        ziperr(ferror(e) ? ZE_READ : ZE_EOF, zipfile);
       if ((r = zipcopy(w[g], e, f)) != ZE_OK)
       {
-        free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
         if (r == ZE_TEMP)
-          err(ZE_WRITE, path);
+        {
+          if (u && retry()) goto redobin;
+          ziperr(ZE_WRITE, path);
+        }
         else
-          err(r, zipfile);
+          ziperr(r, zipfile);
       }
     }
-    if ((c = ftell(f)) == -1L)
+
+    /* write central headers */
+    if ((c = ftell(f)) == (ulg)(-1L))
     {
-      free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
-      err(ZE_WRITE, path);
+      if (u && retry()) goto redobin;
+      ziperr(ZE_WRITE, path);
     }
-    for (g = b[j], k = 0; g != (extent)-1; g = (extent)a[g], k++)
+    for (g = b[j], k = 0; g != (extent)-1; g = n[g], k++)
       if ((r = putcentral(w[g], f)) != ZE_OK)
       {
-        free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
-        err(ZE_WRITE, path);
+        if (u && retry()) goto redobin;
+        ziperr(ZE_WRITE, path);
       }
-    if ((t = ftell(f)) == -1L)
+
+    /* write end-of-central header */
+    if ((t = ftell(f)) == (ulg)(-1L) ||
+        (r = putend(k, t - c, c, (extent)0, (char *)NULL, f)) != ZE_OK ||
+        ferror(f) || fclose(f))
     {
-      free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
-      err(ZE_WRITE, path);
+      if (u && retry()) goto redobin;
+      ziperr(ZE_WRITE, path);
     }
-    if ((r = putend(k, t - c, c, (extent)0, (char *)NULL, f)) != ZE_OK)
-    {
-      free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
-      err(ZE_WRITE, path);
-    }
-    if (ferror(f) || fclose(f))
-    {
-      free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
-      err(ZE_WRITE, path);
-    }
+#ifdef RISCOS
+    /* Set the filetype to &DDC */
+    setfiletype(path,0xDDC);
+#endif
   }
-  free((voidp *)b);  free((voidp *)w);  free((voidp *)a);
   fclose(e);
 
   /* Done! */
-  exit(0);
-  return 0; /* avoid warning */
+  if (u)
+    fputs("Done.\n", stderr);
+  tfreeall();
+
+  RETURN(0);
 }

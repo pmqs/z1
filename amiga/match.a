@@ -1,12 +1,21 @@
-; match.a -- optional optimized asm version of longest match in deflate.c
-; Copyright (C) 1992-1993 Jean-loup Gailly
+;===========================================================================
+; Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
 ;
+; See the accompanying file LICENSE, version 1999-Oct-05 or later
+; (the contents of which are also included in zip.h) for terms of use.
+; If, for some reason, both of these files are missing, the Info-ZIP license
+; also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
+;===========================================================================
+; match.a -- optional optimized asm version of longest match in deflate.c
+; Written by Jean-loup Gailly
 ; Adapted for the Amiga by Carsten Steger <stegerc@informatik.tu-muenchen.de>
 ; using the code in match.S.
 ; The major change in this code consists of removing all unaligned
 ; word accesses, because they cause 68000-based Amigas to crash.
 ; For maximum speed, UNALIGNED_OK can be defined in Makefile.sasc.
 ; The program will then only run on 68020-based Amigas, though.
+; If you have reduced WSIZE in zip.h, then make sure this is
+; assembled with an equivalent -dWSIZE=<whatever>.
 ;
 ; This code will run with registerized parameters too, unless SAS
 ; changes parameter passing conventions between new releases of SAS/C.
@@ -28,7 +37,9 @@ Match_Ini       reg     a4
 
 MAX_MATCH       equ     258
 MIN_MATCH       equ     3
+        ifnd    WSIZE
 WSIZE           equ     32768
+        endc
 MAX_DIST        equ     WSIZE-MAX_MATCH-MIN_MATCH-1
 
 
@@ -83,16 +94,16 @@ length_ok:
         ifd     UNALIGNED_OK
 
         move.w  -MIN_MATCH(Scan_Ini),Scan_Start
-        move.w  -MIN_MATCH-1(Scan_Ini,Best_Len),Scan_End
+        move.w  -MIN_MATCH-1(Scan_Ini,Best_Len.L),Scan_End
 
         else
 
         move.b  -MIN_MATCH(Scan_Ini),Scan_Start
         lsl.w   #8,Scan_Start
         move.b  -MIN_MATCH+1(Scan_Ini),Scan_Start
-        move.b  -MIN_MATCH-1(Scan_Ini,Best_Len),Scan_End
+        move.b  -MIN_MATCH-1(Scan_Ini,Best_Len.L),Scan_End
         lsl.w   #8,Scan_End
-        move.b  -MIN_MATCH(Scan_Ini,Best_Len),Scan_End
+        move.b  -MIN_MATCH(Scan_Ini,Best_Len.L),Scan_End
 
         endc
 
@@ -102,19 +113,19 @@ long_loop:
 
         ifd     UNALIGNED_OK
 
-        move.w  -MIN_MATCH-1(Scan_Ini,Best_Len),Scan_End
+        move.w  -MIN_MATCH-1(Scan_Ini,Best_Len.L),Scan_End
 
         else
 
-        move.b  -MIN_MATCH-1(Scan_Ini,Best_Len),Scan_End
+        move.b  -MIN_MATCH-1(Scan_Ini,Best_Len.L),Scan_End
         lsl.w   #8,Scan_End
-        move.b  -MIN_MATCH(Scan_Ini,Best_Len),Scan_End
+        move.b  -MIN_MATCH(Scan_Ini,Best_Len.L),Scan_End
 
         endc
 
 short_loop:
         lsl.w   #1,Cur_Match
-        move.w  0(Prev_Address,Cur_Match.l),Cur_Match
+        move.w  0(Prev_Address,Cur_Match.L),Cur_Match
         cmp.w   Limit,Cur_Match
         dbls    Chain_Length,do_scan
         bra.b   return
@@ -125,16 +136,16 @@ do_scan:
 
         ifd     UNALIGNED_OK
 
-        cmp.w   -MIN_MATCH-1(Match,Best_Len),Scan_End
+        cmp.w   -MIN_MATCH-1(Match,Best_Len.L),Scan_End
         bne.b   short_loop
         cmp.w   -MIN_MATCH(Match),Scan_Start
         bne.b   short_loop
 
         else
 
-        move.b  -MIN_MATCH-1(Match,Best_Len),Scan_Test
+        move.b  -MIN_MATCH-1(Match,Best_Len.L),Scan_Test
         lsl.w   #8,Scan_Test
-        move.b  -MIN_MATCH(Match,Best_Len),Scan_Test
+        move.b  -MIN_MATCH(Match,Best_Len.L),Scan_Test
         cmp.w   Scan_Test,Scan_End
         bne.b   short_loop
         move.b  -MIN_MATCH(Match),Scan_Test

@@ -1,23 +1,26 @@
 /*
+  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
 
- Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly,
- Kai Uwe Rommel and Igor Mandrichenko.
- Permission is granted to any individual or institution to use, copy, or
- redistribute this software so long as all of the original files are included,
- that it is not sold for profit, and that this copyright notice is retained.
-
+  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  (the contents of which are also included in zip.h) for terms of use.
+  If, for some reason, both of these files are missing, the Info-ZIP license
+  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
 */
-
 /*
  *  trees.c by Jean-loup Gailly
  *
  *  This is a new version of im_ctree.c originally written by Richard B. Wales
  *  for the defunct implosion method.
+ *  The low level bit string handling routines from bits.c (originally
+ *  im_bits.c written by Richard B. Wales) have been merged into this version
+ *  of trees.c.
  *
  *  PURPOSE
  *
  *      Encode various sets of source values using variable-length
  *      binary code trees.
+ *      Output the resulting variable-length bit strings.
+ *      Compression can be done to a file or to memory.
  *
  *  DISCUSSION
  *
@@ -30,6 +33,27 @@
  *      The actual code strings are reconstructed from the lengths in
  *      the UNZIP process, as described in the "application note"
  *      (APPNOTE.TXT) distributed as part of PKWARE's PKZIP program.
+ *
+ *      The PKZIP "deflate" file format interprets compressed file data
+ *      as a sequence of bits.  Multi-bit strings in the file may cross
+ *      byte boundaries without restriction.
+ *      The first bit of each byte is the low-order bit.
+ *
+ *      The routines in this file allow a variable-length bit value to
+ *      be output right-to-left (useful for literal values). For
+ *      left-to-right output (useful for code strings from the tree routines),
+ *      the bits must have been reversed first with bi_reverse().
+ *
+ *      For in-memory compression, the compressed bit stream goes directly
+ *      into the requested output buffer. The buffer is limited to 64K on
+ *      16 bit machines; flushing of the output buffer during compression
+ *      process is not supported.
+ *      The input data is read in blocks by the (*read_buf)() function.
+ *
+ *      For more details about input to and output from the deflation routines,
+ *      see the actual input functions for (*read_buf)(), flush_outbuf(), and
+ *      the filecompress() resp. memcompress() wrapper functions which handle
+ *      the I/O setup.
  *
  *  REFERENCES
  *
@@ -55,15 +79,46 @@
  *      void ct_tally (int dist, int lc);
  *          Save the match info and tally the frequency counts.
  *
- *      long flush_block (char *buf, ulg stored_len, int eof)
+ *      ulg flush_block (char *buf, ulg stored_len, int eof)
  *          Determine the best encoding for the current block: dynamic trees,
  *          static trees or store, and output the encoded block to the zip
  *          file. Returns the total compressed length for the file so far.
  *
+ *      void bi_init (char *tgt_buf, unsigned tgt_size, int flsh_allowed)
+ *          Initialize the bit string routines.
+ *
+ *    Most of the bit string output functions are only used internally
+ *    in this source file, they are normally declared as "local" routines:
+ *
+ *      local void send_bits (int value, int length)
+ *          Write out a bit string, taking the source bits right to
+ *          left.
+ *
+ *      local unsigned bi_reverse (unsigned code, int len)
+ *          Reverse the bits of a bit string, taking the source bits left to
+ *          right and emitting them right to left.
+ *
+ *      local void bi_windup (void)
+ *          Write out any remaining bits in an incomplete byte.
+ *
+ *      local void copy_block(char *buf, unsigned len, int header)
+ *          Copy a stored block to the zip file, storing first the length and
+ *          its one's complement if requested.
+ *
+ *    All output that exceeds the bitstring output buffer size (as initialized
+ *    by bi_init() is fed through an externally provided transfer routine
+ *    which flushes the bitstring output buffer on request and resets the
+ *    buffer fill counter:
+ *
+ *      extern void flush_outbuf(char *o_buf, unsigned *o_idx);
+ *
  */
+#define __TREES_C
 
 #include <ctype.h>
 #include "zip.h"
+
+#ifndef USE_ZLIB
 
 /* ===========================================================================
  * Constants
@@ -272,21 +327,91 @@ local uch flag_bit;         /* current bit used in flags */
 local ulg opt_len;        /* bit length of current block with optimal trees */
 local ulg static_len;     /* bit length of current block with static trees */
 
-local ulg compressed_len; /* total bit length of compressed file */
-
-local ulg input_len;      /* total byte length of input file */
-/* input_len is for debugging only since we can get it by other means. */
-
-ush *file_type;        /* pointer to UNKNOWN, BINARY or ASCII */
-int *file_method;      /* pointer to DEFLATE or STORE */
+local ulg cmpr_bytelen;     /* total byte length of compressed file */
+local ulg cmpr_len_bits;    /* number of bits past 'cmpr_bytelen' */
 
 #ifdef DEBUG
-extern ulg bits_sent;  /* bit length of the compressed data */
+local ulg input_len;        /* total byte length of input file */
+/* input_len is for debugging only since we can get it by other means. */
+#endif
+
+local ush *file_type;       /* pointer to UNKNOWN, BINARY or ASCII */
+local int *file_method;     /* pointer to DEFLATE or STORE */
+
+/* ===========================================================================
+ * Local data used by the "bit string" routines.
+ */
+
+local int flush_flg;
+
+#if (!defined(ASMV) || !defined(RISCOS))
+local unsigned bi_buf;
+#else
+unsigned bi_buf;
+#endif
+/* Output buffer. bits are inserted starting at the bottom (least significant
+ * bits). The width of bi_buf must be at least 16 bits.
+ */
+
+#define Buf_size (8 * 2*sizeof(char))
+/* Number of bits used within bi_buf. (bi_buf may be implemented on
+ * more than 16 bits on some systems.)
+ */
+
+#if (!defined(ASMV) || !defined(RISCOS))
+local int bi_valid;
+#else
+int bi_valid;
+#endif
+/* Number of valid bits in bi_buf.  All bits above the last valid bit
+ * are always zero.
+ */
+
+#if (!defined(ASMV) || !defined(RISCOS))
+local char *out_buf;
+#else
+char *out_buf;
+#endif
+/* Current output buffer. */
+
+#if (!defined(ASMV) || !defined(RISCOS))
+local unsigned out_offset;
+#else
+unsigned out_offset;
+#endif
+/* Current offset in output buffer.
+ * On 16 bit machines, the buffer is limited to 64K.
+ */
+
+#if !defined(ASMV) || !defined(RISCOS)
+local unsigned out_size;
+#else
+unsigned out_size;
+#endif
+/* Size of current output buffer */
+
+/* Output a 16 bit value to the bit stream, lower (oldest) byte first */
+#define PUTSHORT(w) \
+{ if (out_offset >= out_size-1) \
+    flush_outbuf(out_buf, &out_offset); \
+  out_buf[out_offset++] = (char) ((w) & 0xff); \
+  out_buf[out_offset++] = (char) ((ush)(w) >> 8); \
+}
+
+#define PUTBYTE(b) \
+{ if (out_offset >= out_size) \
+    flush_outbuf(out_buf, &out_offset); \
+  out_buf[out_offset++] = (char) (b); \
+}
+
+#ifdef DEBUG
+local ulg bits_sent;   /* bit length of the compressed data */
 extern ulg isize;      /* byte length of input file */
 #endif
 
 extern long block_start;       /* window offset of current block */
 extern unsigned near strstart; /* window offset of current string */
+
 
 /* ===========================================================================
  * Local (static) routines in this file.
@@ -303,6 +428,12 @@ local int  build_bl_tree  OF((void));
 local void send_all_trees OF((int lcodes, int dcodes, int blcodes));
 local void compress_block OF((ct_data near *ltree, ct_data near *dtree));
 local void set_file_type  OF((void));
+#if (!defined(ASMV) || !defined(RISCOS))
+local void send_bits      OF((int value, int length));
+local unsigned bi_reverse OF((unsigned code, int len));
+#endif
+local void bi_windup      OF((void));
+local void copy_block     OF((char *buf, unsigned len, int header));
 
 
 #ifndef DEBUG
@@ -322,7 +453,7 @@ local void set_file_type  OF((void));
  * used.
  */
 
-#define MAX(a,b) (a >= b ? a : b)
+#define Max(a,b) (a >= b ? a : b)
 /* the arguments must not have side effects */
 
 /* ===========================================================================
@@ -342,15 +473,19 @@ void ct_init(attr, method)
 
     file_type = attr;
     file_method = method;
-    compressed_len = input_len = 0L;
-        
+    cmpr_bytelen = cmpr_len_bits = 0L;
+#ifdef DEBUG
+    input_len = 0L;
+#endif
+
     if (static_dtree[0].Len != 0) return; /* ct_init already called */
 
 #ifdef DYN_ALLOC
-    d_buf = (ush far*) fcalloc(DIST_BUFSIZE, sizeof(ush));
-    l_buf = (uch far*) fcalloc(LIT_BUFSIZE/2, 2);
+    d_buf = (ush far *) zcalloc(DIST_BUFSIZE, sizeof(ush));
+    l_buf = (uch far *) zcalloc(LIT_BUFSIZE/2, 2);
     /* Avoid using the value 64K on 16 bit machines */
-    if (l_buf == NULL || d_buf == NULL) error("ct_init: out of memory");
+    if (l_buf == NULL || d_buf == NULL)
+        ziperr(ZE_MEM, "ct_init: out of memory");
 #endif
 
     /* Initialize the mapping length (0..255) -> length code (0..28) */
@@ -361,7 +496,7 @@ void ct_init(attr, method)
             length_code[length++] = (uch)code;
         }
     }
-    Assert (length == 256, "ct_init: length != 256");
+    Assert(length == 256, "ct_init: length != 256");
     /* Note that the length 255 (match length 258) can be represented
      * in two different ways: code 284 + 5 bits or code 285, so we
      * overwrite length_code[255] to use the best encoding:
@@ -376,7 +511,7 @@ void ct_init(attr, method)
             dist_code[dist++] = (uch)code;
         }
     }
-    Assert (dist == 256, "ct_init: dist != 256");
+    Assert(dist == 256, "ct_init: dist != 256");
     dist >>= 7; /* from now on, all distances are divided by 128 */
     for ( ; code < D_CODES; code++) {
         base_dist[code] = dist << 7;
@@ -384,7 +519,7 @@ void ct_init(attr, method)
             dist_code[256 + dist++] = (uch)code;
         }
     }
-    Assert (dist == 256, "ct_init: 256+dist != 512");
+    Assert(dist == 256, "ct_init: 256+dist != 512");
 
     /* Construct the codes of the static literal tree */
     for (bits = 0; bits <= MAX_BITS; bits++) bl_count[bits] = 0;
@@ -402,7 +537,7 @@ void ct_init(attr, method)
     /* The static distance tree is trivial: */
     for (n = 0; n < D_CODES; n++) {
         static_dtree[n].Len = 5;
-        static_dtree[n].Code = bi_reverse(n, 5);
+        static_dtree[n].Code = (ush)bi_reverse(n, 5);
     }
 
     /* Initialize the first block of the first file: */
@@ -519,7 +654,7 @@ local void gen_bitlen(desc)
         n = heap[h];
         bits = tree[tree[n].Dad].Len + 1;
         if (bits > max_length) bits = max_length, overflow++;
-        tree[n].Len = bits;
+        tree[n].Len = (ush)bits;
         /* We overwrite tree[n].Dad which is no longer needed */
 
         if (n > max_code) continue; /* not a leaf node */
@@ -540,8 +675,8 @@ local void gen_bitlen(desc)
     do {
         bits = max_length-1;
         while (bl_count[bits] == 0) bits--;
-        bl_count[bits]--;      /* move one leaf down the tree */
-        bl_count[bits+1] += 2; /* move one overflow item as its brother */
+        bl_count[bits]--;           /* move one leaf down the tree */
+        bl_count[bits+1] += (ush)2; /* move one overflow item as its brother */
         bl_count[max_length]--;
         /* The brother of the overflow item also moves one step up,
          * but this does not affect bl_count[max_length]
@@ -559,10 +694,10 @@ local void gen_bitlen(desc)
         while (n != 0) {
             m = heap[--h];
             if (m > max_code) continue;
-            if (tree[m].Len != (unsigned) bits) {
+            if (tree[m].Len != (ush)bits) {
                 Trace((stderr,"code %d bits %d->%d\n", m, tree[m].Len, bits));
                 opt_len += ((long)bits-(long)tree[m].Len)*(long)tree[m].Freq;
-                tree[m].Len = bits;
+                tree[m].Len = (ush)bits;
             }
             n--;
         }
@@ -590,12 +725,12 @@ local void gen_codes (tree, max_code)
      * without bit reversal.
      */
     for (bits = 1; bits <= MAX_BITS; bits++) {
-        next_code[bits] = code = (code + bl_count[bits-1]) << 1;
+        next_code[bits] = code = (ush)((code + bl_count[bits-1]) << 1);
     }
     /* Check that the bit counts in bl_count are consistent. The last code
      * must be all ones.
      */
-    Assert (code + bl_count[MAX_BITS]-1 == (1<<MAX_BITS)-1,
+    Assert(code + bl_count[MAX_BITS]-1 == (1<< ((ush) MAX_BITS)) - 1,
             "inconsistent bit counts");
     Tracev((stderr,"\ngen_codes: max_code %d ", max_code));
 
@@ -603,7 +738,7 @@ local void gen_codes (tree, max_code)
         int len = tree[n].Len;
         if (len == 0) continue;
         /* Now reverse the bits */
-        tree[n].Code = bi_reverse(next_code[len]++, len);
+        tree[n].Code = (ush)bi_reverse(next_code[len]++, len);
 
         Tracec(tree != static_ltree, (stderr,"\nn %3d %c l %2d c %4x (%x) ",
              n, (isgraph(n) ? n : ' '), len, tree[n].Code, next_code[len]-1));
@@ -673,9 +808,9 @@ local void build_tree(desc)
         heap[--heap_max] = m;
 
         /* Create a new node father of n and m */
-        tree[node].Freq = tree[n].Freq + tree[m].Freq;
-        depth[node] = (uch) (MAX(depth[n], depth[m]) + 1);
-        tree[n].Dad = tree[m].Dad = node;
+        tree[node].Freq = (ush)(tree[n].Freq + tree[m].Freq);
+        depth[node] = (uch) (Max(depth[n], depth[m]) + 1);
+        tree[n].Dad = tree[m].Dad = (ush)node;
 #ifdef DUMP_BL_TREE
         if (tree == bl_tree) {
             fprintf(stderr,"\nnode %d(%d), sons %d(%d) %d(%d)",
@@ -725,7 +860,7 @@ local void scan_tree (tree, max_code)
         if (++count < max_count && curlen == nextlen) {
             continue;
         } else if (count < min_count) {
-            bl_tree[curlen].Freq += count;
+            bl_tree[curlen].Freq += (ush)count;
         } else if (curlen != 0) {
             if (curlen != prevlen) bl_tree[curlen].Freq++;
             bl_tree[REP_3_6].Freq++;
@@ -837,8 +972,8 @@ local void send_all_trees(lcodes, dcodes, blcodes)
 {
     int rank;                    /* index in bl_order */
 
-    Assert (lcodes >= 257 && dcodes >= 1 && blcodes >= 4, "not enough codes");
-    Assert (lcodes <= L_CODES && dcodes <= D_CODES && blcodes <= BL_CODES,
+    Assert(lcodes >= 257 && dcodes >= 1 && blcodes >= 4, "not enough codes");
+    Assert(lcodes <= L_CODES && dcodes <= D_CODES && blcodes <= BL_CODES,
             "too many codes");
     Tracev((stderr, "\nbl counts: "));
     send_bits(lcodes-257, 5);
@@ -861,7 +996,7 @@ local void send_all_trees(lcodes, dcodes, blcodes)
 /* ===========================================================================
  * Determine the best encoding for the current block: dynamic trees, static
  * trees or store, and output the encoded block to the zip file. This function
- * returns the total compressed length for the file so far.
+ * returns the total compressed length (in bytes) for the file so far.
  */
 ulg flush_block(buf, stored_len, eof)
     char *buf;        /* input block, or NULL if too old */
@@ -894,7 +1029,9 @@ ulg flush_block(buf, stored_len, eof)
     /* Determine the best encoding. Compute first the block length in bytes */
     opt_lenb = (opt_len+3+7)>>3;
     static_lenb = (static_len+3+7)>>3;
+#ifdef DEBUG
     input_len += stored_len; /* for debugging only */
+#endif
 
     Trace((stderr, "\nopt %lu(%lu) stat %lu(%lu) stored %lu lit %u dist %u ",
             opt_lenb, opt_len, static_lenb, static_len, stored_len,
@@ -904,19 +1041,20 @@ ulg flush_block(buf, stored_len, eof)
 
 #ifndef PGP /* PGP can't handle stored blocks */
     /* If compression failed and this is the first and last block,
-     * and if the zip file can be seeked (to rewrite the local header),
      * the whole file is transformed into a stored file:
      */
 #ifdef FORCE_METHOD
-    if (level == 1 && eof && compressed_len == 0L) { /* force stored file */
+    if (level == 1 && eof && file_method != NULL &&
+        cmpr_bytelen == 0L && cmpr_len_bits == 0L) { /* force stored file */
 #else
-    if (stored_len <= opt_lenb && eof && compressed_len == 0L && seekable()) {
+    if (stored_len <= opt_lenb && eof && file_method != NULL &&
+        cmpr_bytelen == 0L && cmpr_len_bits == 0L && seekable()) {
 #endif
         /* Since LIT_BUFSIZE <= 2*WSIZE, the input data must be there: */
         if (buf == NULL) error ("block vanished");
 
         copy_block(buf, (unsigned)stored_len, 0); /* without header */
-        compressed_len = stored_len << 3;
+        cmpr_bytelen = stored_len;
         *file_method = STORE;
     } else
 #endif /* PGP */
@@ -934,8 +1072,8 @@ ulg flush_block(buf, stored_len, eof)
          * transform a block into a stored block.
          */
         send_bits((STORED_BLOCK<<1)+eof, 3);  /* send block type */
-        compressed_len = (compressed_len + 3 + 7) & ~7L;
-        compressed_len += (stored_len + 4) << 3;
+        cmpr_bytelen += ((cmpr_len_bits + 3 + 7) >> 3) + stored_len + 4;
+        cmpr_len_bits = 0L;
 
         copy_block(buf, (unsigned)stored_len, 1); /* with header */
 
@@ -946,14 +1084,19 @@ ulg flush_block(buf, stored_len, eof)
 #endif
         send_bits((STATIC_TREES<<1)+eof, 3);
         compress_block((ct_data near *)static_ltree, (ct_data near *)static_dtree);
-        compressed_len += 3 + static_len;
+        cmpr_len_bits += 3 + static_len;
+        cmpr_bytelen += cmpr_len_bits >> 3;
+        cmpr_len_bits &= 7L;
     } else {
         send_bits((DYN_TREES<<1)+eof, 3);
         send_all_trees(l_desc.max_code+1, d_desc.max_code+1, max_blindex+1);
         compress_block((ct_data near *)dyn_ltree, (ct_data near *)dyn_dtree);
-        compressed_len += 3 + opt_len;
+        cmpr_len_bits += 3 + opt_len;
+        cmpr_bytelen += cmpr_len_bits >> 3;
+        cmpr_len_bits &= 7L;
     }
-    Assert (compressed_len == bits_sent, "bad compressed size");
+    Assert(((cmpr_bytelen << 3) + cmpr_len_bits) == bits_sent,
+            "bad compressed size");
     init_block();
 
     if (eof) {
@@ -966,15 +1109,16 @@ ulg flush_block(buf, stored_len, eof)
 # endif
         memset(window, 0, (unsigned)(2*WSIZE-1)); /* -1 needed if WSIZE=32K */
 #else /* !PGP */
-        Assert (input_len == isize, "bad input size");
+        Assert(input_len == isize, "bad input size");
 #endif
         bi_windup();
-        compressed_len += 7;  /* align on byte boundary */
+        cmpr_len_bits += 7;  /* align on byte boundary */
     }
-    Tracev((stderr,"\ncomprlen %lu(%lu) ", compressed_len>>3,
-           compressed_len-7*eof));
+    Tracev((stderr,"\ncomprlen %lu(%lu) ", cmpr_bytelen + (cmpr_len_bits>>3),
+           (cmpr_bytelen << 3) + cmpr_len_bits - 7*eof));
+    Trace((stderr, "\n"));
 
-    return compressed_len >> 3;
+    return cmpr_bytelen + (cmpr_len_bits >> 3);
 }
 
 /* ===========================================================================
@@ -999,7 +1143,7 @@ int ct_tally (dist, lc)
         dyn_ltree[length_code[lc]+LITERALS+1].Freq++;
         dyn_dtree[d_code(dist)].Freq++;
 
-        d_buf[last_dist++] = dist;
+        d_buf[last_dist++] = (ush)dist;
         flags |= flag_bit;
     }
     flag_bit <<= 1;
@@ -1065,7 +1209,7 @@ local void compress_block(ltree, dtree)
             dist = d_buf[dx++];
             /* Here, dist is the match distance - 1 */
             code = d_code(dist);
-            Assert (code < D_CODES, "bad d_code");
+            Assert(code < D_CODES, "bad d_code");
 
             send_code(code, dtree);       /* send the distance code */
             extra = extra_dbits[code];
@@ -1094,10 +1238,127 @@ local void set_file_type()
     while (n < 7)        bin_freq += dyn_ltree[n++].Freq;
     while (n < 128)    ascii_freq += dyn_ltree[n++].Freq;
     while (n < LITERALS) bin_freq += dyn_ltree[n++].Freq;
-    *file_type = bin_freq > (ascii_freq >> 2) ? BINARY : ASCII;
-#ifndef PGP
-    if (*file_type == BINARY && translate_eol) {
-        warn("-l used on binary file", "");
-    }
+    *file_type = (ush)(bin_freq > (ascii_freq >> 2) ? BINARY : ASCII);
+}
+
+
+/* ===========================================================================
+ * Initialize the bit string routines.
+ */
+void bi_init (tgt_buf, tgt_size, flsh_allowed)
+    char *tgt_buf;
+    unsigned tgt_size;
+    int flsh_allowed;
+{
+    out_buf = tgt_buf;
+    out_size = tgt_size;
+    out_offset = 0;
+    flush_flg = flsh_allowed;
+
+    bi_buf = 0;
+    bi_valid = 0;
+#ifdef DEBUG
+    bits_sent = 0L;
 #endif
 }
+
+#if (!defined(ASMV) || !defined(RISCOS))
+/* ===========================================================================
+ * Send a value on a given number of bits.
+ * IN assertion: length <= 16 and value fits in length bits.
+ */
+local void send_bits(value, length)
+    int value;  /* value to send */
+    int length; /* number of bits */
+{
+#ifdef DEBUG
+    Tracevv((stderr," l %2d v %4x ", length, value));
+    Assert(length > 0 && length <= 15, "invalid length");
+    bits_sent += (ulg)length;
+#endif
+    /* If not enough room in bi_buf, use (bi_valid) bits from bi_buf and
+     * (Buf_size - bi_valid) bits from value to flush the filled bi_buf,
+     * then fill in the rest of (value), leaving (length - (Buf_size-bi_valid))
+     * unused bits in bi_buf.
+     */
+    bi_buf |= (value << bi_valid);
+    bi_valid += length;
+    if (bi_valid > (int)Buf_size) {
+        PUTSHORT(bi_buf);
+        bi_valid -= Buf_size;
+        bi_buf = (unsigned)value >> (length - bi_valid);
+    }
+}
+
+/* ===========================================================================
+ * Reverse the first len bits of a code, using straightforward code (a faster
+ * method would use a table)
+ * IN assertion: 1 <= len <= 15
+ */
+local unsigned bi_reverse(code, len)
+    unsigned code; /* the value to invert */
+    int len;       /* its bit length */
+{
+    register unsigned res = 0;
+    do {
+        res |= code & 1;
+        code >>= 1, res <<= 1;
+    } while (--len > 0);
+    return res >> 1;
+}
+#endif /* !ASMV || !RISCOS */
+
+/* ===========================================================================
+ * Write out any remaining bits in an incomplete byte.
+ */
+local void bi_windup()
+{
+    if (bi_valid > 8) {
+        PUTSHORT(bi_buf);
+    } else if (bi_valid > 0) {
+        PUTBYTE(bi_buf);
+    }
+    if (flush_flg) {
+        flush_outbuf(out_buf, &out_offset);
+    }
+    bi_buf = 0;
+    bi_valid = 0;
+#ifdef DEBUG
+    bits_sent = (bits_sent+7) & ~7;
+#endif
+}
+
+/* ===========================================================================
+ * Copy a stored block to the zip file, storing first the length and its
+ * one's complement if requested.
+ */
+local void copy_block(block, len, header)
+    char *block;  /* the input data */
+    unsigned len; /* its length */
+    int header;   /* true if block header must be written */
+{
+    bi_windup();              /* align on byte boundary */
+
+    if (header) {
+        PUTSHORT((ush)len);
+        PUTSHORT((ush)~len);
+#ifdef DEBUG
+        bits_sent += 2*16;
+#endif
+    }
+    if (flush_flg) {
+        flush_outbuf(out_buf, &out_offset);
+        out_offset = len;
+        flush_outbuf(block, &out_offset);
+    } else if (out_offset + len > out_size) {
+        error("output buffer too small for in-memory compression");
+    } else {
+        memcpy(out_buf + out_offset, block, len);
+        out_offset += len;
+    }
+#ifdef DEBUG
+    bits_sent += (ulg)len<<3;
+#endif
+}
+
+#endif /* !USE_ZLIB */

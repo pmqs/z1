@@ -1,51 +1,105 @@
 /*
+  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
 
- Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly,
- Kai Uwe Rommel and Igor Mandrichenko.
- Permission is granted to any individual or institution to use, copy, or
- redistribute this software so long as all of the original files are included,
- that it is not sold for profit, and that this copyright notice is retained.
-
+  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  (the contents of which are also included in zip.h) for terms of use.
+  If, for some reason, both of these files are missing, the Info-ZIP license
+  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
 */
-
 /*
  *  revision.h by Mark Adler.
  */
 
-#define REVISION 20
-#define PATCHLEVEL 0
-#define VERSION "2.0"
-#define REVDATE "Sept 7th 1993"
+#ifndef __revision_h
+#define __revision_h 1
 
+/* For api version checking */
+#define Z_MAJORVER   2
+#define Z_MINORVER   3
+#define Z_PATCHLEVEL 0
+#define Z_BETALEVEL ""
+
+#define VERSION "2.3"
+#define REVDATE "November 29th 1999"
+
+#define DW_MAJORVER    Z_MAJORVER
+#define DW_MINORVER    Z_MINORVER
+#define DW_PATCHLEVEL  Z_PATCHLEVEL
+
+#ifndef WINDLL
 /* Copyright notice for binary executables--this notice only applies to
  * those (zip, zipcloak, zipsplit, and zipnote), not to this file
  * (revision.h).
  */
 
-#ifndef NOCPYRT
-char *copyright[] = {
-#ifdef VMS
-"Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly",
-"and Igor Mandrichenko. Type '%s \"-L\"' for software license.",
-#else
-# ifdef AMIGA
-"Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly,",
-"John Bush and Paul Kienitz. Type '%s -L' for the software License.",
-# else
-"Copyright (C) 1990-1993 Mark Adler, Richard B. Wales, Jean-loup Gailly",
-"and Kai Uwe Rommel. Type '%s -L' for the software License.",
-# endif /* ?AMIGA */
-#endif /* ?VMS */
+#ifndef DEFCPYRT                     /* copyright[] gets defined only once ! */
+extern ZCONST char *copyright[2];    /* keep array sizes in sync with number */
+extern ZCONST char *swlicense[40];   /*  of text line in definition below !! */
+extern ZCONST char *versinfolines[7];
+
+#else /* DEFCPYRT */
+
+ZCONST char *copyright[] = {
+"Copyright (C) 1990-1999 Info-ZIP",
+"Type '%s \"-L\"' for software license."
+/* XXX still necessary ???? */
+#ifdef AZTEC_C
+,        /* extremely lame compiler bug workaround */
+#endif
 };
-char *disclaimer[] = {
+
+ZCONST char *versinfolines[] = {
+"This is %s %s (%s), by Info-ZIP.",
+"Currently maintained by Onno van der Linden. Please send bug reports to",
+"the authors at Zip-Bugs@lists.wku.edu; see README for details.",
 "",
-"Permission is granted to any individual or institution to use, copy, or",
-"redistribute this executable so long as it is not modified and that it is",
-"not sold for profit.",
-"",
-"LIKE ANYTHING ELSE THAT'S FREE, ZIP AND ITS ASSOCIATED UTILITIES ARE",
-"PROVIDED AS IS AND COME WITH NO WARRANTY OF ANY KIND, EITHER EXPRESSED OR",
-"IMPLIED. IN NO EVENT WILL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY DAMAGES",
-"RESULTING FROM THE USE OF THIS SOFTWARE."
+"Latest sources and executables are at ftp://ftp.cdrom.com/pub/infozip, as of",
+"above date; see http://www.cdrom.com/pub/infozip/Zip.html for other sites.",
+""
 };
-#endif /* !NOCPYRT */
+
+ZCONST char *swlicense[] = {
+"Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.",
+"",
+"For the purposes of this copyright and license, \"Info-ZIP\" is defined as",
+"the following set of individuals:",
+"",
+"   Mark Adler, John Bush, Karl Davis, Harald Denker, Jean-Michel Dubois,",
+"   Jean-loup Gailly, Hunter Goatley, Ian Gorman, Chris Herborth, Dirk Haase,",
+"   Greg Hartwig, Robert Heath, Jonathan Hudson, Paul Kienitz, David Kirschbaum,",
+"   Johnny Lee, Onno van der Linden, Igor Mandrichenko, Steve P. Miller,",
+"   Sergio Monesi, Keith Owens, George Petrov, Greg Roelofs, Kai Uwe Rommel,",
+"   Steve Salisbury, Dave Smith, Christian Spieler, Antoine Verheijen,",
+"   Paul von Behren, Rich Wales, Mike White",
+"",
+"This software is provided \"as is,\" without warranty of any kind, express",
+"or implied.  In no event shall Info-ZIP or its contributors be held liable",
+"for any direct, indirect, incidental, special or consequential damages",
+"arising out of the use of or inability to use this software.",
+"",
+"Permission is granted to anyone to use this software for any purpose,",
+"including commercial applications, and to alter it and redistribute it",
+"freely, subject to the following restrictions:",
+"",
+"    1. Redistributions of source code must retain the above copyright notice,",
+"       definition, disclaimer, and this list of conditions.",
+"",
+"    2. Redistributions in binary form must reproduce the above copyright",
+"       notice, definition, disclaimer, and this list of conditions in",
+"       documentation and/or other materials provided with the distribution.",
+"",
+"    3. Altered versions--including, but not limited to, ports to new operating",
+"       systems, existing ports with new graphical interfaces, and dynamic,",
+"       shared, or static library versions--must be plainly marked as such",
+"       and must not be misrepresented as being the original source.  Such",
+"       altered versions also must not be misrepresented as being Info-ZIP",
+"       releases--including, but not limited to, labeling of the altered",
+"       versions with the names \"Info-ZIP\" (or any variation thereof, including,",
+"       but not limited to, different capitalizations), \"Pocket UnZip,\" \"WiZ\"",
+"       or \"MacZip\" without the explicit permission of Info-ZIP.  Such altered",
+"       versions are further prohibited from misrepresentative use of the",
+"       Zip-Bugs or Info-ZIP e-mail addresses or of the Info-ZIP URL(s).",
+};
+#endif /* DEFCPYRT */
+#endif /* !WINDLL */
+#endif /* !__revision_h */

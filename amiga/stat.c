@@ -1,22 +1,43 @@
+/*
+  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
+
+  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  (the contents of which are also included in zip.h) for terms of use.
+  If, for some reason, both of these files are missing, the Info-ZIP license
+  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
+*/
 /* Here we have a handmade stat() function because Aztec's c.lib stat() */
 /* does not support an st_mode field, which we need... also a chmod().  */
 
 /* This stat() is by Paul Wells, modified by Paul Kienitz. */
-/* for use with Aztec C >= 5.0 and Lattice C <= 4.01  */
+/* Originally for use with Aztec C >= 5.0 and Lattice C <= 4.01  */
+/* Adapted for SAS/C 6.5x by Haidinger Walter */
+
+/* POLICY DECISION: We will not attempt to remove global variables from */
+/* this source file for Aztec C.  These routines are essentially just   */
+/* augmentations of Aztec's c.lib, which is itself not reentrant.  If   */
+/* we want to produce a fully reentrant UnZip, we will have to use a    */
+/* suitable startup module, such as purify.a for Aztec by Paul Kienitz. */
+
+#ifndef __amiga_stat_c
+#define __amiga_stat_c
 
 #include <exec/types.h>
 #include <exec/memory.h>
-#include <libraries/dos.h>
-#include <libraries/dosextens.h>
+#include "amiga/z-stat.h"             /* fake version of stat.h */
+#include <string.h>
+
 #ifdef AZTEC_C
+#  include <libraries/dos.h>
+#  include <libraries/dosextens.h>
 #  include <clib/exec_protos.h>
 #  include <clib/dos_protos.h>
 #  include <pragmas/exec_lib.h>
 #  include <pragmas/dos_lib.h>
-#  include "amiga/z-stat.h"             /* fake version of stat.h */
-#else
+#endif
+#ifdef __SASC
+#  include <sys/dir.h>               /* SAS/C dir function prototypes */
 #  include <sys/types.h>
-#  include <sys/stat.h>
 #  include <proto/exec.h>
 #  include <proto/dos.h>
 #endif
@@ -26,32 +47,48 @@
 #  define FAILURE (0)
 #endif
 
-extern int stat(char *file,struct stat *buf);
+
+void close_leftover_open_dirs(void);    /* prototype */
+
+static DIR *dir_cleanup_list = NULL;    /* for resource tracking */
+
+/* CALL THIS WHEN HANDLING CTRL-C OR OTHER UNEXPECTED EXIT! */
+void close_leftover_open_dirs(void)
+{
+    while (dir_cleanup_list)
+        closedir(dir_cleanup_list);
+}
+
+
+unsigned short disk_not_mounted;
+
+extern int stat(const char *file, struct stat *buf);
 
 stat(file,buf)
-char *file;
+const char *file;
 struct stat *buf;
 {
 
         struct FileInfoBlock *inf;
-        struct FileLock *lock;
-        long ftime;
+        BPTR lock;
+        time_t ftime;
+        struct tm local_tm;
 
-        if( (lock = (struct FileLock *)Lock(file,SHARED_LOCK))==0 )
+        if( (lock = Lock((char *)file,SHARED_LOCK))==0 )
                 /* file not found */
                 return(-1);
 
         if( !(inf = (struct FileInfoBlock *)AllocMem(
                 (long)sizeof(struct FileInfoBlock),MEMF_PUBLIC|MEMF_CLEAR)) )
         {
-                UnLock((BPTR)lock);
+                UnLock(lock);
                 return(-1);
         }
 
-        if( Examine((BPTR)lock,inf)==FAILURE )
+        if( Examine(lock,inf)==FAILURE )
         {
                 FreeMem((char *)inf,(long)sizeof(*inf));
-                UnLock((BPTR)lock);
+                UnLock(lock);
                 return(-1);
         }
 
@@ -61,7 +98,6 @@ struct stat *buf;
         buf->st_uid         =
         buf->st_gid         =
         buf->st_rdev        = 0;
-        
         buf->st_ino         = inf->fib_DiskKey;
         buf->st_blocks      = inf->fib_NumBlocks;
         buf->st_size        = inf->fib_Size;
@@ -78,7 +114,11 @@ struct stat *buf;
                 (86400 * 8 * 365 )                              +
                 (86400 * 2 );  /* two leap years */
 
-    /*  ftime += timezone;  */
+        tzset();
+        /* ftime += timezone; */
+        local_tm = *gmtime(&ftime);
+        local_tm.tm_isdst = -1;
+        ftime = mktime(&local_tm);
 
         buf->st_ctime =
         buf->st_atime =
@@ -96,19 +136,23 @@ struct stat *buf;
 
 }
 
+int fstat(int handle, struct stat *buf)
+{
+    /* fake some reasonable values for stdin */
+    buf->st_mode = (S_IREAD|S_IWRITE|S_IFREG);
+    buf->st_size = -1;
+    buf->st_mtime = time(&buf->st_mtime);
+    return 0;
+}
 
 
-/* opendir(), readdir(), closedir() and rmdir() by Paul Kienitz: */
+/* opendir(), readdir(), closedir(), rmdir(), and chmod() by Paul Kienitz. */
 
-unsigned short disk_not_mounted;
-
-static DIR *dir_cleanup_list = NULL;    /* for resource tracking */
-
-DIR *opendir(char *path)
+DIR *opendir(const char *path)
 {
     DIR *dd = AllocMem(sizeof(DIR), MEMF_PUBLIC);
     if (!dd) return NULL;
-    if (!(dd->d_parentlock = Lock(path, MODE_OLDFILE))) {
+    if (!(dd->d_parentlock = Lock((char *)path, MODE_OLDFILE))) {
         disk_not_mounted = IoErr() == ERROR_DEVICE_NOT_MOUNTED;
         FreeMem(dd, sizeof(DIR));
         return NULL;
@@ -139,44 +183,32 @@ void closedir(DIR *dd)
     }
 }
 
-/* CALL THIS WHEN HANDLING CTRL-C OR OTHER UNEXPECTED EXIT! */
-void close_leftover_open_dirs(void)
+struct dirent *readdir(DIR *dd)
 {
-    while (dir_cleanup_list)
-        closedir(dir_cleanup_list);
-}
-
-DIR *readdir(DIR *dd)
-{
-    return (ExNext(dd->d_parentlock, &dd->d_fib) ? dd : NULL);
-}
-
-int rmdir(char *path)
-{
-    return (DeleteFile(path) ? 0 : IoErr());
-}
-
-
-int chmod(char *filename, int bits)     /* bits are as for st_mode */
-{
-    long protmask = (bits & 0xFF) ^ 0xF;
-    return !SetProtection(filename, protmask);
+    return (ExNext(dd->d_parentlock, &dd->d_fib) ? (struct dirent *)dd : NULL);
 }
 
 
 #ifdef AZTEC_C
 
-/* This here removes unnecessary bulk from the executable with Aztec: */
-void _wb_parse()  { }
+int rmdir(const char *path)
+{
+    return (DeleteFile((char *)path) ? 0 : IoErr());
+}
 
-/* This here pretends we have time zone support and suchlike when we don't: */
-int timezone = 0;
-void tzset()  { }
+int chmod(const char *filename, int bits)       /* bits are as for st_mode */
+{
+    long protmask = (bits & 0xFF) ^ 0xF;
+    return !SetProtection((char *)filename, protmask);
+}
+
+
+/* This here removes unnecessary bulk from the executable with Aztec: */
+void _wb_parse(void)  { }
 
 /* fake a unix function that does not apply to amigados: */
-int umask()  { return 0; }
+int umask(void)  { return 0; }
 
-int _OSERR;
 
 #  include <signal.h>
 
@@ -186,8 +218,8 @@ __signal_return_type signal()  { return SIG_ERR; }
 
 
 /* The following replaces Aztec's argv-parsing function for compatibility with
-the standard AmigaDOS handling of *E, *N, and *".  It also fixes the problem
-the standard _cli_parse() has of accepting only lower-ascii characters. */
+Unix-like syntax used on other platforms.  It also fixes the problem the
+standard _cli_parse() has of accepting only lower-ascii characters. */
 
 int _argc, _arg_len;
 char **_argv, *_arg_lin;
@@ -198,6 +230,9 @@ void _cli_parse(struct Process *pp, long alen, register UBYTE *aptr)
     register struct CommandLineInterface *cli;
     register short c;
     register short starred = 0;
+#  ifdef PRESTART_HOOK
+    void Prestart_Hook(void);
+#  endif
 
     cli = (struct CommandLineInterface *) (pp->pr_CLI << 2);
     cp = (UBYTE *) (cli->cli_CommandName << 2);
@@ -210,7 +245,8 @@ void _cli_parse(struct Process *pp, long alen, register UBYTE *aptr)
     for (cp = _arg_lin + c + 1; alen && (*aptr < '\n' || *aptr > '\r'); alen--)
         *cp++ = *aptr++;
     *cp = 0;
-    for (_argc = 1, aptr = cp = _arg_lin + c + 1; ; _argc++) {
+    aptr = cp = _arg_lin + c + 1;
+    for (_argc = 1; ; _argc++) {
         while (*cp == ' ' || *cp == '\t')
             cp++;
         if (!*cp)
@@ -218,21 +254,16 @@ void _cli_parse(struct Process *pp, long alen, register UBYTE *aptr)
         if (*cp == '"') {
             cp++;
             while (c = *cp++) {
-                if (starred) {
-                    if (c | 0x20 == 'n')
-                        *aptr++ = '\n';
-                    else if (c | 0x20 == 'e')
-                        *aptr++ = 27;
-                    else
-                        *aptr++ = c;
-                    starred = 0;
-                } else if (c == '"') {  
+                if (c == '"' && !starred) {
                     *aptr++ = 0;
+                    starred = 0;
                     break;
-                } else if (c == '*')
+                } else if (c == '\\' && !starred)
                     starred = 1;
-                else
+                else {
                     *aptr++ = c;
+                    starred = 0;
+                }
             }
         } else {
             while ((c = *cp++) && c != ' ' && c != '\t')
@@ -252,6 +283,11 @@ void _cli_parse(struct Process *pp, long alen, register UBYTE *aptr)
         cp += strlen(cp) + 1;
     }
     _argv[c] = NULL;
+#  ifdef PRESTART_HOOK
+    Prestart_Hook();
+#  endif
 }
 
 #endif /* AZTEC_C */
+
+#endif /* __amiga_stat_c */

@@ -5,9 +5,9 @@
  *  MS-DOS.  Written by Michael Rendell ({uunet,utai}michael@garfield),
  *  August 1987
  *
- *  Enhanced and ported to OS/2 by Kai Uwe Rommel; added scandir() prototype
- *  December 1989, February 1990
- *  Change of MAXPATHLEN for HPFS, October 1990
+ *  Ported to OS/2 by Kai Uwe Rommel
+ *  Addition of other OS/2 file system specific code
+ *  Placed into the public domain
  */
 
 
@@ -22,7 +22,7 @@
 #define _A_ARCHIVE  0x20
 
 
-struct direct
+struct dirent
 {
   ino_t    d_ino;                   /* a bit of a farce */
   int      d_reclen;                /* more farce */
@@ -59,17 +59,18 @@ typedef struct _dirdesc
 DIR;
 
 
-extern DIR *opendir(char *);
-extern struct direct *readdir(DIR *);
+extern DIR *opendir(const char *);
+extern struct dirent *readdir(DIR *);
 extern void seekdir(DIR *, long);
 extern long telldir(DIR *);
 extern void closedir(DIR *);
 #define rewinddir(dirp) seekdir(dirp, 0L)
 
 int GetFileMode(char *name);
-long GetFileTime(char *name);
-void SetFileTime(char *path, long stamp);
-char *getVolumeLabel(int drive, unsigned long *time, unsigned long *mode);
+ulg GetFileTime(char *name);
+void SetFileTime(char *path, ulg stamp);
+char *getVolumeLabel(int drive, unsigned long *time, unsigned long *mode,
+                     time_t *utim);
 
 int IsFileNameValid(char *name);
 int IsFileSystemFAT(char *dir);
