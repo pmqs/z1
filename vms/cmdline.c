@@ -1,9 +1,9 @@
 /*
-  Copyright (c) 1990-2005 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2006 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 2004-May-22 or later
+  See the accompanying file LICENSE, version 2005-Feb-10 or later
   (the contents of which are also included in zip.h) for terms of use.
-  If, for some reason, both of these files are missing, the Info-ZIP license
+  If, for some reason, all these files are missing, the Info-ZIP license
   also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
 */
 #define module_name VMS_ZIP_CMDLINE
@@ -136,6 +136,7 @@ $DESCRIPTOR(cli_keep_version,   "KEEP_VERSION");        /* -w */
 $DESCRIPTOR(cli_latest,         "LATEST");              /* -o */
 $DESCRIPTOR(cli_level,          "LEVEL");               /* -[0-9] */
 $DESCRIPTOR(cli_license,        "LICENSE");             /* -L */
+$DESCRIPTOR(cli_must_match,     "MUST_MATCH");          /* -MM */
 $DESCRIPTOR(cli_pkzip,          "PKZIP");               /* -k */
 $DESCRIPTOR(cli_quiet,          "QUIET");               /* -q */
 $DESCRIPTOR(cli_recurse,        "RECURSE");             /* -r,-R */
@@ -149,9 +150,11 @@ $DESCRIPTOR(cli_translate_eol,  "TRANSLATE_EOL");       /* -l[l] */
 $DESCRIPTOR(cli_transl_eol_lf,  "TRANSLATE_EOL.LF");    /* -l */
 $DESCRIPTOR(cli_transl_eol_crlf,"TRANSLATE_EOL.CRLF");  /* -ll */
 $DESCRIPTOR(cli_unsfx,          "UNSFX");               /* -J */
-$DESCRIPTOR(cli_verbose,        "VERBOSE");             /* -v */
+$DESCRIPTOR(cli_verbose,        "VERBOSE");             /* -v (?) */
+$DESCRIPTOR(cli_verbose_normal, "VERBOSE.NORMAL");      /* -v */
 $DESCRIPTOR(cli_verbose_more,   "VERBOSE.MORE");        /* -vv */
 $DESCRIPTOR(cli_verbose_debug,  "VERBOSE.DEBUG");       /* -vvv */
+$DESCRIPTOR(cli_verbose_command,"VERBOSE.COMMAND");     /* (none) */
 $DESCRIPTOR(cli_vms,            "VMS");                 /* -V */
 $DESCRIPTOR(cli_vms_all,        "VMS.ALL");             /* -VV */
 
@@ -163,7 +166,7 @@ $DESCRIPTOR(zip_command,        "zip ");
 
 static int show_VMSCLI_help;
 
-#if (defined(__GNUC__) && !defined(zip_clitable))
+#if !defined(zip_clitable)
 #  define zip_clitable ZIP_CLITABLE
 #endif
 #if defined(__DECC) || defined(__GNUC__)
@@ -203,6 +206,7 @@ static unsigned long get_list (struct dsc$descriptor_s *,
                                char **, unsigned long *, unsigned long *);
 static unsigned long get_time (struct dsc$descriptor_s *qual, char *timearg);
 static unsigned long check_cli (struct dsc$descriptor_s *);
+static int verbose_command = 0;
 
 
 #ifdef TEST
@@ -494,13 +498,31 @@ vms_zip_cmdline (int *argc_p, char ***argv_p)
     */
     status = cli$present(&cli_verbose);
     if (status & 1) {
-        *ptr++ = 'v';
-        if ((status = cli$present(&cli_verbose_more)) & 1)
-            *ptr++ = 'v';
-        if ((status = cli$present(&cli_verbose_debug)) & 1) {
-            *ptr++ = 'v';
-            *ptr++ = 'v';
+        int i;
+        int verbo = 0;
+
+        /* /VERBOSE */
+        if ((status = cli$present(&cli_verbose_command)) & 1)
+        {
+            /* /VERBOSE = COMMAND */
+            verbose_command = 1;
         }
+
+        /* Note that any or all of the following options may be
+           specified, and the maximum one is used.
+        */
+        if ((status = cli$present(&cli_verbose_normal)) & 1)
+            /* /VERBOSE [ = NORMAL ] */
+            verbo = 1;
+        if ((status = cli$present(&cli_verbose_more)) & 1)
+            /* /VERBOSE = MORE */
+            verbo = 2;
+        if ((status = cli$present(&cli_verbose_debug)) & 1) {
+            /* /VERBOSE = DEBUG */
+            verbo = 3;
+        }
+        for (i = 0; i < verbo; i++)
+            *ptr++ = 'v';
     }
 
     /*
@@ -587,6 +609,18 @@ vms_zip_cmdline (int *argc_p, char ***argv_p)
         strncpy(&the_cmd_line[x+3], work_str.dsc$a_pointer,
                 work_str.dsc$w_length);
         the_cmd_line[cmdl_len-1] = '\0';
+    }
+
+    /*
+    **  Demand that all input files exist (and wildcards match something).
+    */
+#define OPT_MM  "-MM"           /* Input file specs must exist. */
+    status = cli$present(&cli_must_match);
+    if (status & 1) {
+        x = cmdl_len;
+        cmdl_len += strlen( OPT_MM)+ 1;
+        CHECK_BUFFER_ALLOCATION(the_cmd_line, cmdl_size, cmdl_len)
+        strcpy( &the_cmd_line[ x], OPT_MM);
     }
 
     /*
@@ -768,6 +802,15 @@ vms_zip_cmdline (int *argc_p, char ***argv_p)
     for (x = 0; x < new_argc; x++)
         printf("new_argv[%d] = %s\n", x, new_argv[x]);
 #endif /* TEST || DEBUG */
+
+    /* Show the complete UNIX command line, if requested. */
+    if (verbose_command != 0)
+    {
+        printf( "   UNIX command line args (argc = %d):\n", new_argc);
+        for (x = 0; x < new_argc; x++)
+            printf( "%s\n", new_argv[ x]);
+        printf( "\n");
+    }
 
     /*
     **  All finished.  Return the new argc and argv[] addresses to Zip.
@@ -967,27 +1010,30 @@ void VMSCLI_help(void)  /* VMSCLI version */
 
   /* help array */
   static char *text[] = {
-"Zip %s (%s). Usage: zip==\"$disk:[dir]zip.exe\"",
+"Zip %s (%s). Usage: (zip :== $ dev:[dir]zip_cli.exe)",
 "zip zipfile[.zip] [list] [/EXCL=(xlist)] /options /modifiers",
 "  The default action is to add or replace zipfile entries from list, except",
-"  those in xlist. The include file list may contain the special name - to",
+"  those in xlist. The include file list may contain the special name \"-\" to",
 "  compress standard input.  If both zipfile and list are omitted, zip",
 "  compresses stdin to stdout.",
-"  Type zip -h for Unix style flags.",
+"  Type zip -h for Unix-style flags.",
 "  Major options include:",
-"    /FRESHEN, /UPDATE, /DELETE, /[NO]MOVE, /COMMENTS[={ZIP_FILE|FILES}],",
-"    /LATEST, /TEST, /ADJUST_OFFSETS, /FIX_ARCHIVE[=FULL], /UNSFX",
+"    /DELETE, /FRESHEN, /MOVE, /UPDATE, /TEST, /COMMENTS[={ZIP_FILE|FILES}],",
+"    /LATEST, /ADJUST_OFFSETS, /FIX_ARCHIVE[={NORMAL|FULL}], /UNSFX,",
 "  Modifiers include:",
-"    /EXCLUDE=(file list), /INCLUDE=(file list), /SINCE=\"creation time\",",
+"    /EXCLUDE=(file_list), /EXLIST=file, /INCLUDE=(file_list), /INLIST=file,",
+"    /BATCH[=list_file], /BEFORE=\"creation_time\", /SINCE=\"creation_time\",",
+"    /NORECURSE|/RECURSE[={PATH|FILENAMES}], /STORE_TYPES=(type_list),",
 #if CRYPT
 "\
-    /QUIET,/VERBOSE[=MORE],/[NO]RECURSE,/[NO]DIRNAMES,/JUNK,/ENCRYPT[=\"pwd\"],\
+    /QUIET, /VERBOSE[={MORE|DEBUG}], /[NO]DIRNAMES, /JUNK, /ENCRYPT[=\"pwd\"],\
 ",
 #else /* !CRYPT */
-"    /QUIET, /VERBOSE[=MORE], /[NO]RECURSE, /[NO]DIRNAMES, /JUNK,",
+"    /QUIET, /VERBOSE[={MORE|DEBUG}], /[NO]DIRNAMES, /JUNK,",
 #endif /* ?CRYPT */
-"    /[NO]KEEP_VERSION, /[NO]VMS, /[NO]PKZIP, /TRANSLATE_EOL[={LF|CRLF}],",
-"    /[NO]EXTRA_FIELDS /LEVEL=[0-9], /TEMP_PATH=directory, /BATCH[=list file]"
+"    /LEVEL=[0-9], /[NO]EXTRA_FIELDS, /[NO]KEEP_VERSION, /MUST_MATCH,",
+"    /NOVMS|/VMS[=ALL], /TEMP_PATH=directory, /TRANSLATE_EOL[={LF|CRLF}],",
+"    /[NO]PKZIP"
   };
 
   if (!show_VMSCLI_help) {
