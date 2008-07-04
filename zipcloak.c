@@ -1,19 +1,30 @@
 /*
-  Copyright (c) 1990-2005 Info-ZIP.  All rights reserved.
+  zipcloak.c - Zip 3
 
-  See the accompanying file LICENSE, version 2005-Feb-10 or later
+  Copyright (c) 1990-2008 Info-ZIP.  All rights reserved.
+
+  See the accompanying file LICENSE, version 2007-Mar-4 or later
   (the contents of which are also included in zip.h) for terms of use.
-  If, for some reason, both of these files are missing, the Info-ZIP license
+  If, for some reason, all these files are missing, the Info-ZIP license
   also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
 */
+/*
+   This code was originally written in Europe and could be freely distributed
+   from any country except the U.S.A. If this code was imported into the U.S.A,
+   it could not be re-exported from the U.S.A to another country. (This
+   restriction might seem curious but this is what US law required.)
+
+   Now this code can be freely exported and imported.  See README.CR.
+ */
 #define __ZIPCLOAK_C
 
 #ifndef UTIL
-#define UTIL
+# define UTIL
 #endif
 #include "zip.h"
 #define DEFCPYRT        /* main module: enable copyright string defines! */
 #include "revision.h"
+#include "crc32.h"
 #include "crypt.h"
 #include "ttyio.h"
 #include <signal.h>
@@ -30,8 +41,7 @@ local void license OF((void));
 local void help OF((void));
 local void version_info OF((void));
 
-/* Temporary zip file name and file pointer */
-local char *tempzip;
+/* Temporary zip file pointer */
 local FILE *tempzf;
 
 /* Pointer to CRC-32 table (used for decryption/encryption) */
@@ -41,6 +51,86 @@ ZCONST ulg near *crc_32_tab;
 ZCONST uLongf *crc_32_tab;
 #endif
 
+int set_filetype(out_path)
+  char *out_path;
+{
+#ifdef __BEOS__
+  /* Set the filetype of the zipfile to "application/zip" */
+  setfiletype( out_path, "application/zip" );
+#endif
+
+#ifdef __ATHEOS__
+  /* Set the filetype of the zipfile to "application/x-zip" */
+  setfiletype(out_path, "application/x-zip");
+#endif
+
+#ifdef MACOS
+  /* Set the Creator/Type of the zipfile to 'IZip' and 'ZIP ' */
+  setfiletype(out_path, 'IZip', 'ZIP ');
+#endif
+
+#ifdef RISCOS
+  /* Set the filetype of the zipfile to &DDC */
+  setfiletype(out_path, 0xDDC);
+#endif
+  return ZE_OK;
+}
+
+/* rename a split
+ * A split has a tempfile name until it is closed, then
+ * here rename it as out_path the final name for the split.
+ */
+int rename_split(temp_name, out_path)
+  char *temp_name;
+  char *out_path;
+{
+  int r;
+  /* Replace old zip file with new zip file, leaving only the new one */
+  if ((r = replace(out_path, temp_name)) != ZE_OK)
+  {
+    zipwarn("new zip file left as: ", temp_name);
+    free((zvoid *)tempzip);
+    tempzip = NULL;
+    ZIPERR(r, "was replacing split file");
+  }
+  if (zip_attributes) {
+    setfileattr(out_path, zip_attributes);
+  }
+  return ZE_OK;
+}
+
+void zipmessage_nl(a, nl)
+ZCONST char *a;     /* message string to output */
+int nl;             /* 1 = add nl to end */
+/* If nl false, print a message to mesg without new line.
+   If nl true, print and add new line. */
+{
+  if (noisy) {
+    fprintf(mesg, "%s", a);
+    if (nl) {
+      fprintf(mesg, "\n");
+      mesg_line_started = 0;
+    } else {
+      mesg_line_started = 1;
+    }
+    fflush(mesg);
+  }
+}
+
+void zipmessage(a, b)
+ZCONST char *a, *b;     /* message strings juxtaposed in output */
+/* Print a message to mesg and flush.  Write new line first
+   if current line has output already. */
+{
+  if (noisy) {
+    if (mesg_line_started)
+      fprintf(mesg, "\n");
+    fprintf(mesg, "%s%s\n", a, b);
+    mesg_line_started = 0;
+    fflush(mesg);
+  }
+}
+
 /***********************************************************************
  * Issue a message for the error, clean up files and memory, and exit.
  */
@@ -49,7 +139,7 @@ void ziperr(code, msg)
     ZCONST char *msg;       /* message about how it happened */
 {
     if (PERR(code)) perror("zipcloak error");
-    fprintf(stderr, "zipcloak error: %s (%s)\n", ziperrors[code-1], msg);
+    fprintf(mesg, "zipcloak error: %s (%s)\n", ZIPERRORS(code), msg);
     if (tempzf != NULL) fclose(tempzf);
     if (tempzip != NULL) {
         destroy(tempzip);
@@ -60,12 +150,12 @@ void ziperr(code, msg)
 }
 
 /***********************************************************************
- * Print a warning message to stderr and return.
+ * Print a warning message to mesg (usually stderr) and return.
  */
 void zipwarn(msg1, msg2)
     ZCONST char *msg1, *msg2;   /* message strings juxtaposed in output */
 {
-    fprintf(stderr, "zipcloak warning: %s%s\n", msg1, msg2);
+    fprintf(mesg, "zipcloak warning: %s%s\n", msg1, msg2);
 }
 
 
@@ -78,23 +168,38 @@ local void handler(sig)
 {
 #if (!defined(MSDOS) && !defined(__human68k__) && !defined(RISCOS))
     echon();
-    putc('\n', stderr);
+    putc('\n', mesg);
 #endif
     ziperr(ZE_ABORT +sig-sig, "aborting");
     /* dummy usage of sig to avoid compiler warnings */
 }
 
 
+static ZCONST char *public[] = {
+"The encryption code of this program is not copyrighted and is",
+"put in the public domain. It was originally written in Europe",
+"and can be freely distributed in both source and object forms",
+"from any country, including the USA under License Exception",
+"TSU of the U.S. Export Administration Regulations (section",
+"740.13(e)) of 6 June 2002.  (Prior to January 2000, re-export",
+"from the US was a violation of US law.)"
+};
+
 /***********************************************************************
  * Print license information to stdout.
  */
 local void license()
 {
-    extent i;
+    extent i;             /* counter for copyright array */
 
-    for (i = 0; i < sizeof(swlicense)/sizeof(char *); i++)
+    for (i = 0; i < sizeof(swlicense)/sizeof(char *); i++) {
         puts(swlicense[i]);
+    }
     putchar('\n');
+    printf("Export notice:\n");
+    for (i = 0; i < sizeof(public)/sizeof(char *); i++) {
+        puts(public[i]);
+    }
 }
 
 
@@ -107,14 +212,18 @@ static ZCONST char *help_info[] = {
 "Usage:  zipcloak [-dq] [-b path] zipfile",
 #endif
 "  the default action is to encrypt all unencrypted entries in the zip file",
-"  -d   decrypt--decrypt encrypted entries (copy if given wrong password)",
+"",
+"  -d  --decrypt      decrypt encrypted entries (copy if given wrong password)",
 #ifdef VM_CMS
-"  -b   use \"fm\" as the filemode for the temporary zip file",
+"  -b  --temp-mode    use \"fm\" as the filemode for the temporary zip file",
 #else
-"  -b   use \"path\" for the temporary zip file",
+"  -b  --temp-path    use \"path\" for the temporary zip file",
 #endif
-"  -q   quieter operation, suppress some informational messages",
-"  -h   show this help    -v   show version info    -L   show software license"
+"  -O  --output-file  write output to new zip file",
+"  -q  --quiet        quiet operation, suppress some informational messages",
+"  -h  --help         show this help",
+"  -v  --version      show version info",
+"  -L  --license      show software license"
   };
 
 /***********************************************************************
@@ -153,6 +262,7 @@ local void version_info()
     printf(copyright[i], "zipcloak");
     putchar('\n');
   }
+  putchar('\n');
 
   for (i = 0; i < sizeof(versinfolines)/sizeof(char *); i++)
   {
@@ -169,10 +279,25 @@ local void version_info()
   }
   printf("\t[encryption, version %d.%d%s of %s]\n",
             CR_MAJORVER, CR_MINORVER, CR_BETA_VER, CR_VERSION_DATE);
-
-  for (i = 0; i < sizeof(cryptnote)/sizeof(char *); i++)
-      puts(cryptnote[i]);
 }
+
+/* options for zipcloak - 3/5/2004 EG */
+struct option_struct far options[] = {
+  /* short longopt        value_type        negatable        ID    name */
+#ifdef VM_CMS
+    {"b",  "temp-mode",   o_REQUIRED_VALUE, o_NOT_NEGATABLE, 'b',  "temp file mode"},
+#else
+    {"b",  "temp-path",   o_REQUIRED_VALUE, o_NOT_NEGATABLE, 'b',  "path for temp file"},
+#endif
+    {"d",  "decrypt",     o_NO_VALUE,       o_NOT_NEGATABLE, 'd',  "decrypt"},
+    {"h",  "help",        o_NO_VALUE,       o_NOT_NEGATABLE, 'h',  "help"},
+    {"L",  "license",     o_NO_VALUE,       o_NOT_NEGATABLE, 'L',  "license"},
+    {"l",  "",            o_NO_VALUE,       o_NOT_NEGATABLE, 'L',  "license"},
+    {"O",  "output-file", o_REQUIRED_VALUE, o_NOT_NEGATABLE, 'O',  "output to new archive"},
+    {"v",  "version",     o_NO_VALUE,       o_NOT_NEGATABLE, 'v',  "version"},
+    /* the end of the list */
+    {NULL, NULL,          o_NO_VALUE,       o_NOT_NEGATABLE, 0,    NULL} /* end has option_ID = 0 */
+  };
 
 
 /***********************************************************************
@@ -185,20 +310,68 @@ int main(argc, argv)
     char **argv;                /* command line tokens */
 {
     int attr;                   /* attributes of zip file */
-    ulg start_offset;           /* start of central directory */
+    zoff_t start_offset;        /* start of central directory */
     int decrypt;                /* decryption flag */
     int temp_path;              /* 1 if next argument is path for temp files */
     char passwd[IZ_PWLEN+1];    /* password for encryption or decryption */
     char verify[IZ_PWLEN+1];    /* password for encryption or decryption */
+#if 0
     char *q;                    /* steps through option arguments */
     int r;                      /* arg counter */
+#endif
     int res;                    /* result code */
-    ulg length;                 /* length of central directory */
+    zoff_t length;              /* length of central directory */
     FILE *inzip, *outzip;       /* input and output zip files */
     struct zlist far *z;        /* steps through zfiles linked list */
+    /* used by get_option */
+    unsigned long option; /* option ID returned by get_option */
+    int argcnt = 0;       /* current argcnt in args */
+    int argnum = 0;       /* arg number */
+    int optchar = 0;      /* option state */
+    char *value = NULL;   /* non-option arg, option value or NULL */
+    int negated = 0;      /* 1 = option negated */
+    int fna = 0;          /* current first non-opt arg */
+    int optnum = 0;       /* index in table */
+
+    char **args;               /* copy of argv that can be freed */
 
 #ifdef THEOS
     setlocale(LC_CTYPE, "I");
+#endif
+
+#ifdef UNICODE_SUPPORT
+# ifdef UNIX
+  /* For Unix, set the locale to UTF-8.  Any UTF-8 locale is
+     OK and they should all be the same.  This allows seeing,
+     writing, and displaying (if the fonts are loaded) all
+     characters in UTF-8. */
+  {
+    char *loc;
+
+    /*
+      loc = setlocale(LC_CTYPE, NULL);
+      printf("  Initial language locale = '%s'\n", loc);
+    */
+
+    loc = setlocale(LC_CTYPE, "en_US.UTF-8");
+
+    /*
+      printf("langinfo %s\n", nl_langinfo(CODESET));
+    */
+
+    if (loc != NULL) {
+      /* using UTF-8 character set so can set UTF-8 GPBF bit 11 */
+      using_utf8 = 1;
+      /*
+        printf("  Locale set to %s\n", loc);
+      */
+    } else {
+      /*
+        printf("  Could not set Unicode UTF-8 locale\n");
+      */
+    }
+  }
+# endif
 #endif
 
     /* If no args, show help */
@@ -240,6 +413,8 @@ int main(argc, argv)
     signal(SIGSEGV, handler);
 #endif
     temp_path = decrypt = 0;
+#if 0
+    /* old command line */
     for (r = 1; r < argc; r++) {
         if (*argv[r] == '-') {
             if (!argv[r][1]) ziperr(ZE_PARMS, "zip file cannot be stdin");
@@ -282,7 +457,111 @@ int main(argc, argv)
         } /* if */
     } /* for */
 
+#else
+
+    /* new command line */
+
+    zipfile = NULL;
+    out_path = NULL;
+
+    /* make copy of args that can use with insert_arg() */
+    args = copy_args(argv, 0);
+
+    /*
+    -------------------------------------------
+    Process command line using get_option
+    -------------------------------------------
+
+    Each call to get_option() returns either a command
+    line option and possible value or a non-option argument.
+    Arguments are permuted so that all options (-r, -b temp)
+    are returned before non-option arguments (zipfile).
+    Returns 0 when nothing left to read.
+    */
+
+    /* set argnum = 0 on first call to init get_option */
+    argnum = 0;
+
+    /* get_option returns the option ID and updates parameters:
+           args    - usually same as argv if no argument file support
+           argcnt  - current argc for args
+           value   - char* to value (free() when done with it) or NULL if no value
+           negated - option was negated with trailing -
+    */
+
+    while ((option = get_option(&args, &argcnt, &argnum,
+                                &optchar, &value, &negated,
+                                &fna, &optnum, 0)))
+    {
+      switch (option)
+      {
+        case 'b':   /* Specify path for temporary file */
+          if (temp_path) {
+            ziperr(ZE_PARMS, "more than one temp_path");
+          }
+          temp_path = 1;
+          tempath = value;
+          break;
+        case 'd':
+          decrypt = 1;  break;
+        case 'h':   /* Show help */
+          help();
+          EXIT(ZE_OK);
+        case 'l': case 'L':  /* Show copyright and disclaimer */
+          license();
+          EXIT(ZE_OK);
+        case 'O':   /* Output to new zip file instead of updating original zip file */
+          if ((out_path = ziptyp(value)) == NULL) {
+            ziperr(ZE_MEM, "was processing arguments");
+          }
+          free(value);
+          break;
+        case 'q':   /* Quiet operation, suppress info messages */
+          noisy = 0;  break;
+        case 'v':   /* Show version info */
+          version_info();
+          EXIT(ZE_OK);
+        case o_NON_OPTION_ARG:
+          /* not an option */
+          /* no more options as permuting */
+          /* just dash also ends up here */
+
+          if (strcmp(value, "-") == 0) {
+            ziperr(ZE_PARMS, "zip file cannot be stdin");
+          } else if (zipfile != NULL) {
+            ziperr(ZE_PARMS, "can only specify one zip file");
+          }
+
+          if ((zipfile = ziptyp(value)) == NULL) {
+            ziperr(ZE_MEM, "was processing arguments");
+          }
+          free(value);
+          break;
+
+        default:
+          ziperr(ZE_PARMS, "unknown option");
+      }
+    }
+
+    free_args(args);
+
+#endif
+
     if (zipfile == NULL) ziperr(ZE_PARMS, "need to specify zip file");
+
+    /* in_path is the input zip file */
+    if ((in_path = malloc(strlen(zipfile) + 1)) == NULL) {
+      ziperr(ZE_MEM, "input");
+    }
+    strcpy(in_path, zipfile);
+
+    /* out_path defaults to in_path */
+    if (out_path == NULL) {
+      if ((out_path = malloc(strlen(zipfile) + 1)) == NULL) {
+        ziperr(ZE_MEM, "output");
+      }
+      strcpy(out_path, zipfile);
+    }
 
     /* Read zip file */
     if ((res = readzipfile()) != ZE_OK) ziperr(res, zipfile);
@@ -303,9 +582,50 @@ int main(argc, argv)
     attr = getfileattr(zipfile);
 
     /* Open output zip file for writing */
-    if ((tempzf = outzip = fopen(tempzip = tempname(zipfile), FOPW)) == NULL) {
+#if defined(UNIX) && !defined(NO_MKSTEMP)
+    {
+      int yd;
+      int i;
+
+      /* use mkstemp to avoid race condition and compiler warning */
+
+      if (tempath != NULL)
+      {
+        /* if -b used to set temp file dir use that for split temp */
+        if ((tempzip = malloc(strlen(tempath) + 12)) == NULL) {
+          ZIPERR(ZE_MEM, "allocating temp filename");
+        }
+        strcpy(tempzip, tempath);
+        if (lastchar(tempzip) != '/')
+          strcat(tempzip, "/");
+      }
+      else
+      {
+        /* create path by stripping name and appending template */
+        if ((tempzip = malloc(strlen(zipfile) + 12)) == NULL) {
+        ZIPERR(ZE_MEM, "allocating temp filename");
+        }
+        strcpy(tempzip, zipfile);
+        for(i = strlen(tempzip); i > 0; i--) {
+          if (tempzip[i - 1] == '/')
+            break;
+        }
+        tempzip[i] = '\0';
+      }
+      strcat(tempzip, "ziXXXXXX");
+
+      if ((yd = mkstemp(tempzip)) == EOF) {
+        ZIPERR(ZE_TEMP, tempzip);
+      }
+      if ((y = tempzf = outzip = fdopen(yd, FOPW_TMP)) == NULL) {
+        ZIPERR(ZE_TEMP, tempzip);
+      }
+    }
+#else
+    if ((y = tempzf = outzip = fopen(tempzip = tempname(zipfile), FOPW)) == NULL) {
         ziperr(ZE_TEMP, tempzip);
     }
+#endif
 
     /* Get password */
     if (getp("Enter password: ", passwd, IZ_PWLEN+1) == NULL)
@@ -325,9 +645,10 @@ int main(argc, argv)
     }
 
     /* Open input zip file again, copy preamble if any */
-    if ((inzip = fopen(zipfile, FOPR)) == NULL) ziperr(ZE_NAME, zipfile);
+    if ((in_file = fopen(zipfile, FOPR)) == NULL) ziperr(ZE_NAME, zipfile);
 
-    if (zipbeg && (res = fcopy(inzip, outzip, zipbeg)) != ZE_OK) {
+    if (zipbeg && (res = bfcopy(zipbeg)) != ZE_OK)
+    {
         ziperr(res, res == ZE_TEMP ? tempzip : zipfile);
     }
     tempzn = zipbeg;
@@ -337,50 +658,56 @@ int main(argc, argv)
         if (decrypt && (z->flg & 1)) {
             printf("decrypting: %s", z->zname);
             fflush(stdout);
-            if ((res = zipbare(z, inzip, outzip, passwd)) != ZE_OK) {
+            if ((res = zipbare(z, passwd)) != ZE_OK)
+            {
                 if (res != ZE_MISS) ziperr(res, "was decrypting an entry");
                 printf(" (wrong password--just copying)");
+                fflush(stdout);
             }
             putchar('\n');
 
         } else if ((!decrypt) && !(z->flg & 1)) {
             printf("encrypting: %s\n", z->zname);
             fflush(stdout);
-            if ((res = zipcloak(z, inzip, outzip, passwd)) != ZE_OK) {
+            if ((res = zipcloak(z, passwd)) != ZE_OK)
+            {
                 ziperr(res, "was encrypting an entry");
             }
         } else {
             printf("   copying: %s\n", z->zname);
             fflush(stdout);
-            if ((res = zipcopy(z, inzip, outzip)) != ZE_OK) {
+            if ((res = zipcopy(z)) != ZE_OK)
+            {
                 ziperr(res, "was copying an entry");
             }
         } /* if */
     } /* for */
-    fclose(inzip);
+
+    fclose(in_file);
+
 
     /* Write central directory and end of central directory */
 
     /* get start of central */
-    if ((start_offset = (ulg)ftell(outzip)) == (ulg)-1L)
+    if ((start_offset = zftello(outzip)) == (zoff_t)-1)
         ziperr(ZE_TEMP, tempzip);
 
     for (z = zfiles; z != NULL; z = z->nxt) {
-        if ((res = putcentral(z, outzip)) != ZE_OK) ziperr(res, tempzip);
+        if ((res = putcentral(z)) != ZE_OK) ziperr(res, tempzip);
     }
 
     /* get end of central */
-    if ((length = (ulg)ftell(outzip)) == (ulg)-1L)
+    if ((length = zftello(outzip)) == (zoff_t)-1)
         ziperr(ZE_TEMP, tempzip);
 
     length -= start_offset;               /* compute length of central */
-    if ((res = putend((int)zcount, length, start_offset, zcomlen,
-                       zcomment, outzip)) != ZE_OK) {
+    if ((res = putend((zoff_t)zcount, length, start_offset, zcomlen,
+                      zcomment)) != ZE_OK) {
         ziperr(res, tempzip);
     }
     tempzf = NULL;
     if (fclose(outzip)) ziperr(ZE_TEMP, tempzip);
-    if ((res = replace(zipfile, tempzip)) != ZE_OK) {
+    if ((res = replace(out_path, tempzip)) != ZE_OK) {
         zipwarn("new zip file left as: ", tempzip);
         free((zvoid *)tempzip);
         tempzip = NULL;
@@ -393,6 +720,9 @@ int main(argc, argv)
     /* Set the filetype of the zipfile to &DDC */
     setfiletype(zipfile, 0xDDC);
 #endif
+    free((zvoid *)in_path);
+    free((zvoid *)out_path);
+
     free((zvoid *)zipfile);
     zipfile = NULL;
 
@@ -400,6 +730,17 @@ int main(argc, argv)
     RETURN(0);
 }
 #else /* !CRYPT */
+
+
+/* below is only used if crypt is not enabled */
+
+struct option_struct far options[] = {
+  /* short longopt        value_type        negatable        ID    name */
+    {"h",  "help",        o_NO_VALUE,       o_NOT_NEGATABLE, 'h',  "help"},
+    /* the end of the list */
+    {NULL, NULL,          o_NO_VALUE,       o_NOT_NEGATABLE, 0,    NULL} /* end has option_ID = 0 */
+  };
+
 
 int main OF((void));
 
@@ -420,7 +761,7 @@ ZCONST char *h;
 
 int main()
 {
-    fprintf(stderr, "\
+    fprintf(mesg, "\
 This version of ZipCloak does not support encryption.  Get the current Zip\n\
 source distribution and recompile ZipCloak after you have added an option to\n\
 define the symbol USE_CRYPT to the C compiler's command arguments.\n");

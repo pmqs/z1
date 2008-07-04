@@ -55,16 +55,16 @@ _BSS    segment public use32 'DATA'
         extrn   _prev         : word
         extrn   _window       : byte
 _BSS    ends
- 
-    ifdef WATCOM_DSEG
-DGROUP  group   _BSS
-    endif
 
-    ifdef ASM_NEW
+   ifdef WATCOM_DSEG
+DGROUP  group   _BSS
+   endif
+
+   ifdef ASM_NEW
 _TEXT   segment public use32
-    else
+   else
 _TEXT   segment para public use32 'CODE'
-    endif
+   endif
         assume CS: _TEXT
         assume DS: _BSS, ES: _BSS, FS: _BSS
         public  _match_init

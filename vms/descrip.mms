@@ -1,359 +1,358 @@
-# VMS Makefile for Zip, ZipNote, ZipCloak and ZipSplit
-
+#                                               23 February 2007.  SMS.
 #
-#  Modified to support both AXP and VAX by Hunter Goatley, 10-SEP-1993 06:43
-#  Modified (DECC VAX, Zip 2.1) by Christian Spieler, 16-SEP-1995
-#  Modified (Addition of VMS CLI) by Christian Spieler, 10-OCT-1995
-#  Modified (fixed VAXC, changed compiler opts) by C. Spieler, 10-DEC-1995
-#  Modified (removed zipup_.obj from Zip utils) by C. Spieler, 08-JAN-1996
-#  Modified (cmdline$O depends on crypt.h) by C. Spieler, 09-JAN-1996
-#  Modified (split crypt -> crypt, ttyio) by C. Spieler, 16-JAN-1996
-#  Modified (modified VMSCLI compilation) by C. Spieler, 25-JUL-1997
-#  Modified (comment concerning online help) by C. Spieler, 14-OCT-1997
-#  Modified (removed bits.c source file) by C. Spieler, 25-JUN-1998
-#  Last modified (Alpha, IA64 sensing) by Steven Schweda, 30-MAY-2006
+#    Zip 3.0 for VMS - MMS (or MMK) Description File.
 #
-#  To build Zip and the Ziputils, copy this file (DESCRIP.MMS) into the
-#  main directory, then use one of the following commands, depending on
-#  your system.  Modern MMS and MMK versions should correctly determine
-#  the system type without the "/MACRO=" qualifier, but on VAX the
-#  compiler should be specified explicitly, and it should always be safe
-#  to specify the proper system type.  (If you have installed both DEC C
-#  and VAX C on your VAX and want to use VAX C, you should define the
-#  macro "__FORCE_VAXC__" instead of "__VAXC__".)
+# Usage:
 #
-#	$ MMS                                   ! Should work on non-VAX.
+#    MMS /DESCRIP = [.VMS]DESCRIP.MMS [/MACRO = (<see_below>)] [target]
 #
-#	$ MMS/MACRO=(__ALPHA__=1)		! Alpha AXP, (DEC C).
-#	$ MMS/MACRO=(__IA64__=1)		! IA64, (DEC C).
-#	$ MMS/MACRO=(__DECC__=1)		! VAX, using DEC C.
+# Note that this description file must be used from the main
+# distribution directory, not from the [.VMS] subdirectory.
 #
-#	$ MMS/MACRO=(__FORCE_VAXC__=1)		! VAX, using VAX C, not DEC C.
-#	$ MMS/MACRO=(__VAXC__=1)		! VAX, where VAX C is default.
-#	$ MMS/MACRO=(__GNUC__=1)		! VAX, using GNU C.
+# Optional macros:
 #
-#  Other MMS macros intended for use on the MMS command line are:
-#	__DEBUG__=1				! Compile for debugging.
+#    CCOPTS=xxx     Compile with CC options xxx.  For example:
+#                   CCOPTS=/ARCH=HOST
 #
-#  For some discussion on the compiler options used, see documentation
-#  in [.VMS]00README.VMS.
+#    DBG=1          Compile with /DEBUG /NOOPTIMIZE.
+#                   Link with /DEBUG /TRACEBACK.
+#                   (Default is /NOTRACEBACK.)
 #
+#    IM=1           Use the old "IM" scheme for storing VMS/RMS file
+#                   atributes, instead of the newer "PK" scheme.
+#
+#    IZ_BZIP2=dev:[dir]  Add optional BZIP2 support.  The valus of the
+#                        MMS macro IZ_BZIP2 ("dev:[dir]", or a suitable
+#                   logical name) tells where to find "bzlib.h".  The
+#                   BZIP2 object library (LIBBZ2_NS.OLB) is expected to
+#                   be in a "[.dest]" directory under that one
+#                   ("dev:[dir.ALPHAL]", for example), or in that
+#                   directory itself.
+#
+#    LARGE=1        Enable large-file (>2GB) support.  Non-VAX only.
+#
+#    LINKOPTS=xxx   Link with LINK options xxx.  For example:
+#                   LINKOPTS=/NOINFO   
+#
+#    LIST=1         Compile with /LIST /SHOW = (ALL, NOMESSAGES).
+#                   Link with /MAP /CROSS_REFERENCE /FULL.
+#
+#    "LOCAL_ZIP=c_macro_1=value1 [, c_macro_2=value2 [...]]"
+#                   Compile with these additional C macros defined.
+#
+# VAX-specific optional macros:
+#
+#    VAXC=1         Use the VAX C compiler, assuming "CC" runs it.
+#                   (That is, DEC C is not installed, or else DEC C is
+#                   installed, but VAX C is the default.)
+#
+#    FORCE_VAXC=1   Use the VAX C compiler, assuming "CC /VAXC" runs it.
+#                   (That is, DEC C is installed, and it is the
+#                   default, but you want VAX C anyway, you fool.)
+#
+#    GNUC=1         Use the GNU C compiler.  (Seriously under-tested.)
+#
+#
+# The default target, ALL, builds the selected product executables and
+# help files.
+#
+# Other targets:
+#
+#    CLEAN      deletes architecture-specific files, but leaves any
+#               individual source dependency files and the help files.
+#
+#    CLEAN_ALL  deletes all generated files, except the main (collected)
+#               source dependency file.
+#
+#    CLEAN_EXE  deletes only the architecture-specific executables. 
+#               Handy if all you wish to do is re-link the executables.
+#
+# Example commands:
+#
+# To build the conventional small-file product using the DEC/Compaq/HP C
+# compiler (Note: DESCRIP.MMS is the default description file name.):
+#
+#    MMS /DESCRIP = [.VMS]
+#
+# To get the large-file executables (on a non-VAX system):
+#
+#    MMS /DESCRIP = [.VMS] /MACRO = (LARGE=1)
+#
+# To delete the architecture-specific generated files for this system
+# type:
+#
+#    MMS /DESCRIP = [.VMS] /MACRO = (LARGE=1) CLEAN     ! Large-file.
+# or
+#    MMS /DESCRIP = [.VMS] CLEAN                        ! Small-file.
+#
+# To build a complete small-file product for debug with compiler
+# listings and link maps:
+#
+#    MMS /DESCRIP = [.VMS] CLEAN
+#    MMS /DESCRIP = [.VMS] /MACRO = (DBG=1, LIST=1)
+#
+########################################################################
 
-# Define MMK architecture macros when using MMS.
+# Include primary product description file.
 
-.IFDEF __MMK__                  # __MMK__
-.ELSE                           # __MMK__
-ALPHA_X_ALPHA = 1
-IA64_X_IA64 = 1
-VAX_X_VAX = 1
-.IFDEF $(MMS$ARCH_NAME)_X_ALPHA     # $(MMS$ARCH_NAME)_X_ALPHA
-__ALPHA__ = 1
-.ENDIF                              # $(MMS$ARCH_NAME)_X_ALPHA
-.IFDEF $(MMS$ARCH_NAME)_X_IA64      # $(MMS$ARCH_NAME)_X_IA64
-__IA64__ = 1
-.ENDIF                              # $(MMS$ARCH_NAME)_X_IA64
-.IFDEF $(MMS$ARCH_NAME)_X_VAX       # $(MMS$ARCH_NAME)_X_VAX
-__VAX__ = 1
-.ENDIF                              # $(MMS$ARCH_NAME)_X_VAX
-.ENDIF                          # __MMK__
+INCL_DESCRIP_SRC = 1
+.INCLUDE [.VMS]DESCRIP_SRC.MMS
 
-.IFDEF __ALPHA__                # __ALPHA__
-E = .AXP_EXE
-O = .AXP_OBJ
-A = .AXP_OLB
-.ELSE                           # __ALPHA__
-.IFDEF __IA64__                     # __IA64__
-E = .I64_EXE
-O = .I64_OBJ
-A = .I64_OLB
-.ELSE                               # __IA64__
-.IFDEF __DECC__                         # __DECC__
-E = .VAX_DECC_EXE
-O = .VAX_DECC_OBJ
-A = .VAX_DECC_OLB
-.ENDIF                                  # __DECC__
-.IFDEF __FORCE_VAXC__                   # __FORCE_VAXC__
-__VAXC__ = 1
-.ENDIF                                  # __FORCE_VAXC__
-.IFDEF __VAXC__                         # __VAXC__
-E = .VAX_VAXC_EXE
-O = .VAX_VAXC_OBJ
-A = .VAX_VAXC_OLB
-.ENDIF                                  # __VAXC__
-.IFDEF __GNUC__                         # __GNUC__
-E = .VAX_GNUC_EXE
-O = .VAX_GNUC_OBJ
-A = .VAX_GNUC_OLB
-.ENDIF                                  # __GNUC__
-.ENDIF                              # __IA64__
-.ENDIF                          # __ALPHA__
+# Object library names.
 
-.IFDEF O                        # O
-.ELSE                           # O
-!If EXE and OBJ extensions aren't defined, define them
-E = .EXE
-O = .OBJ
-A = .OLB
-.ENDIF                          # O
+LIB_ZIP = [.$(DEST)]ZIP.OLB
+LIB_ZIPCLI = [.$(DEST)]ZIPCLI.OLB
+LIB_ZIPUTILS = [.$(DEST)]ZIPUTILS.OLB
 
-!The following preprocessor macros are set to enable the VMS CLI$ interface:
-CLI_DEFS = VMSCLI,
+# Help file names.
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!! USER CUSTOMIZATION !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! add any other optional preprocessor flags (macros) except VMSCLI to the
-! following line for a custom version (do not forget a trailing comma!!):
-COMMON_DEFS =
-!
-! WARNING: Do not use VMSCLI here!! The creation of a Zip executable
-!          utilizing the VMS CLI$ command interface is handled differently.
-!!!!!!!!!!!!!!!!!!!!!!!! END OF USER CUSTOMIZATION !!!!!!!!!!!!!!!!!!!!!!!!
+ZIP_HELP = ZIP.HLP ZIP_CLI.HLP
 
-.IFDEF __GNUC__
-CC = gcc
-LIBS = ,GNU_CC:[000000]GCCLIB.OLB/LIB
-.ELSE
-CC = cc
-LIBS =
+# Message file names.
+
+ZIP_MSG_MSG = [.VMS]ZIP_MSG.MSG
+ZIP_MSG_EXE = [.$(DEST)]ZIP_MSG.EXE
+ZIP_MSG_OBJ = [.$(DEST)]ZIP_MSG.OBJ
+
+
+# TARGETS.
+
+# Default target, ALL.  Build All Zip executables, utility executables,
+# and help files.
+
+ALL : $(ZIP) $(ZIP_CLI) $(ZIPUTILS) $(ZIP_HELP) $(ZIP_MSG_EXE)
+	@ write sys$output "Done."
+
+# CLEAN target.  Delete the [.$(DEST)] directory and everything in it.
+
+CLEAN :
+	if (f$search( "[.$(DEST)]*.*") .nes. "") then -
+	 delete /noconfirm [.$(DEST)]*.*;*
+	if (f$search( "$(DEST).DIR") .nes. "") then -
+	 set protection = w:d $(DEST).DIR;*
+	if (f$search( "$(DEST).DIR") .nes. "") then -
+	 delete /noconfirm $(DEST).DIR;*
+
+# CLEAN_ALL target.  Delete:
+#    The [.$(DEST)] directories and everything in them.
+#    All help-related derived files,
+#    All individual C dependency files.
+# Also mention:
+#    Comprehensive dependency file.
+
+CLEAN_ALL :
+	if (f$search( "[.ALPHA*]*.*") .nes. "") then -
+	 delete /noconfirm [.ALPHA*]*.*;*
+	if (f$search( "ALPHA*.DIR", 1) .nes. "") then -
+	 set protection = w:d ALPHA*.DIR;*
+	if (f$search( "ALPHA*.DIR", 2) .nes. "") then -
+	 delete /noconfirm ALPHA*.DIR;*
+	if (f$search( "[.IA64*]*.*") .nes. "") then -
+	 delete /noconfirm [.IA64*]*.*;*
+	if (f$search( "IA64*.DIR", 1) .nes. "") then -
+	 set protection = w:d IA64*.DIR;*
+	if (f$search( "IA64*.DIR", 2) .nes. "") then -
+	 delete /noconfirm IA64*.DIR;*
+	if (f$search( "[.VAX*]*.*") .nes. "") then -
+	 delete /noconfirm [.VAX*]*.*;*
+	if (f$search( "VAX*.DIR", 1) .nes. "") then -
+	 set protection = w:d VAX*.DIR;*
+	if (f$search( "VAX*.DIR", 2) .nes. "") then -
+	 delete /noconfirm VAX*.DIR;*
+	if (f$search( "[.vms]ZIP_CLI.RNH") .nes. "") then -
+	 delete /noconfirm [.vms]ZIP_CLI.RNH;*
+	if (f$search( "ZIP_CLI.HLP") .nes. "") then -
+	 delete /noconfirm ZIP_CLI.HLP;*
+	if (f$search( "ZIP.HLP") .nes. "") then -
+	 delete /noconfirm ZIP.HLP;*
+	if (f$search( "*.MMSD") .nes. "") then -
+	 delete /noconfirm *.MMSD;*
+	if (f$search( "[.vms]*.MMSD") .nes. "") then -
+	 delete /noconfirm [.vms]*.MMSD;*
+	@ write sys$output ""
+	@ write sys$output "Note:  This procedure will not"
+	@ write sys$output "   DELETE [.VMS]DESCRIP_DEPS.MMS;*"
+	@ write sys$output -
+ "You may choose to, but a recent version of MMS (V3.5 or newer?) is"
+	@ write sys$output -
+ "needed to regenerate it.  (It may also be recovered from the original"
+	@ write sys$output -
+ "distribution kit.)  See [.VMS]DESCRIP_MKDEPS.MMS for instructions on"
+	@ write sys$output -
+ "generating [.VMS]DESCRIP_DEPS.MMS."
+	@ write sys$output ""
+	@ write sys$output -
+ "It also does not delete the error message source file:"
+	@ write sys$output "   DELETE [.VMS]ZIP_MSG.MSG;*"
+	@ write sys$output -
+ "but it can regenerate it if needed."
+	@ write sys$output ""
+
+# CLEAN_EXE target.  Delete the executables in [.$(DEST)].
+
+CLEAN_EXE :
+	if (f$search( "[.$(DEST)]*.EXE") .nes. "") then -
+	 delete /noconfirm [.$(DEST)]*.EXE;*
+
+
+# Object library module dependencies.
+
+$(LIB_ZIP) : $(LIB_ZIP)($(MODS_OBJS_LIB_ZIP))
+	@ write sys$output "$(MMS$TARGET) updated."
+
+$(LIB_ZIPCLI) : $(LIB_ZIPCLI)($(MODS_OBJS_LIB_ZIPCLI))
+	@ write sys$output "$(MMS$TARGET) updated."
+
+$(LIB_ZIPUTILS) : $(LIB_ZIPUTILS)($(MODS_OBJS_LIB_ZIPUTILS))
+	@ write sys$output "$(MMS$TARGET) updated."
+
+# Module ID options file.
+
+OPT_ID = SYS$DISK:[.VMS]ZIP.OPT
+
+# Default C compile rule.
+
+.C.OBJ :
+	$(CC) $(CFLAGS) $(CDEFS_UNX) $(MMS$SOURCE)
+
+
+# Normal sources in [.VMS].
+
+[.$(DEST)]VMS.OBJ : [.VMS]VMS.C
+[.$(DEST)]VMSMUNCH.OBJ : [.VMS]VMSMUNCH.C
+[.$(DEST)]VMSZIP.OBJ : [.VMS]VMSZIP.C
+
+# Command-line interface files.
+
+[.$(DEST)]CMDLINE.OBJ : [.VMS]CMDLINE.C
+	$(CC) $(CFLAGS) $(CDEFS_CLI) $(MMS$SOURCE)
+
+[.$(DEST)]ZIPCLI.OBJ : ZIP.C
+	$(CC) $(CFLAGS) $(CDEFS_CLI) $(MMS$SOURCE)
+
+[.$(DEST)]ZIP_CLI.OBJ : [.VMS]ZIP_CLI.CLD
+
+# Utility variant sources.
+
+[.$(DEST)]CRC32_.OBJ : CRC32.C
+	$(CC) $(CFLAGS) $(CDEFS_UTIL) $(MMS$SOURCE)
+
+[.$(DEST)]CRYPT_.OBJ : CRYPT.C
+	$(CC) $(CFLAGS) $(CDEFS_UTIL) $(MMS$SOURCE)
+
+[.$(DEST)]FILEIO_.OBJ : FILEIO.C
+	$(CC) $(CFLAGS) $(CDEFS_UTIL) $(MMS$SOURCE)
+
+[.$(DEST)]UTIL_.OBJ : UTIL.C
+	$(CC) $(CFLAGS) $(CDEFS_UTIL) $(MMS$SOURCE)
+
+[.$(DEST)]ZIPFILE_.OBJ : ZIPFILE.C
+	$(CC) $(CFLAGS) $(CDEFS_UTIL) $(MMS$SOURCE)
+
+[.$(DEST)]VMS_.OBJ : [.VMS]VMS.C
+	$(CC) $(CFLAGS) $(CDEFS_UTIL) $(MMS$SOURCE)
+
+# Utility main sources.
+
+[.$(DEST)]ZIPCLOAK.OBJ : ZIPCLOAK.C
+	$(CC) $(CFLAGS) $(CDEFS_UTIL) $(MMS$SOURCE)
+
+[.$(DEST)]ZIPNOTE.OBJ : ZIPNOTE.C
+	$(CC) $(CFLAGS) $(CDEFS_UTIL) $(MMS$SOURCE)
+
+[.$(DEST)]ZIPSPLIT.OBJ : ZIPSPLIT.C
+	$(CC) $(CFLAGS) $(CDEFS_UTIL) $(MMS$SOURCE)
+
+# VAX C LINK options file.
+
+.IFDEF OPT_FILE
+$(OPT_FILE) :
+        open /write opt_file_ln  $(OPT_FILE)
+        write opt_file_ln "SYS$SHARE:VAXCRTL.EXE /SHARE"
+        close opt_file_ln
 .ENDIF
 
-CFLAGS = /NOLIST/INCL=(SYS$DISK:[])
+# Normal Zip executable.
 
-OPTFILE = sys$disk:[.vms]vaxcshr.opt
+$(ZIP) : [.$(DEST)]ZIP.OBJ $(LIB_ZIP) $(OPT_FILE)
+	$(LINK) $(LINKFLAGS) $(MMS$SOURCE), -
+	 $(LIB_ZIP) /include = (GLOBALS $(INCL_BZIP2_M)) /library,  -
+	 $(LIB_BZIP2_OPTS) -
+	 $(LFLAGS_ARCH) -
+	 $(OPT_ID) /options
 
-.IFDEF __ALPHA__                # __ALPHA__
-CFLG_ARCH = /STANDARD=RELAX/PREFIX=ALL/ANSI_ALIAS
-OPTFILE_LIST =
-OPTIONS = $(LIBS)
-.ELSE                           # __ALPHA__
-.IFDEF __IA64__                     # __IA64__
-CFLG_ARCH = /STANDARD=RELAX/PREFIX=ALL/ANSI_ALIAS
-OPTFILE_LIST =
-OPTIONS = $(LIBS)
-.ELSE                               # __IA64__
-.IFDEF __DECC__                         # __DECC__
-CFLG_ARCH = /DECC/STANDARD=RELAX/PREFIX=ALL
-OPTFILE_LIST =
-OPTIONS = $(LIBS)
-.ELSE				        # __DECC__
-.IFDEF __FORCE_VAXC__                       # __FORCE_VAXC__
-CFLG_ARCH = /VAXC
-.ELSE                                       # __FORCE_VAXC__
-CFLG_ARCH =
-.ENDIF                                      # __FORCE_VAXC__
-OPTFILE_LIST = ,$(OPTFILE)
-OPTIONS = $(LIBS),$(OPTFILE)/OPT
-.ENDIF                                  # __DECC__
-.ENDIF                              # __IA64__
-.ENDIF                          # __ALPHA__
+# CLI Zip executable.
 
-.IFDEF __DEBUG__
-CDEB = /DEBUG/NOOPTIMIZE
-LDEB = /DEBUG
-.ELSE
-CDEB =
-LDEB = /NOTRACE
-.ENDIF
+$(ZIP_CLI) : [.$(DEST)]ZIPCLI.OBJ \
+             $(LIB_ZIPCLI) $(OPT_ID) $(OPT_FILE)
+	$(LINK) $(LINKFLAGS) $(MMS$SOURCE), -
+	 $(LIB_ZIPCLI) /library, -
+	 $(LIB_ZIP) /include = (GLOBALS $(INCL_BZIP2_M)) /library, -
+	 $(LIB_BZIP2_OPTS) -
+	 $(LFLAGS_ARCH) -
+	 $(OPT_ID) /options
 
-CFLAGS_ALL  = $(CFLG_ARCH) $(CFLAGS) $(CDEB) -
-	/def=($(COMMON_DEFS) VMS)
-CFLAGS_CLI  = $(CFLG_ARCH) $(CFLAGS) $(CDEB) -
-	/def=($(COMMON_DEFS) $(CLI_DEFS) VMS)
-CFLAGS_UTIL = $(CFLG_ARCH) $(CFLAGS) $(CDEB) -
-	/def=($(COMMON_DEFS) UTIL, VMS)
+# Utility executables.
 
-LINKFLAGS = $(LDEB)
+[.$(DEST)]ZIPCLOAK.EXE : [.$(DEST)]ZIPCLOAK.OBJ \
+                         $(LIB_ZIPUTILS) \
+                         $(OPT_ID) $(OPT_FILE)
+	$(LINK) $(LINKFLAGS) $(MMS$SOURCE), -
+	 $(LIB_ZIPUTILS) /include = (GLOBALS) /library, -
+	 $(LFLAGS_ARCH) -
+	 $(OPT_ID) /options
 
+[.$(DEST)]ZIPNOTE.EXE : [.$(DEST)]ZIPNOTE.OBJ \
+                        $(LIB_ZIPUTILS) \
+                        $(OPT_ID) $(OPT_FILE)
+	$(LINK) $(LINKFLAGS) $(MMS$SOURCE), -
+	 $(LIB_ZIPUTILS) /include = (GLOBALS) /library, -
+	 $(LFLAGS_ARCH) -
+	 $(OPT_ID) /options
 
-OBJM =	zip$(O), zipcli$(O)
-OBJZ =	crc32$(O), crctab$(O), crypt$(O), ttyio$(O), -
-	zipfile$(O), zipup$(O), fileio$(O), globals$(O), util$(O)
-OBJV =	vmszip$(O), vms$(O), vmsmunch$(O)
-OBJI =	deflate$(O), trees$(O)
-OBJU =	ZIPFILE=zipfile_$(O), FILEIO=fileio_$(O), globals$(O), -
-	UTIL=util_$(O), VMS=vms_$(O), vmsmunch$(O)
-OBJR =	crctab$(O), CRYPT=crypt_$(O), ttyio$(O)
-OBJC =	zipcloak$(O)
-OBJN =	zipnote$(O)
-OBJS =	zipsplit$(O)
+[.$(DEST)]ZIPSPLIT.EXE : [.$(DEST)]ZIPSPLIT.OBJ \
+                         $(LIB_ZIPUTILS) \
+                         $(OPT_ID) $(OPT_FILE)
+	$(LINK) $(LINKFLAGS) $(MMS$SOURCE), -
+	 $(LIB_ZIPUTILS) /include = (GLOBALS) /library, -
+	 $(LFLAGS_ARCH) -
+	 $(OPT_ID) /options
 
-ZIPX_UNX = zip
-ZIPX_CLI = zip_cli
-OBJSZIPLIB = $(OBJZ), $(OBJI), $(OBJV)
-OBJSZIP = zip$(O), $(OBJSZIPLIB)
-OBJSCLI = ZIP=zipcli$(O), -
-	ZIP_CLITABLE=zip_cli$(O), VMS_ZIP_CMDLINE=cmdline$(O)
-ZIPHELP_UNX_RNH = [.vms]vms_zip.rnh
-ZIPHELP_CLI_RNH = [.vms]zip_cli.rnh
+# Help files.
 
-OLBZIP = zip$(A)
-OLBCLI = zipcli$(A)
-OLBUTI = ziputils$(A)
+ZIP.HLP : [.VMS]VMS_ZIP.RNH
+	runoff /output = $(MMS$TARGET) $(MMS$SOURCE)
 
-ZIP_H =	zip.h,ziperr.h,tailor.h,[.vms]osdep.h
+ZIP_CLI.HLP : [.VMS]ZIP_CLI.HELP [.VMS]CVTHELP.TPU
+	edit := edit
+	edit /tpu /nosection /nodisplay /command = [.VMS]CVTHELP.TPU -
+	 $(MMS$SOURCE)
+	rename /noconfirm ZIP_CLI.RNH; [.VMS];
+	purge /noconfirm /nolog /keep = 1 [.VMS]ZIP_CLI.RNH
+	runoff /output = $(MMS$TARGET) [.VMS]ZIP_CLI.RNH
 
-ZIPS =	$(ZIPX_UNX)$(E), $(ZIPX_CLI)$(E),-
-	zipcloak$(E), zipnote$(E), zipsplit$(E)
-ZIPHELPS = $(ZIPX_UNX).hlp, $(ZIPX_CLI).hlp
+# Message file.
 
-#
-#  Define our new suffixes list
-#
-.SUFFIXES :
-.SUFFIXES :	$(E) $(A) $(O) .C .MAR .CLD .HLP .RNH
+$(ZIP_MSG_EXE) : $(ZIP_MSG_OBJ)
+	link /shareable = $(MMS$TARGET) $(ZIP_MSG_OBJ)
 
-$(O)$(E) :
-	$(LINK) $(LINKFLAGS) /EXE=$(MMS$TARGET) $(MMS$SOURCE)
+$(ZIP_MSG_OBJ) : $(ZIP_MSG_MSG)
+	message /object = $(MMS$TARGET) /nosymbols $(ZIP_MSG_MSG)
 
-$(O)$(A) :
-	If "''F$Search("$(MMS$TARGET)")'" .EQS. "" Then $(LIBR)/Create $(MMS$TARGET)
-	$(LIBR)$(LIBRFLAGS) $(MMS$TARGET) $(MMS$SOURCE)
+$(ZIP_MSG_MSG) : ZIPERR.H [.VMS]STREAM_LF.FDL [.VMS]VMS_MSG_GEN.C
+	$(CC) /include = [] /object = [.$(DEST)]VMS_MSG_GEN.OBJ -
+	 [.VMS]VMS_MSG_GEN.C 
+	$(LINK) /executable = [.$(DEST)]VMS_MSG_GEN.EXE -
+	 $(LFLAGS_ARCH) -
+	 [.$(DEST)]VMS_MSG_GEN.OBJ
+	create /fdl = [.VMS]STREAM_LF.FDL $(MMS$TARGET)
+	define /user_mode sys$output $(MMS$TARGET)
+	run [.$(DEST)]VMS_MSG_GEN.EXE
+	purge $(MMS$TARGET)
+	delete [.$(DEST)]VMS_MSG_GEN.EXE;*, [.$(DEST)]VMS_MSG_GEN.OBJ;*
 
-.CLD$(O) :
-	SET COMMAND /OBJECT=$(MMS$TARGET) $(CLDFLAGS) $(MMS$SOURCE)
+# Include generated source dependencies.
 
-.c$(O) :
-	$(CC) $(CFLAGS_ALL) /OBJ=$(MMS$TARGET) $(MMS$SOURCE)
+INCL_DESCRIP_DEPS = 1
+.INCLUDE [.VMS]DESCRIP_DEPS.MMS
 
-.RNH.HLP :
-	runoff /out=$@ $<
-
-
-# rules for zip, zipnote, zipsplit, and VMS online help file.
-
-default :	$(ZIPS), $(ZIPHELPS)
-	@ !
-
-vmszip$(O)   : [.vms]vmszip.c
-vmsmunch$(O) : [.vms]vmsmunch.c
-vms$(O)      : [.vms]vms.c [.vms]vms_im.c [.vms]vms_pk.c [.vms]vms.h
-zipcli$(O)   : zip.c
-	$(CC) $(CFLAGS_CLI) /OBJ=$(MMS$TARGET) $<
-cmdline$(O)  : [.vms]cmdline.c $(ZIP_H) crypt.h revision.h
-	$(CC) $(CFLAGS_CLI) /OBJ=$(MMS$TARGET) $<
-zip_cli$(O)  : [.vms]zip_cli.cld
-
-
-zipfile_$(O) :	zipfile.c,[.vms]vmsmunch.h,[.vms]vmsdefs.h
-	$(CC) $(CFLAGS_UTIL) /OBJECT=$(MMS$TARGET) $<
-fileio_$(O)  :	fileio.c
-	$(CC) $(CFLAGS_UTIL) /OBJECT=$(MMS$TARGET) $<
-util_$(O)    :	util.c
-	$(CC) $(CFLAGS_UTIL) /OBJECT=$(MMS$TARGET) $<
-crypt_$(O)   :	crypt.c,crypt.h,ttyio.h
-	$(CC) $(CFLAGS_UTIL) /OBJECT=$(MMS$TARGET) $<
-vms_$(O)     :	[.vms]vms.c,[.vms]vms_im.c,[.vms]vms_pk.c, -
-		[.vms]vms.h,[.vms]vmsdefs.h
-	$(CC) $(CFLAGS_UTIL) /OBJECT=$(MMS$TARGET) $<
-
-$(OBJM),zipcloak$(O),zipnote$(O),zipsplit$(O),zipup$(O) : revision.h
-
-$(OBJM),zipcloak$(O),zipup$(O),crypt$(O),ttyio$(O) : crypt.h
-
-$(OBJM),zipcloak$(O),crypt$(O),ttyio$(O) : ttyio.h
-
-zipup$(O) : [.vms]zipup.h
-
-$(OBJM), zipfile$(O), vmszip$(O), vmsmunch$(O) : [.vms]vmsmunch.h
-
-zipfile$(O), vms$(O), vmsmunch$(O) : [.vms]vmsdefs.h
-
-$(OBJM) : $(ZIP_H)
-$(OBJZ) : $(ZIP_H)
-$(OBJV) : $(ZIP_H)
-$(OBJI) : $(ZIP_H)
-$(OBJU) : $(ZIP_H)
-$(OBJR) : $(ZIP_H)
-$(OBJC) : $(ZIP_H)
-$(OBJN) : $(ZIP_H)
-$(OBJS) : $(ZIP_H)
-
-
-$(ZIPX_UNX)$(E) : $(OLBZIP)($(OBJSZIP))$(OPTFILE_LIST)
-	$(LINK)$(LINKFLAGS) /EXE=$@ -
-	$(OLBZIP)/inc=(zip,globals)/lib$(OPTIONS)
-
-$(ZIPX_CLI)$(E) : $(OLBCLI)($(OBJSCLI)),$(OLBZIP)($(OBJSZIPLIB))$(OPTFILE_LIST)
-	$(LINK)$(LINKFLAGS) /EXE=$@ -
-	$(OLBCLI)/inc=(zip)/lib, $(OLBZIP)/inc=(globals)/lib$(OPTIONS)
-
-zipcloak$(E) : $(OBJC),$(OLBUTI)($(OBJR),$(OBJU))$(OPTFILE_LIST)
-	$(LINK)$(LINKFLAGS) /EXE=$@ $<, -
-	$(OLBUTI)/inc=(globals)/lib$(OPTIONS)
-
-zipnote$(E) : $(OBJN),$(OLBUTI)($(OBJU))$(OPTFILE_LIST)
-	$(LINK)$(LINKFLAGS) /EXE=$@ $<, -
-	$(OLBUTI)/inc=(globals)/lib$(OPTIONS)
-
-zipsplit$(E) : $(OBJS),$(OLBUTI)($(OBJU))$(OPTFILE_LIST)
-	$(LINK)$(LINKFLAGS) /EXE=$@ $<, -
-	$(OLBUTI)/inc=(globals)/lib$(OPTIONS)
-
-$(OPTFILE) :
-	@ open/write tmp $(OPTFILE)
-	@ write tmp "SYS$SHARE:VAXCRTL.EXE/SHARE"
-	@ close tmp
-
-$(ZIPHELP_CLI_RNH) : [.vms]zip_cli.help
-	@ set default [.vms]
-	edit/tpu/nosection/nodisplay/command=cvthelp.tpu zip_cli.help
-	@ set default [-]
-
-$(ZIPX_UNX).hlp : $(ZIPHELP_UNX_RNH)
-	runoff /out=$@ $<
-
-$(ZIPX_CLI).hlp : $(ZIPHELP_CLI_RNH)
-
-clean.com :
-	@ open/write tmp $(MMS$TARGET)
-	@ write tmp "$!"
-	@ write tmp "$!	Clean.com --	procedure to delete files. It always returns success"
-	@ write tmp "$!			status despite any error or warnings. Also it extracts"
-	@ write tmp "$!			filename from MMS ""module=file"" format."
-	@ write tmp "$!"
-	@ write tmp "$ on control_y then goto ctly"
-	@ write tmp "$ if p1.eqs."""" then exit 1"
-	@ write tmp "$ i = -1"
-	@ write tmp "$scan_list:"
-	@ write tmp "$	i = i+1"
-	@ write tmp "$	item = f$elem(i,"","",p1)"
-	@ write tmp "$	if item.eqs."""" then goto scan_list"
-	@ write tmp "$	if item.eqs."","" then goto done		! End of list"
-	@ write tmp "$	item = f$edit(item,""trim"")		! Clean of blanks"
-	@ write tmp "$	wild = f$elem(1,""="",item)"
-	@ write tmp "$	show sym wild"
-	@ write tmp "$	if wild.eqs.""="" then wild = f$elem(0,""="",item)"
-	@ write tmp "$	vers = f$parse(wild,,,""version"",""syntax_only"")"
-	@ write tmp "$	if vers.eqs."";"" then wild = wild - "";"" + "";*"""
-	@ write tmp "$scan:"
-	@ write tmp "$		f = f$search(wild)"
-	@ write tmp "$		if f.eqs."""" then goto scan_list"
-	@ write tmp "$		on error then goto err"
-	@ write tmp "$		on warning then goto warn"
-	@ write tmp "$		delete/log 'f'"
-	@ write tmp "$warn:"
-	@ write tmp "$err:"
-	@ write tmp "$		goto scan"
-	@ write tmp "$done:"
-	@ write tmp "$ctly:"
-	@ write tmp "$	exit 1"
-	@ close tmp
-
-clean : clean.com
-	@clean "$(OBJM)"
-	@clean "$(OBJZ)"
-	@clean "$(OBJI)"
-	@clean "$(OBJV)"
-	@clean "$(OBJU)"
-	@clean "$(OBJR)"
-	@clean "$(OBJN)"
-	@clean "$(OBJS)"
-	@clean "$(OBJC)"
-	@clean "$(OBJSCLI)"
-	@clean "$(OLBZIP)"
-	@clean "$(OLBCLI)"
-	@clean "$(OLBUTI)"
-	@clean "$(OPTFILE)"
-	@clean "$(ZIPS)"
-	@clean "$(ZIPHELP_CLI_RNH)"
-	@clean "$(ZIPHELPS)"
-	- delete/noconfirm/nolog clean.com;*

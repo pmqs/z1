@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 1990-2006 Info-ZIP.  All rights reserved.
+  trees.h - Zip 3
+
+  Copyright (c) 1990-2007 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2005-Feb-10 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -79,7 +81,7 @@
  *      void ct_tally (int dist, int lc);
  *          Save the match info and tally the frequency counts.
  *
- *      ulg flush_block (char *buf, ulg stored_len, int eof)
+ *      uzoff_t flush_block (char *buf, ulg stored_len, int eof)
  *          Determine the best encoding for the current block: dynamic trees,
  *          static trees or store, and output the encoded block to the zip
  *          file. Returns the total compressed length for the file so far.
@@ -115,6 +117,10 @@
  */
 #define __TREES_C
 
+/* Put zip.h first as when using 64-bit file environment in unix ctype.h
+   defines off_t and then while other files are using an 8-byte off_t this
+   file gets a 4-byte off_t.  Once zip.h sets the large file defines can
+   then include ctype.h and get 8-byte off_t.  8/14/04 EG */
 #include "zip.h"
 #include <ctype.h>
 
@@ -327,11 +333,13 @@ local uch flag_bit;         /* current bit used in flags */
 local ulg opt_len;        /* bit length of current block with optimal trees */
 local ulg static_len;     /* bit length of current block with static trees */
 
-local ulg cmpr_bytelen;     /* total byte length of compressed file */
-local ulg cmpr_len_bits;    /* number of bits past 'cmpr_bytelen' */
+/* zip64 support 08/29/2003 R.Nausedat */
+/* now all file sizes and offsets are zoff_t 7/24/04 EG */
+local uzoff_t cmpr_bytelen;     /* total byte length of compressed file */
+local ulg cmpr_len_bits;        /* number of bits past 'cmpr_bytelen' */
 
 #ifdef DEBUG
-local ulg input_len;        /* total byte length of input file */
+local uzoff_t input_len;        /* total byte length of input file */
 /* input_len is for debugging only since we can get it by other means. */
 #endif
 
@@ -405,8 +413,8 @@ unsigned out_size;
 }
 
 #ifdef DEBUG
-local ulg bits_sent;   /* bit length of the compressed data */
-extern ulg isize;      /* byte length of input file */
+local uzoff_t bits_sent;   /* bit length of the compressed data */
+extern uzoff_t isize;      /* byte length of input file */
 #endif
 
 extern long block_start;       /* window offset of current block */
@@ -442,7 +450,7 @@ local void copy_block     OF((char *buf, unsigned len, int header));
 
 #else /* DEBUG */
 #  define send_code(c, tree) \
-     { if (verbose>1) fprintf(stderr,"\ncd %3d ",(c)); \
+     { if (verbose>1) fprintf(mesg,"\ncd %3d ",(c)); \
        send_bits(tree[c].Code, tree[c].Len); }
 #endif
 
@@ -473,9 +481,10 @@ void ct_init(attr, method)
 
     file_type = attr;
     file_method = method;
-    cmpr_bytelen = cmpr_len_bits = 0L;
+    cmpr_len_bits = 0L;
+    cmpr_bytelen = (uzoff_t)0;
 #ifdef DEBUG
-    input_len = 0L;
+    input_len = (uzoff_t)0;
 #endif
 
     if (static_dtree[0].Len != 0) return; /* ct_init already called */
@@ -813,7 +822,7 @@ local void build_tree(desc)
         tree[n].Dad = tree[m].Dad = (ush)node;
 #ifdef DUMP_BL_TREE
         if (tree == bl_tree) {
-            fprintf(stderr,"\nnode %d(%d), sons %d(%d) %d(%d)",
+            fprintf(mesg,"\nnode %d(%d), sons %d(%d) %d(%d)",
                     node, tree[node].Freq, n, tree[n].Freq, m, tree[m].Freq);
         }
 #endif
@@ -984,13 +993,16 @@ local void send_all_trees(lcodes, dcodes, blcodes)
         Tracev((stderr, "\nbl code %2d ", bl_order[rank]));
         send_bits(bl_tree[bl_order[rank]].Len, 3);
     }
-    Tracev((stderr, "\nbl tree: sent %ld", bits_sent));
+    Tracev((stderr, "\nbl tree: sent %s",
+     zip_fuzofft(bits_sent, NULL, NULL)));
 
     send_tree((ct_data near *)dyn_ltree, lcodes-1); /* send the literal tree */
-    Tracev((stderr, "\nlit tree: sent %ld", bits_sent));
+    Tracev((stderr, "\nlit tree: sent %s",
+     zip_fuzofft(bits_sent, NULL, NULL)));
 
     send_tree((ct_data near *)dyn_dtree, dcodes-1); /* send the distance tree */
-    Tracev((stderr, "\ndist tree: sent %ld", bits_sent));
+    Tracev((stderr, "\ndist tree: sent %ld",
+     zip_fuzofft(bits_sent, NULL, NULL)));
 }
 
 /* ===========================================================================
@@ -998,7 +1010,8 @@ local void send_all_trees(lcodes, dcodes, blcodes)
  * trees or store, and output the encoded block to the zip file. This function
  * returns the total compressed length (in bytes) for the file so far.
  */
-ulg flush_block(buf, stored_len, eof)
+/* zip64 support 08/29/2003 R.Nausedat */
+uzoff_t flush_block(buf, stored_len, eof)
     char *buf;        /* input block, or NULL if too old */
     ulg stored_len;   /* length of input block */
     int eof;          /* true if this is the last block for a file */
@@ -1045,10 +1058,12 @@ ulg flush_block(buf, stored_len, eof)
      */
 #ifdef FORCE_METHOD
     if (level == 1 && eof && file_method != NULL &&
-        cmpr_bytelen == 0L && cmpr_len_bits == 0L) { /* force stored file */
+        cmpr_bytelen == (uzoff_t)0 && cmpr_len_bits == 0L
+       ) { /* force stored file */
 #else
     if (stored_len <= opt_lenb && eof && file_method != NULL &&
-        cmpr_bytelen == 0L && cmpr_len_bits == 0L && seekable()) {
+        cmpr_bytelen == (uzoff_t)0 && cmpr_len_bits == 0L &&
+        seekable() && !use_descriptors) {
 #endif
         /* Since LIT_BUFSIZE <= 2*WSIZE, the input data must be there: */
         if (buf == NULL) error ("block vanished");
@@ -1114,8 +1129,9 @@ ulg flush_block(buf, stored_len, eof)
         bi_windup();
         cmpr_len_bits += 7;  /* align on byte boundary */
     }
-    Tracev((stderr,"\ncomprlen %lu(%lu) ", cmpr_bytelen + (cmpr_len_bits>>3),
-           (cmpr_bytelen << 3) + cmpr_len_bits - 7*eof));
+    Tracev((stderr,"\ncomprlen %s(%s) ",
+     zip_fuzofft( cmpr_bytelen + (cmpr_len_bits>>3), NULL, NULL),
+     zip_fuzofft( (cmpr_bytelen << 3) + cmpr_len_bits - 7*eof, NULL, NULL)));
     Trace((stderr, "\n"));
 
     return cmpr_bytelen + (cmpr_len_bits >> 3);
@@ -1252,7 +1268,7 @@ local void set_file_type()
      * set bits 0..6, 14..25, and 28..31
      * 0xf3ffc07f = binary 11110011111111111100000001111111
      */
-    unsigned long mask = 0xf3ffc07fUL;
+    unsigned long mask = 0xf3ffc07fL;
     int n;
 
     /* Check for non-textual ("black-listed") bytes. */
@@ -1295,7 +1311,7 @@ void bi_init (tgt_buf, tgt_size, flsh_allowed)
     bi_buf = 0;
     bi_valid = 0;
 #ifdef DEBUG
-    bits_sent = 0L;
+    bits_sent = (uzoff_t)0;
 #endif
 }
 
@@ -1311,7 +1327,7 @@ local void send_bits(value, length)
 #ifdef DEBUG
     Tracevv((stderr," l %2d v %4x ", length, value));
     Assert(length > 0 && length <= 15, "invalid length");
-    bits_sent += (ulg)length;
+    bits_sent += (uzoff_t)length;
 #endif
     /* If not enough room in bi_buf, use (bi_valid) bits from bi_buf and
      * (Buf_size - bi_valid) bits from value to flush the filled bi_buf,
@@ -1404,7 +1420,7 @@ local void bi_windup()
  * Thanks to the nice people at WinZip for identifying the problem and
  * passing it on.  Also see Changes.
  *
- * 2006-03-05 EG, CS
+ * 2006-03-06 EG, CS
  */
 local void copy_block(block, len, header)
     char *block;  /* the input data */

@@ -1,7 +1,9 @@
 /*
-  Copyright (c) 1990-2005 Info-ZIP.  All rights reserved.
+  zipnote.c - Zip 3
 
-  See the accompanying file LICENSE, version 2005-Feb-10 or later
+  Copyright (c) 1990-2008 Info-ZIP.  All rights reserved.
+
+  See the accompanying file LICENSE, version 2007-Mar-4 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, all these files are missing, the Info-ZIP license
   also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
@@ -32,8 +34,7 @@
 #define MARKE " (comment above this line)"
 #define MARKZ " (zip file comment below this line)"
 
-/* Temporary zip file name and file pointer */
-local char *tempzip;
+/* Temporary zip file pointer */
 local FILE *tempzf;
 
 
@@ -48,6 +49,14 @@ local char *zgetline OF((char *, extent));
 local int catalloc OF((char * far *, char *));
 int main OF((int, char **));
 
+/* keep compiler happy until implement long options - 11/4/2003 EG */
+struct option_struct far options[] = {
+  /* short longopt        value_type        negatable        ID    name */
+    {"h",  "help",        o_NO_VALUE,       o_NOT_NEGATABLE, 'h',  "help"},
+    /* the end of the list */
+    {NULL, NULL,          o_NO_VALUE,       o_NOT_NEGATABLE, 0,    NULL} /* end has option_ID = 0 */
+  };
+
 #ifdef MACOS
 #define ziperr(c, h)    zipnoteerr(c, h)
 #define zipwarn(a, b)   zipnotewarn(a, b)
@@ -60,6 +69,87 @@ void zipnotewarn(ZCONST char *a, ZCONST char *b);
 #define exit(p1) QDOSexit()
 #endif
 
+int set_filetype(out_path)
+  char *out_path;
+{
+#ifdef __BEOS__
+  /* Set the filetype of the zipfile to "application/zip" */
+  setfiletype( out_path, "application/zip" );
+#endif
+
+#ifdef __ATHEOS__
+  /* Set the filetype of the zipfile to "application/x-zip" */
+  setfiletype(out_path, "application/x-zip");
+#endif
+
+#ifdef MACOS
+  /* Set the Creator/Type of the zipfile to 'IZip' and 'ZIP ' */
+  setfiletype(out_path, 'IZip', 'ZIP ');
+#endif
+
+#ifdef RISCOS
+  /* Set the filetype of the zipfile to &DDC */
+  setfiletype(out_path, 0xDDC);
+#endif
+  return ZE_OK;
+}
+
+/* rename a split
+ * A split has a tempfile name until it is closed, then
+ * here rename it as out_path the final name for the split.
+ */
+int rename_split(temp_name, out_path)
+  char *temp_name;
+  char *out_path;
+{
+  int r;
+  /* Replace old zip file with new zip file, leaving only the new one */
+  if ((r = replace(out_path, temp_name)) != ZE_OK)
+  {
+    zipwarn("new zip file left as: ", temp_name);
+    free((zvoid *)tempzip);
+    tempzip = NULL;
+    ZIPERR(r, "was replacing split file");
+  }
+  if (zip_attributes) {
+    setfileattr(out_path, zip_attributes);
+  }
+  return ZE_OK;
+}
+
+void zipmessage_nl(a, nl)
+ZCONST char *a;     /* message string to output */
+int nl;             /* 1 = add nl to end */
+/* If nl false, print a message to mesg without new line.
+   If nl true, print and add new line.  If logfile is
+   open then also write message to log file. */
+{
+  if (noisy) {
+    fprintf(mesg, "%s", a);
+    if (nl) {
+      fprintf(mesg, "\n");
+      mesg_line_started = 0;
+    } else {
+      mesg_line_started = 1;
+    }
+    fflush(mesg);
+  }
+}
+
+void zipmessage(a, b)
+ZCONST char *a, *b;     /* message strings juxtaposed in output */
+/* Print a message to mesg and flush.  Also write to log file if
+   open.  Write new line first if current line has output already. */
+{
+  if (noisy) {
+    if (mesg_line_started)
+      fprintf(mesg, "\n");
+    fprintf(mesg, "%s%s\n", a, b);
+    mesg_line_started = 0;
+    fflush(mesg);
+  }
+}
+
 void ziperr(c, h)
 int c;                  /* error code from the ZE_ class */
 ZCONST char *h;         /* message about how it happened */
@@ -67,7 +157,7 @@ ZCONST char *h;         /* message about how it happened */
 {
   if (PERR(c))
     perror("zipnote error");
-  fprintf(stderr, "zipnote error: %s (%s)\n", ziperrors[c-1], h);
+  fprintf(mesg, "zipnote error: %s (%s)\n", ZIPERRORS(c), h);
   if (tempzf != NULL)
     fclose(tempzf);
   if (tempzip != NULL)
@@ -86,7 +176,7 @@ int s;                  /* signal number (ignored) */
 /* Upon getting a user interrupt, abort cleanly using ziperr(). */
 {
 #ifndef MSDOS
-  putc('\n', stderr);
+  putc('\n', mesg);
 #endif /* !MSDOS */
   ziperr(ZE_ABORT, "aborting");
   s++;                                  /* keep some compilers happy */
@@ -95,9 +185,9 @@ int s;                  /* signal number (ignored) */
 
 void zipwarn(a, b)
 ZCONST char *a, *b;     /* message strings juxtaposed in output */
-/* Print a warning message to stderr and return. */
+/* Print a warning message to mesg (usually stderr) and return. */
 {
-  fprintf(stderr, "zipnote warning: %s%s\n", a, b);
+  fprintf(mesg, "zipnote warning: %s%s\n", a, b);
 }
 
 
@@ -299,19 +389,55 @@ int argc;               /* number of tokens in command line */
 char **argv;            /* command line tokens */
 /* Write the comments in the zipfile to stdout, or read them from stdin. */
 {
-  char a[WRBUFSIZ+1];   /* input line buffer */
-  ulg c;                /* start of central directory */
+  char abf[WRBUFSIZ+1]; /* input line buffer */
+  char *a;              /* pointer to line buffer or NULL */
+  zoff_t c;             /* start of central directory */
   int k;                /* next argument type */
   char *q;              /* steps through option arguments */
   int r;                /* arg counter, temporary variable */
-  ulg s;                /* length of central directory */
+  zoff_t s;             /* length of central directory */
   int t;                /* attributes of zip file */
   int w;                /* true if updating zip file from stdin */
-  FILE *x, *y;          /* input and output zip files */
+  FILE *x;              /* input file for testing if can write it */
   struct zlist far *z;  /* steps through zfiles linked list */
 
 #ifdef THEOS
   setlocale(LC_CTYPE, "I");
+#endif
+
+#ifdef UNICODE_SUPPORT
+# ifdef UNIX
+  /* For Unix, set the locale to UTF-8.  Any UTF-8 locale is
+     OK and they should all be the same.  This allows seeing,
+     writing, and displaying (if the fonts are loaded) all
+     characters in UTF-8. */
+  {
+    char *loc;
+
+    /*
+      loc = setlocale(LC_CTYPE, NULL);
+      printf("  Initial language locale = '%s'\n", loc);
+    */
+
+    loc = setlocale(LC_CTYPE, "en_US.UTF-8");
+
+    /*
+      printf("langinfo %s\n", nl_langinfo(CODESET));
+    */
+
+    if (loc != NULL) {
+      /* using UTF-8 character set so can set UTF-8 GPBF bit 11 */
+      using_utf8 = 1;
+      /*
+        printf("  Locale set to %s\n", loc);
+      */
+    } else {
+      /*
+        printf("  Could not set Unicode UTF-8 locale\n");
+      */
+    }
+  }
+# endif
 #endif
 
   /* If no args, show help */
@@ -395,6 +521,11 @@ char **argv;            /* command line tokens */
   if (zipfile == NULL)
     ziperr(ZE_PARMS, "need to specify zip file");
 
+  if ((in_path = malloc(strlen(zipfile) + 1)) == NULL) {
+    ziperr(ZE_MEM, "input");
+  }
+  strcpy(in_path, zipfile);
+
   /* Read zip file */
   if ((r = readzipfile()) != ZE_OK)
     ziperr(r, zipfile);
@@ -423,7 +554,7 @@ char **argv;            /* command line tokens */
 
   /* Process stdin, replacing comments */
   z = zfiles;
-  while (zgetline(a, WRBUFSIZ+1) != NULL &&
+  while ((a = zgetline(abf, WRBUFSIZ+1)) != NULL &&
          (a[0] != MARK || strcmp(a + 1, MARKZ)))
   {                                     /* while input and not file comment */
     if (a[0] != MARK || a[1] != ' ')    /* better be "@ name" */
@@ -432,7 +563,7 @@ char **argv;            /* command line tokens */
       z = z->nxt;                       /* allow missing entries in order */
     if (z == NULL)
       ziperr(ZE_NOTE, "unknown entry name");
-    if (zgetline(a, WRBUFSIZ+1) != NULL && a[0] == MARK && a[1] == '=')
+    if ((a = zgetline(abf, WRBUFSIZ+1)) != NULL && a[0] == MARK && a[1] == '=')
     {
       if (z->name != z->iname)
         free((zvoid *)z->iname);
@@ -448,7 +579,7 @@ char **argv;            /* command line tokens */
  * Don't update z->nam here, we need the old value a little later.....
  * The update is handled in zipcopy().
  */
-      zgetline(a, WRBUFSIZ+1);
+      a = zgetline(abf, WRBUFSIZ+1);
     }
     if (z->com)                         /* change zip entry comment */
       free((zvoid *)z->comment);
@@ -456,8 +587,8 @@ char **argv;            /* command line tokens */
     while (a != NULL && *a != MARK)
     {
       if ((r = catalloc(&(z->comment), a)) != ZE_OK)
-        ziperr(r, "was building new comments");
-      zgetline(a, WRBUFSIZ+1);
+        ziperr(r, "was building new zipentry comments");
+      a = zgetline(abf, WRBUFSIZ+1);
     }
     z->com = strlen(z->comment);
     z = z->nxt;                         /* point to next entry */
@@ -465,41 +596,83 @@ char **argv;            /* command line tokens */
   if (a != NULL)                        /* change zip file comment */
   {
     zcomment = malloc(1);  *zcomment = 0;
-    while (zgetline(a, WRBUFSIZ+1) != NULL)
+    while ((a = zgetline(abf, WRBUFSIZ+1)) != NULL)
       if ((r = catalloc(&zcomment, a)) != ZE_OK)
-        ziperr(r, "was building new comments");
+        ziperr(r, "was building new zipfile comment");
     zcomlen = strlen(zcomment);
   }
 
   /* Open output zip file for writing */
+#if defined(UNIX) && !defined(NO_MKSTEMP)
+  {
+    int yd;
+    int i;
+
+    /* use mkstemp to avoid race condition and compiler warning */
+
+    if (tempath != NULL)
+    {
+      /* if -b used to set temp file dir use that for split temp */
+      if ((tempzip = malloc(strlen(tempath) + 12)) == NULL) {
+        ZIPERR(ZE_MEM, "allocating temp filename");
+      }
+      strcpy(tempzip, tempath);
+      if (lastchar(tempzip) != '/')
+        strcat(tempzip, "/");
+    }
+    else
+    {
+      /* create path by stripping name and appending template */
+      if ((tempzip = malloc(strlen(zipfile) + 12)) == NULL) {
+      ZIPERR(ZE_MEM, "allocating temp filename");
+      }
+      strcpy(tempzip, zipfile);
+      for(i = strlen(tempzip); i > 0; i--) {
+        if (tempzip[i - 1] == '/')
+          break;
+      }
+      tempzip[i] = '\0';
+    }
+    strcat(tempzip, "ziXXXXXX");
+
+    if ((yd = mkstemp(tempzip)) == EOF) {
+      ZIPERR(ZE_TEMP, tempzip);
+    }
+    if ((tempzf = y = fdopen(yd, FOPW)) == NULL) {
+      ZIPERR(ZE_TEMP, tempzip);
+    }
+  }
+#else
   if ((tempzf = y = fopen(tempzip = tempname(zipfile), FOPW)) == NULL)
     ziperr(ZE_TEMP, tempzip);
+#endif
 
   /* Open input zip file again, copy preamble if any */
-  if ((x = fopen(zipfile, FOPR)) == NULL)
+  if ((in_file = fopen(zipfile, FOPR)) == NULL)
     ziperr(ZE_NAME, zipfile);
-  if (zipbeg && (r = fcopy(x, y, zipbeg)) != ZE_OK)
+
+  if (zipbeg && (r = bfcopy(zipbeg)) != ZE_OK)
     ziperr(r, r == ZE_TEMP ? tempzip : zipfile);
   tempzn = zipbeg;
 
   /* Go through local entries, copying them over as is */
   fix = 3; /* needed for zipcopy if name changed */
   for (z = zfiles; z != NULL; z = z->nxt) {
-    if ((r = zipcopy(z, x, y)) != ZE_OK)
+    if ((r = zipcopy(z)) != ZE_OK)
       ziperr(r, "was copying an entry");
   }
   fclose(x);
 
   /* Write central directory and end of central directory with new comments */
-  if ((c = ftell(y)) == (ulg)(-1L))    /* get start of central */
+  if ((c = zftello(y)) == (zoff_t)-1)    /* get start of central */
     ziperr(ZE_TEMP, tempzip);
   for (z = zfiles; z != NULL; z = z->nxt)
-    if ((r = putcentral(z, y)) != ZE_OK)
+    if ((r = putcentral(z)) != ZE_OK)
       ziperr(r, tempzip);
-  if ((s = ftell(y)) == (ulg)-1L)    /* get end of central */
+  if ((s = zftello(y)) == (zoff_t)-1)    /* get end of central */
     ziperr(ZE_TEMP, tempzip);
   s -= c;                       /* compute length of central */
-  if ((r = putend((int)zcount, s, c, zcomlen, zcomment, y)) != ZE_OK)
+  if ((r = putend((zoff_t)zcount, s, c, zcomlen, zcomment)) != ZE_OK)
     ziperr(r, tempzip);
   tempzf = NULL;
   if (fclose(y))

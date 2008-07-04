@@ -1,9 +1,11 @@
 /*
-  Copyright (c) 1990-2006 Info-ZIP.  All rights reserved.
+  unix/unix.c - Zip 3
 
-  See the accompanying file LICENSE, version 2005-Feb-10 or later
+  Copyright (c) 1990-2008 Info-ZIP.  All rights reserved.
+
+  See the accompanying file LICENSE, version 2007-Mar-4 or later
   (the contents of which are also included in zip.h) for terms of use.
-  If, for some reason, both of these files are missing, the Info-ZIP license
+  If, for some reason, all these files are missing, the Info-ZIP license
   also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
 */
 #include "zip.h"
@@ -113,7 +115,7 @@ int caseflag;           /* true to force case-sensitive match */
   char *e;              /* pointer to name from readd() */
   int m;                /* matched flag */
   char *p;              /* path for recursion */
-  struct stat s;        /* result of stat() */
+  z_stat s;             /* result of stat() */
   struct zlist far *z;  /* steps through zfiles list */
 
   if (strcmp(n, "-") == 0)   /* if compressing stdin */
@@ -200,20 +202,24 @@ int caseflag;           /* true to force case-sensitive match */
     }
     free((zvoid *)p);
   } /* (s.st_mode & S_IFDIR) */
-#if defined(S_IFIFO) || defined(OS390)
 #ifdef OS390
   else if (S_ISFIFO(s.st_mode))
 #else
   else if ((s.st_mode & S_IFIFO) == S_IFIFO)
 #endif
   {
-    /* FIFO (Named Pipe) - handle as normal file */
-    /* add or remove name of FIFO */
-    if (noisy) zipwarn("FIFO (Named Pipe): ", n);
-    if ((m = newname(n, 0, caseflag)) != ZE_OK)
-      return m;
-  }
-#endif /* S_IFIFO || OS390 */
+    if (allow_fifo) {
+      /* FIFO (Named Pipe) - handle as normal file */
+      /* add or remove name of FIFO */
+      /* zip will stop if FIFO is open and wait for pipe to be fed and closed */
+      if (noisy) zipwarn("Reading FIFO (Named Pipe): ", n);
+      if ((m = newname(n, 0, caseflag)) != ZE_OK)
+        return m;
+    } else {
+      zipwarn("ignoring FIFO (Named Pipe) - use -FI to read: ", n);
+      return ZE_OK;
+    }
+  } /* S_IFIFO */
   else
     zipwarn("ignoring special file: ", n);
   return ZE_OK;
@@ -319,10 +325,10 @@ ulg d;                  /* dos-style time to change it to */
 }
 
 ulg filetime(f, a, n, t)
-  char *f;              /* name of file to get info on */
-  ulg *a;               /* return value: file attributes */
-  long *n;              /* return value: file size */
-  iztimes *t;           /* return value: access, modific. and creation times */
+  char *f;                /* name of file to get info on */
+  ulg *a;                 /* return value: file attributes */
+  zoff_t *n;              /* return value: file size */
+  iztimes *t;             /* return value: access, modific. and creation times */
 /* If file *f does not exist, return 0.  Else, return the file's last
    modified date and time as an MSDOS date and time.  The date and
    time is returned in a long with the date most significant to allow
@@ -335,7 +341,7 @@ ulg filetime(f, a, n, t)
    If f is "-", use standard input as the file. If f is a device, return
    a file size of -1 */
 {
-  struct stat s;        /* results of stat() */
+  z_stat s;         /* results of stat() */
   /* converted to pointer from using FNMAX - 11/8/04 EG */
   char *name;
   int len = strlen(f);
@@ -357,7 +363,7 @@ ulg filetime(f, a, n, t)
     name[len - 1] = '\0';
   /* not all systems allow stat'ing a file with / appended */
   if (strcmp(f, "-") == 0) {
-    if (fstat(fileno(stdin), &s) != 0) {
+    if (zfstat(fileno(stdin), &s) != 0) {
       free(name);
       error("fstat(stdin)");
     }
@@ -423,12 +429,138 @@ ulg filetime(f, a, n, t)
     t->mtime = s.st_mtime;
     t->ctime = t->mtime;   /* best guess, (s.st_ctime: last status change!!) */
   }
-
   return unix2dostime(&s.st_mtime);
 }
 
 
 #ifndef QLZIP /* QLZIP Unix2QDOS cross-Zip supplies an extended variant */
+
+int set_new_unix_extra_field(z, s)
+  struct zlist far *z;
+  z_stat *s;
+  /* New unix extra field.
+     Currently only UIDs and GIDs are stored. */
+{
+  int uid_size;
+  int gid_size;
+  int ef_data_size;
+  char *extra;
+  char *cextra;
+  ulg id;
+  int b;
+
+  uid_size = sizeof(s->st_uid);
+  gid_size = sizeof(s->st_gid);
+
+/* New extra field
+   tag       (2 bytes)
+   size      (2 bytes)
+   version   (1 byte)
+   uid_size  (1 byte - size in bytes)
+   uid       (variable)
+   gid_size  (1 byte - size in bytes)
+   gid       (variable)
+ */
+   
+  ef_data_size = 1 + 1 + uid_size + 1 + gid_size;
+
+  if ((extra = (char *)malloc(z->ext + 4 + ef_data_size)) == NULL)
+    return ZE_MEM;
+  if ((cextra = (char *)malloc(z->ext + 4 + ef_data_size)) == NULL)
+    return ZE_MEM;
+
+  if (z->ext)
+    memcpy(extra, z->extra, z->ext);
+  if (z->cext)
+    memcpy(cextra, z->cextra, z->cext);
+
+  free(z->extra);
+  z->extra = extra;
+  free(z->cextra);
+  z->cextra = cextra;
+
+  z->extra[z->ext + 0] = 'u';
+  z->extra[z->ext + 1] = 'x';
+  z->extra[z->ext + 2] = (char)ef_data_size;     /* length of data part */
+  z->extra[z->ext + 3] = 0;
+  z->extra[z->ext + 4] = 1;                      /* version */
+
+  /* UID */
+  z->extra[z->ext + 5] = (char)(uid_size);       /* uid size in bytes */
+  b = 6;
+  id = (ulg)(s->st_uid);
+  z->extra[z->ext + b] = (char)(id & 0xFF);
+  if (uid_size > 1) {
+    b++;
+    id = id >> 8;
+    z->extra[z->ext + b] = (char)(id & 0xFF);
+    if (uid_size > 2) {
+      b++;
+      id = id >> 8;
+      z->extra[z->ext + b] = (char)(id & 0xFF);
+      b++;
+      id = id >> 8;
+      z->extra[z->ext + b] = (char)(id & 0xFF);
+      if (uid_size == 8) {
+        b++;
+        id = id >> 8;
+        z->extra[z->ext + b] = (char)(id & 0xFF);
+        b++;
+        id = id >> 8;
+        z->extra[z->ext + b] = (char)(id & 0xFF);
+        b++;
+        id = id >> 8;
+        z->extra[z->ext + b] = (char)(id & 0xFF);
+        b++;
+        id = id >> 8;
+        z->extra[z->ext + b] = (char)(id & 0xFF);
+      }
+    }
+  }
+
+  /* GID */
+  b++;
+  z->extra[z->ext + b] = (char)(gid_size);       /* gid size in bytes */
+  b++;
+  id = (ulg)(s->st_gid);
+  z->extra[z->ext + b] = (char)(id & 0xFF);
+  if (gid_size > 1) {
+    b++;
+    id = id >> 8;
+    z->extra[z->ext + b] = (char)(id & 0xFF);
+    if (gid_size > 2) {
+      b++;
+      id = id >> 8;
+      z->extra[z->ext + b] = (char)(id & 0xFF);
+      b++;
+      id = id >> 8;
+      z->extra[z->ext + b] = (char)(id & 0xFF);
+      if (gid_size == 8) {
+        b++;
+        id = id >> 8;
+        z->extra[z->ext + b] = (char)(id & 0xFF);
+        b++;
+        id = id >> 8;
+        z->extra[z->ext + b] = (char)(id & 0xFF);
+        b++;
+        id = id >> 8;
+        z->extra[z->ext + b] = (char)(id & 0xFF);
+        b++;
+        id = id >> 8;
+        z->extra[z->ext + b] = (char)(id & 0xFF);
+      }
+    }
+  }
+
+  /* copy local extra field to central directory extra field */
+  memcpy((z->cextra) + z->cext, (z->extra) + z->ext, 4 + ef_data_size);
+
+  z->ext = z->ext + 4 + ef_data_size;
+  z->cext = z->cext + 4 + ef_data_size;
+
+  return ZE_OK;
+}
+
 
 int set_extra_field(z, z_utim)
   struct zlist far *z;
@@ -436,7 +568,7 @@ int set_extra_field(z, z_utim)
   /* store full data in local header but just modification time stamp info
      in central header */
 {
-  struct stat s;
+  z_stat s;
   char *name;
   int len = strlen(z->name);
 
@@ -458,10 +590,33 @@ int set_extra_field(z, z_utim)
 
 #define EB_L_UT_SIZE    (EB_HEADSIZE + EB_UT_LEN(2))
 #define EB_C_UT_SIZE    (EB_HEADSIZE + EB_UT_LEN(1))
-#define EB_L_UX2_SIZE   (EB_HEADSIZE + EB_UX2_MINLEN)
-#define EB_C_UX2_SIZE   EB_HEADSIZE
-#define EF_L_UNIX_SIZE  (EB_L_UT_SIZE + EB_L_UX2_SIZE)
-#define EF_C_UNIX_SIZE  (EB_C_UT_SIZE + EB_C_UX2_SIZE)
+
+/* The flag UIDGID_NOT_16BIT should be set by the pre-compile configuration
+   script when it detects st_uid or st_gid sizes differing from 16-bit.
+ */
+#ifndef UIDGID_NOT_16BIT
+  /* The following "second-level" check for st_uid and st_gid members being
+     16-bit wide is only added as a safety precaution in case the "first-level"
+     check failed to define the UIDGID_NOT_16BIT symbol.
+     The first-level check should have been implemented in the automatic
+     compile configuration process.
+   */
+# ifdef UIDGID_ARE_16B
+#  undef UIDGID_ARE_16B
+# endif
+  /* The following expression is a compile-time constant and should (hopefully)
+     get optimized away by any sufficiently intelligent compiler!
+   */
+# define UIDGID_ARE_16B  (sizeof(s.st_uid) == 2 && sizeof(s.st_gid) == 2)
+
+# define EB_L_UX2_SIZE   (EB_HEADSIZE + EB_UX2_MINLEN)
+# define EB_C_UX2_SIZE   EB_HEADSIZE
+# define EF_L_UNIX_SIZE  (EB_L_UT_SIZE + (UIDGID_ARE_16B ? EB_L_UX2_SIZE : 0))
+# define EF_C_UNIX_SIZE  (EB_C_UT_SIZE + (UIDGID_ARE_16B ? EB_C_UX2_SIZE : 0))
+#else
+# define EF_L_UNIX_SIZE EB_L_UT_SIZE
+# define EF_C_UNIX_SIZE EB_C_UT_SIZE
+#endif /* !UIDGID_NOT_16BIT */
 
   if ((z->extra = (char *)malloc(EF_L_UNIX_SIZE)) == NULL)
     return ZE_MEM;
@@ -481,20 +636,33 @@ int set_extra_field(z, z_utim)
   z->extra[10] = (char)(s.st_atime >> 8);
   z->extra[11] = (char)(s.st_atime >> 16);
   z->extra[12] = (char)(s.st_atime >> 24);
-  z->extra[13] = 'U';
-  z->extra[14] = 'x';
-  z->extra[15] = (char)EB_UX2_MINLEN;   /* length of data part of local e.f. */
-  z->extra[16] = 0;
-  z->extra[17] = (char)(s.st_uid);
-  z->extra[18] = (char)(s.st_uid >> 8);
-  z->extra[19] = (char)(s.st_gid);
-  z->extra[20] = (char)(s.st_gid >> 8);
+
+#ifndef UIDGID_NOT_16BIT
+  /* Only store the UID and GID in the old Ux extra field if the runtime
+     system provides them in 16-bit wide variables.  */
+  if (UIDGID_ARE_16B) {
+    z->extra[13] = 'U';
+    z->extra[14] = 'x';
+    z->extra[15] = (char)EB_UX2_MINLEN; /* length of data part of local e.f. */
+    z->extra[16] = 0;
+    z->extra[17] = (char)(s.st_uid);
+    z->extra[18] = (char)(s.st_uid >> 8);
+    z->extra[19] = (char)(s.st_gid);
+    z->extra[20] = (char)(s.st_gid >> 8);
+  }
+#endif /* !UIDGID_NOT_16BIT */
+
   z->ext = EF_L_UNIX_SIZE;
 
   memcpy(z->cextra, z->extra, EB_C_UT_SIZE);
   z->cextra[EB_LEN] = (char)EB_UT_LEN(1);
-  memcpy(z->cextra+EB_C_UT_SIZE, z->extra+EB_L_UT_SIZE, EB_C_UX2_SIZE);
-  z->cextra[EB_LEN+EB_C_UT_SIZE] = 0;
+#ifndef UIDGID_NOT_16BIT
+  if (UIDGID_ARE_16B) {
+    /* Copy header of Ux extra field from local to central */
+    memcpy(z->cextra+EB_C_UT_SIZE, z->extra+EB_L_UT_SIZE, EB_C_UX2_SIZE);
+    z->cextra[EB_LEN+EB_C_UT_SIZE] = 0;
+  }
+#endif
   z->cext = EF_C_UNIX_SIZE;
 
 #if 0  /* UID/GID presence is now signaled by central EF_IZUNIX2 field ! */
@@ -508,6 +676,10 @@ int set_extra_field(z, z_utim)
    */
   z->atx |= 0x4000;
 #endif /* never */
+
+  /* new unix extra field */
+  set_new_unix_extra_field(z, &s);
+
   return ZE_OK;
 }
 
@@ -565,7 +737,7 @@ void version_local()
 #  if (defined( __SUNPRO_C))
     char compiler_name[33];
 #  else
-#    if (defined( __HP_cc))
+#    if (defined( __HP_cc) || defined( __IBMC__))
     char compiler_name[33];
 #    else
 #      if (defined( __DECC_VER))
@@ -600,7 +772,7 @@ void version_local()
 #ifdef __GNUC__
 #  ifdef NX_CURRENT_COMPILER_RELEASE
     sprintf(compiler_name, "NeXT DevKit %d.%02d (gcc " __VERSION__ ")",
-        NX_CURRENT_COMPILER_RELEASE/100, NX_CURRENT_COMPILER_RELEASE%100);
+     NX_CURRENT_COMPILER_RELEASE/100, NX_CURRENT_COMPILER_RELEASE%100);
 #    define COMPILER_NAME compiler_name
 #  else
 #    define COMPILER_NAME "gcc " __VERSION__
@@ -635,10 +807,16 @@ void version_local()
     sprintf(compiler_name, "cc version %d", _RELEASE);
 #          define COMPILER_NAME compiler_name
 #        else
-#          ifdef __VERSION__
-#            define COMPILER_NAME "cc " __VERSION__
+#          ifdef __IBMC__
+    sprintf( compiler_name, "IBM C version %d.%d.%d",
+     (__IBMC__/ 100), ((__IBMC__/ 10)% 10), (__IBMC__% 10));
+#            define COMPILER_NAME compiler_name
 #          else
-#            define COMPILER_NAME "cc"
+#            ifdef __VERSION__
+#              define COMPILER_NAME "cc " __VERSION__
+#            else
+#              define COMPILER_NAME "cc "
+#            endif
 #          endif
 #        endif
 #      endif
@@ -797,7 +975,19 @@ void version_local()
 #  define OS_NAME "QNX Neutrino"
 #else
 #ifdef __APPLE__
-#  define OS_NAME "Mac OS X"
+#  ifdef __i386__
+#    define OS_NAME "Mac OS X Intel"
+#  else /* __i386__ */
+#    ifdef __ppc__
+#      define OS_NAME "Mac OS X PowerPC"
+#    else /* __ppc__ */
+#      ifdef __ppc64__
+#        define OS_NAME "Mac OS X PowerPC64"
+#      else /* __ppc64__ */
+#        define OS_NAME "Mac OS X"
+#      endif /* __ppc64__ */
+#    endif /* __ppc__ */
+#  endif /* __i386__ */
 #else
 #  define OS_NAME "Unknown"
 #endif /* Apple */
@@ -840,3 +1030,71 @@ void version_local()
            COMPILER_NAME, OS_NAME, COMPILE_DATE);
 
 } /* end function version_local() */
+
+
+/* 2006-03-23 SMS.
+ * Emergency replacement for strerror().  (Useful on SunOS 4.*.)
+ * Enable by specifying "LOCAL_UNZIP=-DNEED_STRERROR=1" on the "make"
+ * command line.
+ */
+
+#ifdef NEED_STRERROR
+
+char *strerror( err)
+  int err;
+{
+    extern char *sys_errlist[];
+    extern int sys_nerr;
+
+    static char no_msg[ 64];
+
+    if ((err >= 0) && (err < sys_nerr))
+    {
+        return sys_errlist[ err];
+    }
+    else
+    {
+        sprintf( no_msg, "(no message, code = %d.)", err);
+        return no_msg;
+    }
+}
+
+#endif /* def NEED_STRERROR */
+
+
+/* 2006-03-23 SMS.
+ * Emergency replacement for memmove().  (Useful on SunOS 4.*.)
+ * Enable by specifying "LOCAL_UNZIP=-DNEED_MEMMOVE=1" on the "make"
+ * command line.
+ */
+
+#ifdef NEED_MEMMOVE
+
+/* memmove.c -- copy memory.
+   Copy LENGTH bytes from SOURCE to DEST.  Does not null-terminate.
+   In the public domain.
+   By David MacKenzie <djm@gnu.ai.mit.edu>.
+   Adjusted by SMS.
+*/
+
+void *memmove(dest0, source0, length)
+  void *dest0;
+  void const *source0;
+  size_t length;
+{
+    char *dest = dest0;
+    char const *source = source0;
+    if (source < dest)
+        /* Moving from low mem to hi mem; start at end.  */
+        for (source += length, dest += length; length; --length)
+            *--dest = *--source;
+    else if (source != dest)
+    {
+        /* Moving from hi mem to low mem; start at beginning.  */
+        for (; length; --length)
+            *dest++ = *source++;
+    }
+    return dest0;
+}
+
+#endif /* def NEED_MEMMOVE */

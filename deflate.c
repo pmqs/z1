@@ -1,5 +1,7 @@
 /*
-  Copyright (c) 1990-2005 Info-ZIP.  All rights reserved.
+  deflate.c - Zip 3
+
+  Copyright (c) 1990-2007 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2005-Feb-10 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -256,7 +258,8 @@ local config configuration_table[10] = {
  */
 
 local void fill_window   OF((void));
-local ulg deflate_fast   OF((void));
+
+local uzoff_t deflate_fast OF((void));    /* now use uzoff_t 7/24/04 EG */
 
       int  longest_match OF((IPos cur_match));
 #if defined(ASMV) && !defined(RISCOS)
@@ -550,15 +553,15 @@ local void check_match(start, match, length)
     /* check that the match is indeed a match */
     if (memcmp((char*)window + match,
                 (char*)window + start, length) != EQUAL) {
-        fprintf(stderr,
+        fprintf(mesg,
             " start %d, match %d, length %d\n",
             start, match, length);
         error("invalid match");
     }
     if (verbose > 1) {
-        fprintf(stderr,"\\[%d,%d]", start-match, length);
+        fprintf(mesg,"\\[%d,%d]", start-match, length);
 #ifndef WINDLL
-        do { putc(window[start++], stderr); } while (--length != 0);
+        do { putc(window[start++], mesg); } while (--length != 0);
 #else
         do { fprintf(stdout,"%c",window[start++]); } while (--length != 0);
 #endif
@@ -635,11 +638,29 @@ local void fill_window()
                  */
             }
             more += WSIZE;
+            if (dot_size > 0 && !display_globaldots) {
+              /* initial space */
+              if (noisy && dot_count == -1) {
 #ifndef WINDLL
-            if (verbose) putc('.', stderr);
+                putc(' ', mesg);
+                fflush(mesg);
 #else
-            if (verbose) fprintf(stdout,"%c",'.');
+                fprintf(stdout,"%c",' ');
 #endif
+                dot_count++;
+              }
+              dot_count++;
+              if (dot_size <= (dot_count + 1) * WSIZE) dot_count = 0;
+            }
+            if ((verbose || noisy) && dot_size && !dot_count) {
+#ifndef WINDLL
+              putc('.', mesg);
+              fflush(mesg);
+#else
+              fprintf(stdout,"%c",'.');
+#endif
+              mesg_line_started = 1;
+            }
         }
         if (eofile) return;
 
@@ -671,7 +692,7 @@ local void fill_window()
  * new strings in the dictionary only for unmatched strings or for short
  * matches. It is used only for the fast compression options.
  */
-local ulg deflate_fast()
+local uzoff_t deflate_fast()
 {
     IPos hash_head = NIL;       /* head of the hash chain */
     int flush;                  /* set if current block must be flushed */
@@ -770,7 +791,7 @@ local ulg deflate_fast()
  * evaluation for matches: a match is finally adopted only if there is
  * no better match at the next window position.
  */
-ulg deflate()
+uzoff_t deflate()
 {
     IPos hash_head = NIL;       /* head of hash chain */
     IPos prev_match;            /* previous match */
@@ -778,7 +799,7 @@ ulg deflate()
     int match_available = 0;    /* set if previous match exists */
     register unsigned match_length = MIN_MATCH-1; /* length of best match */
 #ifdef DEBUG
-    extern ulg isize;           /* byte length of input file, for debug only */
+    extern uzoff_t isize;       /* byte length of input file, for debug only */
 #endif
 
     if (level <= 3) return deflate_fast(); /* optimized for speed */
