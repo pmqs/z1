@@ -1,9 +1,9 @@
 /*
   qdos/qdos.c
 
-  Copyright (c) 1990-2005 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2014 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 2005-Feb-10 or later
+  See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, all these files are missing, the Info-ZIP license
   also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
@@ -29,7 +29,7 @@
 
 # include <qdos.h>
 
-#if CRYPT
+#ifdef IZ_CRYPT_ANY
 
 char *getp(m, p, n)
     ZCONST char *m;              /* prompt for password */
@@ -56,7 +56,7 @@ char *getp(m, p, n)
                     fputs("\b \b", stderr);
                 }
             }
-            else if (i < n) {
+            else if (i <= n) {
                 p[i++] = c;     /* truncate past n */
                 if(c != '\n') putc('*', stderr);
             }
@@ -72,7 +72,7 @@ char *getp(m, p, n)
 
 } /* end function getp() */
 
-#endif /* CRYPT */
+#endif /* def IZ_CRYPT_ANY */
 
 
 #define __attribute__(p)
@@ -339,7 +339,7 @@ char * ql2Unix (char *qlname)
     {
         *s = 0;
         sts = stat(name, &st);
-        if(deflen && sts ==0 && (st.st_mode & S_IFDIR))
+        if (deflen && (sts == 0) && S_ISDIR( st.st_mode))
         {
             *(path+(s-name)) = '/';
         }
@@ -362,7 +362,7 @@ char * ql2Unix (char *qlname)
             else
                 sts = -1;
 
-            if(sts ==0 && (st.st_mode & S_IFDIR))
+            if ((sts == 0) && S_ISDIR( st.st_mode))
             {
                 *(path+(r-name)) = '/';
                 ldp = r + 1;
@@ -392,7 +392,7 @@ char *LastDir(char *ws)
             p++;
             c = *p;
             *p = 0;
-            if(stat(ws, &s) == 0 && S_ISDIR(s.st_mode))
+            if ((stat(ws, &s) == 0) && S_ISDIR( s.st_mode))
             {
                 q = p;
             }
@@ -494,7 +494,7 @@ int qlwild (char *dnam, short dorecurse, short l)
                 struct stat s;
                 if (stat(dp, &s) == 0)
                 {
-                    if (!(s.st_mode & S_IFDIR))
+                    if (!S_ISDIR( s.st_mode))
                     {
                         return procname(dp, 0);
                     }
@@ -748,7 +748,10 @@ local int GetExtraTime(struct zlist far *z, iztimes *z_utim, unsigned ut_flg)
       eb_c_ptr = malloc(EF_C_UT_UX2_SIZE);
 
     if (eb_c_ptr == NULL)
+    {
+      free(eb_l_ptr);
       return ZE_MEM;
+    }
 
     z->extra = eb_l_ptr;
     eb_l_ptr += z->ext;
@@ -826,7 +829,10 @@ int set_extra_field (struct zlist *z, iztimes *z_utim )
         if ((lq = (qdosextra *) calloc(sizeof(qdosextra), 1)) == NULL)
             return ZE_MEM;
         if ((cq = (qdosextra *) calloc(sizeof(qdosextra), 1)) == NULL)
+        {
+            free(lq);
             return ZE_MEM;
+        }
 
         rv = qlstat(z->name, &(lq->header), &flag);
 

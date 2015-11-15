@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2010 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2014 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -25,21 +25,6 @@
 #include <ctype.h>
 #include <time.h>
 #include <unixlib.h>
-
-/* Judge availability of str[n]casecmp() in C RTL.
-   (Note: This must follow a "#include <decc$types.h>" in something to
-   ensure that __CRTL_VER is as defined as it will ever be.  DEC C on
-   VAX may not define it itself.)
-*/
-#ifdef __CRTL_VER
-#if __CRTL_VER >= 70000000
-#define HAVE_STRCASECMP
-#endif /* __CRTL_VER >= 70000000 */
-#endif /* def __CRTL_VER */
-
-#ifdef HAVE_STRCASECMP
-#include <strings.h>    /* str[n]casecmp() */
-#endif /* def HAVE_STRCASECMP */
 
 #include <dvidef.h>
 #include <lib$routines.h>
@@ -176,12 +161,11 @@ unsigned char char_prop[ 256] = {
 typedef struct zdirent {
   int d_wild;                /* flag for wildcard vs. non-wild */
   struct FAB fab;
-  struct NAM_STRUCT nam;
-  char d_qualwildname[ NAM_MAXRSS+ 1];
-  char d_name[ NAM_MAXRSS+ 1];
+  struct NAMX_STRUCT nam;
+  char d_qualwildname[ NAMX_MAXRSS+ 1];
+  char d_name[ NAMX_MAXRSS+ 1];
 } zDIR;
 
-extern char *label;
 local ulg label_time = 0;
 local ulg label_mode = 0;
 local time_t label_utim = 0;
@@ -346,32 +330,26 @@ local int explicit_dev( char *file_spec)
 {
   int sts;
   struct FAB fab;               /* FAB. */
-  struct NAM_STRUCT nam;        /* NAM[L]. */
+  struct NAMX_STRUCT nam;       /* NAM[L]. */
 
   /* Initialize the FAB and NAM[L], and link the NAM[L] to the FAB. */
-  nam = CC_RMS_NAM;
+  nam = CC_RMS_NAMX;
   fab = cc$rms_fab;
-  fab.FAB_NAM = &nam;
+  fab.FAB_NAMX = &nam;
 
   /* Point the FAB/NAM[L] fields to the actual name and default name. */
-
-#ifdef NAML$C_MAXRSS
-
-  fab.fab$l_dna = (char *) -1;  /* Using NAML for default name. */
-  fab.fab$l_fna = (char *) -1;  /* Using NAML for file name. */
-
-#endif /* def NAML$C_MAXRSS */
+  NAMX_DNA_FNA_SET( fab)
 
   /* File name. */
   FAB_OR_NAML( fab, nam).FAB_OR_NAML_FNA = file_spec;
   FAB_OR_NAML( fab, nam).FAB_OR_NAML_FNS = strlen( file_spec);
 
-  nam.NAM_NOP = NAM_M_SYNCHK;   /* Syntax-only analysis. */
+  nam.NAMX_NOP = NAMX_M_SYNCHK; /* Syntax-only analysis. */
   sts = sys$parse( &fab, 0, 0); /* Parse the file spec. */
 
   /* Device found = $PARSE success and "device was explicit" flag. */
   return (((sts& STS$M_SEVERITY) == STS$M_SUCCESS) &&
-   ((nam.NAM_FNB& NAM_M_EXP_DEV) != 0));
+   ((nam.NAMX_FNB& NAMX_M_EXP_DEV) != 0));
 }
 
 
@@ -569,6 +547,54 @@ local int file_sys_type( char *path)
   return acp_code;
 }
 
+
+/* 2013-02-18 SMS.
+ * get_volume_label( int len, char *pth)
+ *
+ * Return pointer to static volume name for the specified device.
+ */
+local char *get_volume_label( int len, char *pth)
+{
+  char *lbl = NULL;
+  int sts;
+  char vol_nam[ 33];    /* Include NUL-term.  Actual max = ??? */
+
+  /* Volume label descriptor. */
+  struct dsc$descriptor_s vol_nam_descr =
+   { ((sizeof vol_nam)- 1), DSC$K_DTYPE_T, DSC$K_CLASS_S, NULL };
+  unsigned short vol_nam_len;
+
+  struct dsc$descriptor_s dev_descr =
+   { 0, DSC$K_DTYPE_T, DSC$K_CLASS_S, 0 };
+
+  vol_nam_descr.dsc$a_pointer = vol_nam;
+
+  /* Load path arguments into device descriptor. */
+  dev_descr.dsc$a_pointer = pth;
+  dev_descr.dsc$w_length = len;
+
+  /* Get volume name. */
+  sts = lib$getdvi( &((int) DVI$_VOLNAM),       /* Item code. */
+                    0,                          /* Channel. */
+                    &dev_descr,                 /* Device name. */
+                    0,                          /* Result buffer (int). */
+                    &vol_nam_descr,             /* Result buffer (str). */
+                    &vol_nam_len,               /* Result length. */
+                    0);                         /* Path name. */
+
+  if ((sts & STS$M_SUCCESS) == STS$K_SUCCESS)
+  {
+    *(vol_nam+ vol_nam_len) = '\0';     /* NUL-terminate the label. */
+    lbl = vol_nam;
+    /* Set (fake) mode, time, and utim for the label. */
+    label_mode = (ulg)(0x28);
+    label_time = (ulg)(1);
+    label_utim = (time_t)(1);
+  }
+  return lbl;
+}
+
+
 /*---------------------------------------------------------------------------
 
     _vms_findfirst() and _vms_findnext(), based on public-domain DECUS C
@@ -591,16 +617,12 @@ local void vms_wild( char *p, zDIR *d)
    */
   /* Set up the FAB and NAM[L] blocks. */
   d->fab = cc$rms_fab;                  /* Initialize FAB. */
-  d->nam = CC_RMS_NAM;                  /* Initialize NAM[L]. */
+  d->nam = CC_RMS_NAMX;                 /* Initialize NAM[L]. */
 
-  d->fab.FAB_NAM = &d->nam;             /* FAB -> NAM[L] */
+  d->fab.FAB_NAMX = &d->nam;            /* FAB -> NAM[L] */
 
-#ifdef NAML$C_MAXRSS
-
-  d->fab.fab$l_dna =(char *) -1;        /* Using NAML for default name. */
-  d->fab.fab$l_fna = (char *) -1;       /* Using NAML for file name. */
-
-#endif /* def NAML$C_MAXRSS */
+  /* Point the FAB/NAM[L] fields to the actual name and default name. */
+  NAMX_DNA_FNA_SET( d->fab)
 
   /* Argument file name and length. */
   d->FAB_OR_NAML( fab, nam).FAB_OR_NAML_FNA = p;
@@ -612,10 +634,10 @@ local void vms_wild( char *p, zDIR *d)
   d->FAB_OR_NAML( fab, nam).FAB_OR_NAML_DNA = DEF_DEVDIR;
   d->FAB_OR_NAML( fab, nam).FAB_OR_NAML_DNS = sizeof( DEF_DEVDIR)- 1;
 
-  d->nam.NAM_ESA = d->d_qualwildname;   /* qualified wild name */
-  d->nam.NAM_ESS = NAM_MAXRSS;          /* max length */
-  d->nam.NAM_RSA = d->d_name;           /* matching file name */
-  d->nam.NAM_RSS = NAM_MAXRSS;          /* max length */
+  d->nam.NAMX_ESA = d->d_qualwildname;  /* qualified wild name */
+  d->nam.NAMX_ESS = NAMX_MAXRSS;        /* max length */
+  d->nam.NAMX_RSA = d->d_name;          /* matching file name */
+  d->nam.NAMX_RSS = NAMX_MAXRSS;        /* max length */
 
   /* parse the file name */
   if (sys$parse(&d->fab) != RMS$_NORMAL)
@@ -625,8 +647,8 @@ local void vms_wild( char *p, zDIR *d)
 
   /* have qualified wild name (i.e., disk:[dir.subdir]*.*); null-terminate
    * and set wild-flag */
-  d->d_qualwildname[d->nam.NAM_ESL] = '\0';
-  d->d_wild = (d->nam.NAM_FNB & NAM$M_WILDCARD)? 1 : 0;   /* not used... */
+  d->d_qualwildname[d->nam.NAMX_ESL] = '\0';
+  d->d_wild = (d->nam.NAMX_FNB & NAM$M_WILDCARD)? 1 : 0;   /* not used... */
 #ifdef DEBUG
   fprintf(mesg, "  incoming wildname:  %s\n", p);
   fprintf(mesg, "  qualified wildname:  %s\n", d->d_qualwildname);
@@ -694,7 +716,7 @@ local char *readd( zDIR *d)
   From the docs:
 
         Note that you must close the file before invoking the Search
-        service (FAB$W_IFI must be 0). 
+        service (FAB$W_IFI must be 0).
 
   The same is true for PARSE.  Most likely, it's cleared by setting
   "fab = cc$rms_fab", and left that way, so clearing it here may very
@@ -704,7 +726,7 @@ local char *readd( zDIR *d)
     /* get next match to possible wildcard */
     if ((r = sys$search(&d->fab)) == RMS$_NORMAL)
     {
-        d->d_name[d->nam.NAM_RSL] = '\0';   /* null terminate */
+        d->d_name[d->nam.NAMX_RSL] = '\0';   /* null terminate */
         return (char *)d->d_name;   /* OK */
     }
   } while (r == RMS$_PRV);
@@ -743,21 +765,50 @@ int wild( char *p)
     return ZE_MEM;
   vms_wild(p, d);       /* pattern may be more than just directory name */
 
+  /* 2013-02-18 SMS.
+   * If wanting a volume label, then get it from this (first) file.
+   * MSDOS/Windows allows a drive letter with no file spec ("A:") to
+   * specify a drive to provide a volume label without adding a file.
+   * We look for a bare device name (with a colon), like "xxxx:".
+   */
+  if (volume_label == 1)
+  {
+    volume_label = 2;
+    label = get_volume_label( d->nam.NAMX_B_DEV, d->nam.NAMX_L_DEV);
+    if ((label != NULL) && (*label != '\0'))
+    {
+      newname( label, 0, 0);
+    }
+    /* If only a device name (last char is ":", no name, no type), then
+     * pretend that all is well, and leave early.  (Using $PARSE results
+     * obviates looking for "^:" and other quirky elements.)
+     */
+    if ((p == NULL) ||                  /* Not a real name. */
+     ((strlen( p) > 1) &&               /* More than ":". */
+     (p[ strlen( p)- 1] == ':') &&      /* Ends with ":", */
+     (d->nam.NAMX_B_DEV > 0) &&         /* Some device characters. */
+     (d->nam.NAMX_B_NAME == 0) &&       /* No name characters. */
+     (d->nam.NAMX_B_TYPE <= 1)))        /* No (non-dot) .type characters. */
+    {
+      return ZE_OK;
+    }
+  }
+
   /*
    * For a non-directory file, save the version specified by the user
    * for use in recursive drops into subdirectories.  (If the user
    * specifies "-r fred.dir;1", then we don't want to save the ";1".)
    */
 
-  if (((d->nam.NAM_B_TYPE+ d->nam.NAM_B_VER) == DIR_TYPE_VER_LEN) &&
-   strncasecmp( d->nam.NAM_L_TYPE, DIR_TYPE_VER, DIR_TYPE_VER_LEN) == 0)
+  if (((d->nam.NAMX_B_TYPE+ d->nam.NAMX_B_VER) == DIR_TYPE_VER_LEN) &&
+   strncasecmp( d->nam.NAMX_L_TYPE, DIR_TYPE_VER, DIR_TYPE_VER_LEN) == 0)
   {
     wild_version_part[ 0] = '\0';
   }
   else
   {
-    strncpy(wild_version_part, d->nam.NAM_L_VER, d->nam.NAM_B_VER);
-    wild_version_part[d->nam.NAM_B_VER] = '\0';
+    strncpy(wild_version_part, d->nam.NAMX_L_VER, d->nam.NAMX_B_VER);
+    wild_version_part[d->nam.NAMX_B_VER] = '\0';
   }
 
   f = 0;
@@ -782,6 +833,9 @@ int procname( char *n, int caseflag)
   char *p;              /* path for recursion */
   struct stat s;        /* result of stat() */
   struct zlist far *z;  /* steps through zfiles list */
+
+  if (n == NULL)        /* volume_label request in freshen|delete mode ?? */
+    return ZE_OK;
 
   if (strcmp(n, "-") == 0)   /* if compressing stdin */
     return newname(n, 0, caseflag);
@@ -814,14 +868,11 @@ int procname( char *n, int caseflag)
     return m ? ZE_MISS : ZE_OK;
   }
 
-  /* Live name--use if file, recurse if directory */
-  if ((s.st_mode & S_IFDIR) == 0)
+  /* Live name.  Recurse if directory.  Use if file. */
+  if (S_ISDIR( s.st_mode))
   {
-    /* add or remove name of file */
-    if ((m = newname(n, 0, caseflag)) != ZE_OK)
-      return m;
-  } else {
-    if (dirnames && (m = newname(n, 1, caseflag)) != ZE_OK) {
+    /* Directory. */
+    if (dirnames && (m = newname(n, ZFLAG_DIR, caseflag)) != ZE_OK) {
       return m;
     }
     /* recurse into directory */
@@ -836,7 +887,13 @@ int procname( char *n, int caseflag)
       }
       free(d);
     }
-  } /* (s.st_mode & S_IFDIR) == 0) */
+  }
+  else /* S_ISDIR( s.st_mode) */
+  {
+    /* Non-directory.  Add or remove name of file. */
+    if ((m = newname(n, 0, caseflag)) != ZE_OK)
+      return m;
+  } /* S_ISDIR( s.st_mode) [else] */
   return ZE_OK;
 }
 
@@ -941,7 +998,7 @@ char *ex2in( char *x, int isdir, int *pdosflag)
       {
         dir_len -= 7;
         ext_dir_and_name += 7;
-      } 
+      }
     }
   }
   else
@@ -985,7 +1042,7 @@ char *ex2in( char *x, int isdir, int *pdosflag)
   /* If relative path, then strip off the current directory. */
   if (relative_dir_s)
   {
-    char cwd[ NAM_MAXRSS+ 1];
+    char cwd[ NAMX_MAXRSS+ 1];
     char *cwd_dir_only;
     char *q;
     int cwd_dir_only_len;
@@ -1054,7 +1111,7 @@ char *ex2in( char *x, int isdir, int *pdosflag)
   {
     /* If ODS5 is possible, do complicated down-case check.
 
-       Note that the test for ODS2/ODS5 is misleading and over-broad. 
+       Note that the test for ODS2/ODS5 is misleading and over-broad.
        Here, "ODS2" includes anything from DVI$C_ACP_F11V1 (=1, ODS1) up
        to (but not including) DVI$C_ACP_F11V5 (= 11, DVI$C_ACP_F11V5),
        while "ODS5" includes anything from DVI$C_ACP_F11V5 on up.  See
@@ -1135,8 +1192,12 @@ char *ex2in( char *x, int isdir, int *pdosflag)
       *ext_dir_and_name = '.';
   }
 
+  /* 2013-03-23 SMS.
+   * Added option -pv (prsrv_vms) to bypass adjustment of idiosyncratic
+   * VMS file names.
+   */
   /* 2008-10-15 SMS.
-   * Changed the scheme here to remove a trailing dot only if there's 
+   * Changed the scheme here to remove a trailing dot only if there's
    * no escaped dot in the name field.  This covers a case like "x^.y.",
    * which had been losing its type-dot, and being archived as "x.y".
    * This method also covers the ".." ("^..") case naturally.
@@ -1148,7 +1209,8 @@ char *ex2in( char *x, int isdir, int *pdosflag)
   /* Remove a null-type (trailing "."), unless the name is null or there
    * is an unescaped dot in the name.
    */
-  if ((strlen( n) > 1) &&               /* Won't leave a null result. */
+  if ((prsrv_vms <= 0) &&               /* User wants VMS names adjusted. */
+   (strlen( n) > 1) &&                  /* Won't leave a null result. */
    (escaped_dot_in_name == 0) &&        /* No escaped dot in name. */
    ((ext_dir_and_name = strrchr( n, '.')) != NULL))
   {
@@ -1466,6 +1528,7 @@ ulg filetime( char *f, ulg *a, zoff_t *n, iztimes *t)
   if (strcmp(f, "-") == 0) {
     if (fstat(fileno(stdin), &s) != 0) {
       free(name);
+      name = NULL;
       error("fstat(stdin)");
     }
   } else if (LSSTAT(name, &s) != 0) {
@@ -1475,16 +1538,17 @@ ulg filetime( char *f, ulg *a, zoff_t *n, iztimes *t)
     free(name);
     return 0;
   }
-  free(name);
+  if (name != NULL)
+    free(name);
 
   if (a != NULL) {
     *a = ((ulg)s.st_mode << 16) | !(s.st_mode & S_IWRITE);
-    if ((s.st_mode & S_IFDIR) != 0) {
+    if (S_ISDIR( s.st_mode)) {
       *a |= MSDOS_DIR_ATTR;
     }
   }
   if (n != NULL)
-    *n = (s.st_mode & S_IFMT) == S_IFREG ? s.st_size : -1;
+    *n = (S_ISREG( s.st_mode) ? s.st_size : -1);
   if (t != NULL) {
     t->atime = s.st_mtime;
 #ifdef USE_MTIME
@@ -1540,7 +1604,7 @@ int deletedir( char *dir_name)
 
     struct FAB        fab;           /* File Access Block */
     struct RAB        rab;           /* Record Access Block */
-    struct NAM_STRUCT nam;           /* Name Block */
+    struct NAMX_STRUCT nam;          /* Name Block */
 
     int atr_devchn;                  /* Disk device channel. */
 
@@ -1575,7 +1639,7 @@ int deletedir( char *dir_name)
     unsigned short atr_prot;
 
     /* Expanded name storage. */
-    char exp_nam[ NAM_MAXRSS];
+    char exp_nam[ NAMX_MAXRSS];
 
     /* Special ODS5-QIO-compatible name storage. */
 #ifdef NAML$C_MAXRSS
@@ -1584,15 +1648,15 @@ int deletedir( char *dir_name)
 
     fab = cc$rms_fab;                   /* Initialize FAB. */
     rab = cc$rms_rab;                   /* Initialize RAB. */
-    nam = CC_RMS_NAM;                   /* Initialize NAM[L]. */
+    nam = CC_RMS_NAMX;                  /* Initialize NAM[L]. */
 
     rab.rab$l_fab = &fab;               /* Point RAB to FAB. */
-    fab.FAB_NAM = &nam;                 /* Point FAB to NAM[L]. */
+    fab.FAB_NAMX = &nam;                /* Point FAB to NAM[L]. */
 
+  /* Point the FAB/NAM[L] fields to the actual name and default name. */
 #ifdef NAML$C_MAXRSS
 
-    fab.fab$l_dna = (char *) -1;        /* Using NAML for default name. */
-    fab.fab$l_fna = (char *) -1;        /* Using NAML for file name. */
+    NAMX_DNA_FNA_SET( fab)
 
     /* Special ODS5-QIO-compatible name storage. */
     nam.naml$l_filesys_name = sys_nam;
@@ -1605,17 +1669,17 @@ int deletedir( char *dir_name)
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_FNS = strlen( dir_name);
 
     /* Expanded name storage. */
-    nam.NAM_ESA = exp_nam;
-    nam.NAM_ESS = sizeof(exp_nam);
+    nam.NAMX_ESA = exp_nam;
+    nam.NAMX_ESS = sizeof(exp_nam);
 
     sts = sys$parse( &fab);
     if ((sts& STS$M_SEVERITY) == STS$M_SUCCESS)
     {
         /* Set the address in the device name descriptor. */
-        atr_devdsc.dsc$a_pointer = &nam.NAM_DVI[ 1];
+        atr_devdsc.dsc$a_pointer = &nam.NAMX_DVI[ 1];
 
         /* Set the length in the device name descriptor. */
-        atr_devdsc.dsc$w_length = (unsigned short) nam.NAM_DVI[ 0];
+        atr_devdsc.dsc$w_length = (unsigned short) nam.NAMX_DVI[ 0];
 
         /* Open a channel to the disk device. */
         sts = sys$assign( &atr_devdsc, &atr_devchn, 0, 0);
@@ -1626,7 +1690,7 @@ int deletedir( char *dir_name)
             */
             for (i = 0; i < 3; i++)
             {
-                atr_fib.FIB$W_DID[i] = nam.NAM_DID[i];
+                atr_fib.FIB$W_DID[i] = nam.NAMX_DID[i];
                 atr_fib.FIB$W_FID[i] = 0;
             }
 
@@ -1649,9 +1713,9 @@ int deletedir( char *dir_name)
 #else /* def NAML$C_MAXRSS */
 
             /* ODS2-only: Use the whole name. */
-            atr_fnam.dsc$a_pointer = nam.NAM_L_NAME;
+            atr_fnam.dsc$a_pointer = nam.NAMX_L_NAME;
             atr_fnam.dsc$w_length =
-             nam.NAM_B_NAME+ nam.NAM_B_TYPE+ nam.NAM_B_VER;
+             nam.NAMX_B_NAME+ nam.NAMX_B_TYPE+ nam.NAMX_B_VER;
 
 #endif /* def NAML$C_MAXRSS [else] */
 

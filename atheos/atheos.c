@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 1999-Oct-05 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -38,7 +38,6 @@
    int utime OF((char *, time_t *));
 #endif
 
-extern char *label;
 local ulg label_time = 0;
 local ulg label_mode = 0;
 local time_t label_utim = 0;
@@ -96,17 +95,16 @@ int caseflag;           /* true to force case-sensitive match */
     return m ? ZE_MISS : ZE_OK;
   }
 
-  /* Live name--use if file, recurse if directory */
-  if ((s.st_mode & S_IFREG) == S_IFREG ||
-      (s.st_mode & S_IFLNK) == S_IFLNK)
+  /* Live name.  Use if file or symlink.  Recurse if directory. */
+  if (S_ISREG( s.st_mode) || S_ISLNK( s.st_mode))
   {
-    /* add or remove name of file */
+    /* File or symlnk.  Add or remove name of file. */
     if ((m = newname(n, 0, caseflag)) != ZE_OK)
       return m;
-  }
-  else if ((s.st_mode & S_IFDIR) == S_IFDIR)
+  } /* S_ISREG( s.st_mode) || S_ISLNK( s.st_mode) */
+  else if (S_ISDIR( s.st_mode))
   {
-    /* Add trailing / to the directory name */
+    /* Directory.  Add trailing / to the directory name. */
     if ((p = malloc(strlen(n)+2)) == NULL)
       return ZE_MEM;
     if (strcmp(n, ".") == 0) {
@@ -147,9 +145,11 @@ int caseflag;           /* true to force case-sensitive match */
       closedir(d);
     }
     free((zvoid *)p);
-  } /* (s.st_mode & S_IFDIR) */
+  } /* S_ISDIR( s.st_mode) [else if] */
   else
+  {
     zipwarn("ignoring special file: ", n);
+  } /* S_IS<whatever>( s.st_mode) [else] */
   return ZE_OK;
 }
 
@@ -274,7 +274,7 @@ iztimes *t;             /* return value: access, modific. and creation times */
       t->atime = t->mtime = t->ctime = label_utim;
     return label_time;
   }
-  if ((name = malloc(len + 1)) == NULL {
+  if ((name = malloc(len + 1)) == NULL) {
     ZIPERR(ZE_MEM, "filetime");
   }
   strcpy(name, f);
@@ -297,9 +297,6 @@ iztimes *t;             /* return value: access, modific. and creation times */
   free(name);
 
   if (a != NULL) {
-#ifndef OS390
-    *a = ((ulg)s.st_mode << 16) | !(s.st_mode & S_IWRITE);
-#else
 /*
 **  The following defines are copied from the unizip source and represent the
 **  legacy Unix mode flags.  These fixed bit masks are no longer required
@@ -336,13 +333,12 @@ iztimes *t;             /* return value: access, modific. and creation times */
       legacy_modes |= UNX_IFSOCK;
     *a = ((ulg)legacy_modes << 16) | !(s.st_mode & S_IWRITE);
     }
-#endif
-    if ((s.st_mode & S_IFMT) == S_IFDIR) {
+    if (S_ISDIR( s.st_mode)) {
       *a |= MSDOS_DIR_ATTR;
     }
   }
   if (n != NULL)
-    *n = (s.st_mode & S_IFMT) == S_IFREG ? s.st_size : -1L;
+    *n = (S_ISREG( s.st_mode) ? s.st_size : -1L);
   if (t != NULL) {
     t->atime = s.st_atime;
     t->mtime = s.st_mtime;
@@ -875,7 +871,7 @@ void version_local()
       " (unknown platform)",
 #endif
 
-#ifdef __DATE__
+#if defined( __DATE__) && !defined( NO_BUILD_DATE)
       " on ", __DATE__
 #else
       "", ""

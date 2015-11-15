@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2010 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -24,6 +24,25 @@
  *      after the long fight with RMS.)
  *      Moved the VMS_PK_EXTRA test(s) into VMS_IM.C and VMS_PK.C to
  *      allow more general automatic dependency generation.
+ *
+ *  3.1         10-jun-2012     SMS
+ *      Added (and changed to use) vms_status().
+ *              23-apr-2011     SMS
+ *      Added entropy_fun() for AES encryption.
+ *              17-nov-2011     SMS
+ *      Added establish_ctrl_t() for user-triggered progress reports.
+ *              05-dec-2011     SMS
+ *      Added vms_fopen() to solve %rms-w-rtb (or %rms-e-netbts for
+ *      DECnet access) errors when zipping Record format: Stream or
+ *      Stream_CR files (without "-V[V]").
+ *              08-may-2012     SMS
+ *      Changed to write all "-vv" diagnostic messages to "mesg" instead
+ *      of "stderr", and added a "\n" prefix to the vms_fopen() message
+ *      to avoid overwritten and over-long "-vv" messages.
+ *
+ *              2015-03-23      SMS
+ *      Added vms_getcwd() (because the CRTL getcwd() fails when the
+ *      size argument is zero).
  */
 
 #ifdef VMS                      /* For VMS only ! */
@@ -33,15 +52,31 @@
 #include "zip.h"
 #include "zipup.h"              /* Only partial. */
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <unixlib.h>            /* getpid().  (<unistd.h> is too new.) */
 
-#include <jpidef.h>
+#include <dcdef.h>
+#include <descrip.h>
+#include <dvidef.h>
 #include <fab.h>                /* Needed only in old environments. */
+#include <iodef.h>
+#include <jpidef.h>
+#include <lib$routines.h>
 #include <nam.h>                /* Needed only in old environments. */
 #include <starlet.h>
 #include <ssdef.h>
 #include <stsdef.h>
+#include <syidef.h>
+
+#ifdef ENABLE_USER_PROGRESS
+# include <prdef.h>
+/* Last-ditch attempt to get PR$C_PS_USER defined. */
+# ifndef PR$C_PS_USER
+#  define PR$C_PS_USER 3
+# endif /* ndef PR$C_PS_USER */
+#endif /* def ENABLE_USER_PROGRESS */
 
 /* On VAX, define Goofy VAX Type-Cast to obviate /standard = vaxc.
    Otherwise, lame system headers on VAX cause compiler warnings.
@@ -57,6 +92,8 @@
 # define GVTC
 #endif /* def __VAX */
 
+#define DIAG_FLAG (verbose >= 2)
+
 
 #ifdef UTIL
 
@@ -66,7 +103,7 @@
 
 # include "vms.h"
 
-#else /* not UTIL */
+#else /* def UTIL */
 
 /* Include the `VMS attributes' preserving file-io code. We distinguish
    between two incompatible flavours of storing VMS attributes in the
@@ -83,10 +120,10 @@
  * tested there) to allow more general automatic dependency generation.
  */
 
-#include "vms_pk.c"
-#include "vms_im.c"
+# include "vms_pk.c"
+# include "vms_im.c"
 
-#endif /* not UTIL [else] */
+#endif /* def UTIL [else] */
 
 #ifndef ERR
 #define ERR(x) (((x)&1)==0)
@@ -96,12 +133,78 @@
 #define NULL (void*)(0L)
 #endif
 
+
+/* 2011-12-04 SMS.
+ *
+ *       vms_fopen().
+ *
+ *    VMS-specific jacket for fopen().
+ *
+ * Formerly, zopen() was defined in [.vms]zipup.h, so:
+ *   #define zopen(n,p)   (vms_native?vms_open(n)    :(ftype)fopen((n), p))
+ * so, when vms_native was zero, fopen() was used directly (with the
+ * "fhow" value which was also defined in [.vms]zipup.h).  This caused
+ * problems ("%rms-w-rtb, !ul byte record too large for user's buffer")
+ * for files with Record Format: Stream or Stream_CR (but,
+ * interestingly, not Stream_LF).
+ *
+ * Now, zopen() is defined in [.vms]zipup.h, so:
+ *   #define zopen(n,p)   (vms_native?vms_open(n)    :vms_fopen(n))
+ * so vms_fopen() (below) is used to specify the exotic arguments for
+ * fopen() (and "fhow" is ignored).
+ *
+ * vms_fopen() uses stat() to get the record format of a file before
+ * opening it.  If stat() works, and the record format is one of the
+ * Stream types, then the file is opened in stream mode ("ctx = stm").
+ * This seems to solve the %RMS-W-RTB problem.
+ *
+ * Changed old non-DEC-C "mbc=60" to DEC-C-default-like "mbc=127".
+ */
+
+#ifdef __DECC
+# define FOPEN_ARGS , "acc", acc_cb, &fhow_id
+#else /* def __DECC */          /* (So, GNU C, VAX C, ...)*/
+# define FOPEN_ARGS , "mbc=127"
+#endif /* def __DECC [else] */
+
+FILE *vms_fopen( char *file_spec)
+{
+    int sts;
+    struct stat stat_buf;
+
+    sts = stat( file_spec, &stat_buf);
+
+    if (DIAG_FLAG)
+    {
+        fprintf( mesg,
+         "\nvms_fopen(): stat() = %d, rfm = %d.\n",
+         sts, stat_buf.st_fab_rfm);
+    }
+
+    if ((sts == 0) &&
+     ((stat_buf.st_fab_rfm == FAB$C_STM) ||
+     (stat_buf.st_fab_rfm == FAB$C_STMCR) ||
+     (stat_buf.st_fab_rfm == FAB$C_STMLF)))
+    {
+        /* Use stream-mode access ("ctx = stm") for Stream[_xx] files. */
+        return fopen( file_spec, "r", "ctx = stm" FOPEN_ARGS);
+    }
+    else
+    {
+        return fopen( file_spec, "r" FOPEN_ARGS);
+    }
+}
+
+
+/*
+ *       vms_stat().
+ */
 int vms_stat( char *file, stat_t *s)
 {
     int status;
     int staterr;
     struct FAB fab;
-    struct NAM_STRUCT nam;
+    struct NAMX_STRUCT nam;
     struct XABFHC fhc;
 
     /*
@@ -110,8 +213,8 @@ int vms_stat( char *file, stat_t *s)
      */
 
     if( (staterr=stat(file,s)) == 0
-        && ( s->st_size >= 0                      /* Size - ok */
-             || (s->st_mode & S_IFREG) == 0       /* Not a plain file */
+        && ( s->st_size >= 0                    /* Size - ok */
+             || (s->st_mode & S_IFREG) == 0     /* Not a plain file */
            )
     ) return staterr;
 
@@ -124,18 +227,12 @@ int vms_stat( char *file, stat_t *s)
      */
 
     fab = cc$rms_fab;
-    nam = CC_RMS_NAM;
+    nam = CC_RMS_NAMX;
     fhc = cc$rms_xabfhc;
-    fab.FAB_NAM = &nam;
+    fab.FAB_NAMX = &nam;
     fab.fab$l_xab = (char*)(&fhc);
 
-#ifdef NAML$C_MAXRSS
-
-    fab.fab$l_dna = (char *) -1;    /* Using NAML for default name. */
-    fab.fab$l_fna = (char *) -1;    /* Using NAML for file name. */
-
-#endif /* def NAML$C_MAXRSS */
-
+    NAMX_DNA_FNA_SET(fab)
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_FNA = file;
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_FNS = strlen( file);
 
@@ -178,7 +275,7 @@ int vms_stat( char *file, stat_t *s)
  *  Severity codes are 0 = Warning, 1 = Success, 2 = Error, 3 = Info,
  *  4 = Severe (fatal).
  *
- *  Previous versions of Info-ZIP programs used a generic ("chosen (by
+ *  Zip versions before 3.0 used a generic ("chosen by
  *  experimentation)") Control+Facility code of 0x7FFF, which included
  *  some reserved control bits, the inhibit-printing bit, and the
  *  customer-defined bit.
@@ -192,7 +289,6 @@ int vms_stat( char *file, stat_t *s)
  *
  *  Now, unless the CTL_FAC_IZ_ZIP macro is defined at build-time, we
  *  will use the official Facility code.
- *
  */
 
 /* Official HP-assigned Info-ZIP Zip Facility code. */
@@ -213,19 +309,69 @@ int vms_stat( char *file, stat_t *s)
 #endif /* ndef CTL_FAC_IZ_ZIP [else] */
 
 
+/* Translate a ZE_xxx code to the corresponding VMS status value. */
+
+int vms_status( int err)
+{
+    int sts;
+
+    /* 2013-06-13 SMS.
+     * Normal behavior is to return SS$_NORMAL for success (ZE_OK), or a
+     * status value with an official Facility code for any other result.
+     * Define OK_USE_FAC to return a success code with a Facility code
+     * (instead of SS$_NORMAL).
+     *
+     * Raw status codes are effectively multiplied by two ("<< 4"
+     * instead of "<< 3"), which makes them easier to read in a
+     * hexadecimal representation of the VMS status value.  For example,
+     * PK_PARAM = 10 (0x0a) -> %x17A280A2.
+     *                                ^^
+     *
+     * Zip versions before 3.0 (before an official Facility code was
+     * assigned) used 0x7FFF instead of the official Facility code.
+     * Define CTL_FAC_IZ_UZP as 0x7FFF (and/or MSG_FAC_SPEC) to get the
+     * old behavior.  (See above.)
+     */
+
+#ifdef OK_USE_FAC
+
+    /* Always return a status code comprising Control, Facility,
+     * Message, and Severity.
+     */
+    sts = (CTL_FAC_IZ_ZIP << 16) |              /* Facility                */
+          MSG_FAC_SPEC |                        /* Facility-specific (+?)  */
+          (err << 4) |                          /* Message code            */
+          (ziperrors[ err].severity & 0x07);    /* Severity                */
+
+#else /* def OK_USE_FAC */
+
+    /* Return simple SS$_NORMAL for ZE_OK.  Otherwise, return a status
+     * code comprising Control, Facility, Message, and Severity.
+     */
+    sts = (err == ZE_OK) ? SS$_NORMAL :         /* Success (others below)  */
+          ((CTL_FAC_IZ_ZIP << 16) |             /* Facility                */
+          MSG_FAC_SPEC |                        /* Facility-specific (+?)  */
+          (err << 4) |                          /* Message code            */
+          (ziperrors[ err].severity & 0x07));   /* Severity                */
+
+#endif /* ndef OLD_STATUS [else] */
+
+    return sts;
+}
+
+
+/* Exit with an intelligent status/severity code. */
+
 /* Declare __posix_exit() if <stdlib.h> won't, and we use it. */
 
 #if __CRTL_VER >= 70000000 && !defined(_POSIX_EXIT)
 #  if !defined( NO_POSIX_EXIT)
 void     __posix_exit     (int __status);
 #  endif /* !defined( NO_POSIX_EXIT) */
-#endif /* __CRTL_VER >= 70000000 && !defined(_POSIX_EXIT)
+#endif /* __CRTL_VER >= 70000000 && !defined(_POSIX_EXIT) */
 
 
-/* Return an intelligent status/severity code. */
-
-void vms_exit(e)
-   int e;
+void vms_exit( int err)
 {
 #if !defined( NO_POSIX_EXIT) && (__CRTL_VER >= 70000000)
 
@@ -238,59 +384,41 @@ void vms_exit(e)
     sh_ptr = getenv( "SHELL");
     if ((sh_ptr != NULL) && strcasecmp( sh_ptr, "DCL"))
     {
-        __posix_exit( e);
+        __posix_exit( err);
     }
     else
 
 #endif /* #if !defined( NO_POSIX_EXIT) && (__CRTL_VER >= 70000000) */
 
     {
-#ifndef OLD_STATUS
-
-        /* If __posix_exit() is unavailable (__CRTL_VER < 70000000) or
-         * undesired (defined( NO_POSIX_EXIT)), or the environment
-         * variable "SHELL" is not defined, then:
-         *
-         * Exit with code comprising Control, Facility,
-         * (facility-specific) Message, and Severity.
-         */
-        exit( (CTL_FAC_IZ_ZIP << 16) |          /* Facility                */
-              MSG_FAC_SPEC |                    /* Facility-specific       */
-              (e << 4) |                        /* Message code            */
-              (ziperrors[ e].severity & 0x07)   /* Severity                */
-         );
-
-#else /* ndef OLD_STATUS */
-
-    /* 2007-01-17 SMS.
-     * Defining OLD_STATUS provides the same behavior as in Zip versions
-     * before an official VMS Facility code had been assigned, which
-     * means that Success (ZE_OK) gives a status value of 1 (SS$_NORMAL)
-     * with no Facility code, while any error or warning gives a status
-     * value which includes a Facility code.  (Curiously, under the old
-     * scheme, message codes were left-shifted by 4 instead of 3,
-     * resulting in all-even message codes.)  I don't like this, but I
-     * was afraid to remove it, as someone, somewhere may be depending
-     * on it.  Define CTL_FAC_IZ_ZIP as 0x7FFF to get the old behavior.
-     * Define only OLD_STATUS to get the old behavior for Success
-     * (ZE_OK), but using the official HP-assigned Facility code for an
-     * error or warning.  Define MSG_FAC_SPEC to get the desired
-     * behavior.
-     *
-     * Exit with simple SS$_NORMAL for ZE_OK.  Otherwise, exit with code
-     * comprising Control, Facility, Message, and Severity.
-     */
-        exit(
-         (e == ZE_OK) ? SS$_NORMAL :            /* Success (others below)  */
-          ((CTL_FAC_IZ_ZIP << 16) |             /* Facility                */
-          MSG_FAC_SPEC |                        /* Facility-specific (?)   */
-          (e << 4) |                            /* Message code            */
-          (ziperrors[ e].severity & 0x07)       /* Severity                */
-          )
-         );
-
-#endif /* ndef OLD_STATUS */
+        exit( vms_status( err));
     }
+}
+
+
+/***************************/
+/*  Function vms_getcwd()  */
+/***************************/
+
+/* 2015-03-23 SMS.
+ * As of __VMS_VER = 80400022 and __CRTL_VER = 80400000, getcwd() fails
+ * if the size argument is 0.  Duh.
+ * styl: 0 for UNIX-style result; 1 for VMS-style result.
+ */
+
+char *vms_getcwd( char *bf, size_t sz, int styl)
+{
+    if ((bf == NULL) || (sz == 0))
+    {                                   /* We're expected to malloc storage. */
+        sz = NAMX_MAXRSS;               /* Size of the max-len file spec. */
+        bf = izz_malloc( sz+ 1);        /* Allocate the (adequate) storage. */
+    }
+    if (bf != NULL)
+    {
+        bf = getcwd( bf, sz, styl);     /* Use the lame getcwd(). */
+    }
+
+    return bf;
 }
 
 
@@ -373,7 +501,7 @@ void version_local()
       "",
 #endif /* def VMS_VERSION */
 
-#ifdef __DATE__
+#if defined( __DATE__) && !defined( NO_BUILD_DATE)
       " on ", __DATE__
 #else
       "", ""
@@ -398,8 +526,15 @@ void version_local()
  *    "ZIxxxxxxxx", where "xxxxxxxx" is the (whole) eight-digit
  *    hexadecimal representation of the process ID.  More important, it
  *    actually uses the directory part of the argument or "tempath".
+ *
+ * 2010-09-29 SMS.
+ *    Well, duh.  Split archives need more than one temporary file name,
+ *    and a PID-only method can't achieve that.  The new method retains
+ *    the PID base, but adds a (hexadecimal) serial number as the
+ *    ".type", producing "ZIxxxxxxxx.yyyyyyyy;", where "xxxxxxxx" is the
+ *    hexadecimal PID, and "yyyyyyyy" is the hexadecimal serial number.
+ *    This should still be safe on ODS2 or ODS5.
  */
-
 
 char *tempname( char *zip)
 /* char *zip; */                /* Path name of Zip archive. */
@@ -409,6 +544,7 @@ char *tempname( char *zip)
 
     static int pid;             /* Process ID. */
     static int pid_len;         /* Returned size of process ID. */
+    static int serial = 0;      /* Serial number, for certain uniqueness. */
 
     struct                      /* Item list for GETJPIW. */
     {
@@ -420,76 +556,78 @@ char *tempname( char *zip)
     } jpi_itm_lst = { sizeof( pid), JPI$_PID, &pid, &pid_len };
 
     /* ZI<UNIQUE> name storage. */
-    static char zip_tmp_nam[ 16] = "ZI<unique>.;";
+    static char zip_tmp_nam[ 24] = "ZI<pid|time>.<serial>;";
 
     struct FAB fab;             /* FAB structure. */
-    struct NAM_STRUCT nam;      /* NAM[L] structure. */
+    struct NAMX_STRUCT nam;     /* NAM[L] structure. */
 
-    char exp_str[ NAM_MAXRSS+ 1];   /* Expanded name storage. */
+    char exp_str[ NAMX_MAXRSS+ 1];      /* Expanded name storage. */
 
 #ifdef VMS_UNIQUE_TEMP_BY_TIME
 
     /* Use alternate time-based scheme to generate a unique temporary name. */
-    sprintf( &zip_tmp_nam[ 2], "%08X", time( NULL));
+    sprintf( &zip_tmp_nam[ 2], "%08X.%08X", time( NULL), serial);
 
 #else /* def VMS_UNIQUE_TEMP_BY_TIME */
 
     /* Use the process ID to generate a unique temporary name. */
     sts = sys$getjpiw( 0, 0, 0, &jpi_itm_lst, 0, 0, 0);
-    sprintf( &zip_tmp_nam[ 2], "%08X", pid);
+    sprintf( &zip_tmp_nam[ 2], "%08X.%08X", pid, serial);
 
 #endif /* def VMS_UNIQUE_TEMP_BY_TIME */
 
+    /* Increment the serial number. */
+    serial++;
+
     /* Smoosh the unique temporary name against the actual Zip archive
        name (or "tempath") to create the full temporary path name.
-       (Truncate it at the file type to remove any file type.)
     */
     if (tempath != NULL)        /* Use "tempath", if it's been specified. */
         zip = tempath;
 
     /* Initialize the FAB and NAM[L], and link the NAM[L] to the FAB. */
     fab = cc$rms_fab;
-    nam = CC_RMS_NAM;
-    fab.FAB_NAM = &nam;
+    nam = CC_RMS_NAMX;
+    fab.FAB_NAMX = &nam;
 
     /* Point the FAB/NAM[L] fields to the actual name and default name. */
-
-#ifdef NAML$C_MAXRSS
-
-    fab.fab$l_dna = (char *) -1;    /* Using NAML for default name. */
-    fab.fab$l_fna = (char *) -1;    /* Using NAML for file name. */
-
-#endif /* def NAML$C_MAXRSS */
+    NAMX_DNA_FNA_SET(fab)
 
     /* Default name = Zip archive name. */
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_DNA = zip;
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_DNS = strlen( zip);
 
-    /* File name = "ZI<unique>,;". */
+    /* File name = "ZI<unique>.<serial>;". */
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_FNA = zip_tmp_nam;
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_FNS = strlen( zip_tmp_nam);
 
-    nam.NAM_ESA = exp_str;      /* Expanded name (result) storage. */
-    nam.NAM_ESS = NAM_MAXRSS;   /* Size of expanded name storage. */
+    nam.NAMX_ESA = exp_str;     /* Expanded name (result) storage. */
+    nam.NAMX_ESS = NAMX_MAXRSS; /* Size of expanded name storage. */
 
-    nam.NAM_NOP = NAM_M_SYNCHK; /* Syntax-only analysis. */
+    nam.NAMX_NOP = NAMX_M_SYNCHK; /* Syntax-only analysis. */
 
     temp_name = NULL;           /* Prepare for failure (unlikely). */
     sts = sys$parse( &fab, 0, 0);       /* Parse the name(s). */
 
     if ((sts& STS$M_SEVERITY) == STS$M_SUCCESS)
     {
-        /* Overlay any resulting file type (typically ".ZIP") with none. */
-        strcpy( nam.NAM_L_TYPE, ".;");
+        /* Truncate/NUL-terminate the resulting file spec. */
+        /* 2010-09-29 SMS.
+         * Truncate at version, with ".<serial>"; at type, without.
+         * Was:
+         * strcpy( nam.NAMX_L_TYPE, ".;");
+         * Now:
+         */
+        *(nam.NAMX_L_VER+ 1) = '\0';
 
         /* Allocate temp name storage (as caller expects), and copy the
-           (truncated) temp name into the new location.
+           (truncated/terminated) temp name into the new location.
         */
-        temp_name = malloc( strlen( nam.NAM_ESA)+ 1);
+        temp_name = izz_malloc( strlen( nam.NAMX_ESA)+ 1);
 
         if (temp_name != NULL)
         {
-            strcpy( temp_name, nam.NAM_ESA);
+            strcpy( temp_name, nam.NAMX_ESA);
         }
     }
     return temp_name;
@@ -536,21 +674,17 @@ char *ziptyp( char *s)
     int status;
     int exp_len;
     struct FAB fab;
-    struct NAM_STRUCT nam;
-    char result[ NAM_MAXRSS+ 1];
-    char exp[ NAM_MAXRSS+ 1];
+    struct NAMX_STRUCT nam;
+    char result[ NAMX_MAXRSS+ 1];
+    char exp[ NAMX_MAXRSS+ 1];
     char *p;
 
-    fab = cc$rms_fab;                           /* Initialize FAB. */
-    nam = CC_RMS_NAM;                           /* Initialize NAM[L]. */
-    fab.FAB_NAM = &nam;                         /* FAB -> NAM[L] */
+    fab = cc$rms_fab;                   /* Initialize FAB. */
+    nam = CC_RMS_NAMX;                  /* Initialize NAM[L]. */
+    fab.FAB_NAMX = &nam;                /* FAB -> NAM[L] */
 
-#ifdef NAML$C_MAXRSS
-
-    fab.fab$l_dna =(char *) -1;         /* Using NAML for default name. */
-    fab.fab$l_fna = (char *) -1;        /* Using NAML for file name. */
-
-#endif /* def NAML$C_MAXRSS */
+    /* Point the FAB/NAM[L] fields to the actual name and default name. */
+    NAMX_DNA_FNA_SET(fab)
 
     /* Argument file name and length. */
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_FNA = s;
@@ -560,10 +694,10 @@ char *ziptyp( char *s)
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_DNA = DEF_DEVDIRNAM;
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_DNS = sizeof( DEF_DEVDIRNAM)- 1;
 
-    nam.NAM_ESA = exp;                 /* Expanded name, */
-    nam.NAM_ESS = NAM_MAXRSS;          /* storage size. */
-    nam.NAM_RSA = result;              /* Resultant name, */
-    nam.NAM_RSS = NAM_MAXRSS;          /* storage size. */
+    nam.NAMX_ESA = exp;                 /* Expanded name, */
+    nam.NAMX_ESS = NAMX_MAXRSS;         /* storage size. */
+    nam.NAMX_RSA = result;              /* Resultant name, */
+    nam.NAMX_RSS = NAMX_MAXRSS;         /* storage size. */
 
     status = sys$parse(&fab);
     if ((status & 1) == 0)
@@ -571,7 +705,7 @@ char *ziptyp( char *s)
         /* Invalid file name.  Return (re-allocated) original, and hope
            for a later error message.
         */
-        if ((p = malloc( strlen( s)+ 1)) != NULL )
+        if ((p = izz_malloc( strlen( s)+ 1)) != NULL )
         {
             strcpy( p, s);
         }
@@ -579,24 +713,24 @@ char *ziptyp( char *s)
     }
 
     /* Save expanded name length from sys$parse(). */
-    exp_len = nam.NAM_ESL;
+    exp_len = nam.NAMX_ESL;
 
     /* Leave expanded name as-is, in case of search failure. */
-    nam.NAM_ESA = NULL;                 /* Expanded name, */
-    nam.NAM_ESS = 0;                    /* storage size. */
+    nam.NAMX_ESA = NULL;                /* Expanded name, */
+    nam.NAMX_ESS = 0;                   /* storage size. */
 
     status = sys$search(&fab);
     if (status & 1)
     {   /* Zip file exists.  Use resultant (complete, exact) name. */
-        if ((p = malloc( nam.NAM_RSL+ 1)) != NULL )
+        if ((p = izz_malloc( nam.NAMX_RSL+ 1)) != NULL )
         {
-            result[ nam.NAM_RSL] = '\0';
+            result[ nam.NAMX_RSL] = '\0';
             strcpy( p, result);
         }
     }
     else
     {   /* New Zip file.  Use pre-search expanded name. */
-        if ((p = malloc( exp_len+ 1)) != NULL )
+        if ((p = izz_malloc( exp_len+ 1)) != NULL )
         {
             exp[ exp_len] = '\0';
             strcpy( p, exp);
@@ -617,31 +751,27 @@ char *vms_file_version( char *s)
 {
     int status;
     struct FAB fab;
-    struct NAM_STRUCT nam;
+    struct NAMX_STRUCT nam;
     char *p;
 
-    static char exp[ NAM_MAXRSS+ 1];    /* Expanded name storage. */
+    static char exp[ NAMX_MAXRSS+ 1];   /* Expanded name storage. */
 
 
     fab = cc$rms_fab;                   /* Initialize FAB. */
-    nam = CC_RMS_NAM;                   /* Initialize NAM[L]. */
-    fab.FAB_NAM = &nam;                 /* FAB -> NAM[L] */
+    nam = CC_RMS_NAMX;                  /* Initialize NAM[L]. */
+    fab.FAB_NAMX = &nam;                /* FAB -> NAM[L] */
 
-#ifdef NAML$C_MAXRSS
-
-    fab.fab$l_dna =(char *) -1;         /* Using NAML for default name. */
-    fab.fab$l_fna = (char *) -1;        /* Using NAML for file name. */
-
-#endif /* def NAML$C_MAXRSS */
+    /* Point the FAB/NAM[L] fields to the actual name and default name. */
+    NAMX_DNA_FNA_SET(fab)
 
     /* Argument file name and length. */
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_FNA = s;
     FAB_OR_NAML( fab, nam).FAB_OR_NAML_FNS = strlen( s);
 
-    nam.NAM_ESA = exp;                 /* Expanded name, */
-    nam.NAM_ESS = NAM_MAXRSS;          /* storage size. */
+    nam.NAMX_ESA = exp;                 /* Expanded name, */
+    nam.NAMX_ESS = NAMX_MAXRSS;         /* storage size. */
 
-    nam.NAM_NOP = NAM_M_SYNCHK;        /* Syntax-only analysis. */
+    nam.NAMX_NOP = NAMX_M_SYNCHK;       /* Syntax-only analysis. */
 
     status = sys$parse(&fab);
 
@@ -656,11 +786,353 @@ char *vms_file_version( char *s)
         /* Success.  NUL-terminate, and return a pointer to the ";" in
            the expanded name storage buffer.
         */
-        p = nam.NAM_L_VER;
-        p[ nam.NAM_B_VER] = '\0';
+        p = nam.NAMX_L_VER;
+        p[ nam.NAMX_B_VER] = '\0';
     }
     return p;
 } /* vms_file_version(). */
+
+
+# ifdef IZ_CRYPT_AES_WG
+
+/* Entropy gathering for VMS.  We use the system time, some memory usage
+ * and process I/O statistics, the process CPU time, the process ID, and
+ * then we smoosh together bits from operation counts of every device on
+ * the system.
+ */
+
+/* $DEVICE_SCAN parameters. */
+static unsigned short dev_name_ret_len;         /* Returned name length. */
+static unsigned int dev_scan_ctx[ 2] =          /* Context. */
+     { 0, 0 };
+static char dev_name_ret[ 65];                  /* Returned name storage. */
+static struct dsc$descriptor_s                  /* Returned name descriptor. */
+ dev_name_ret_descr =
+ { ((sizeof dev_name_ret)- 1), DSC$K_DTYPE_T, DSC$K_CLASS_S, dev_name_ret };
+
+/* Devices to consider.  (That is, all of them.) */
+static $DESCRIPTOR( dev_name_descr, "*");
+
+/* 2011-05-01 SMS.
+ *
+ *       device_opcnt_bits().
+ *
+ *    Fill the user's (32-bit) buffer with a non-tiny operation-count
+ *    value from each device on the system, in turn.
+ *    Return the number of bits.  If negative, then we've run out of
+ *    devices to check, and the next call will begin a new scan (of the
+ *    same old devices, most likely).
+ */
+
+int device_opcnt_bits( unsigned int *ui)
+{
+    unsigned int os_info;
+    unsigned int os_infos;
+    int bits;
+    int shft;
+    int sts;
+
+    sts = SS$_NORMAL;
+    bits = -1;
+    while (((sts& STS$M_SEVERITY) == STS$K_SUCCESS) && (bits < 0))
+    {
+        /* Get the next device name. */
+        sts = sys$device_scan( &dev_name_ret_descr, /* Returned name. */
+                               &dev_name_ret_len,   /* Returned name length. */
+                               &dev_name_descr,     /* Search name. */
+                               0,                   /* Selection item list. */
+                               dev_scan_ctx);       /* Search context. */
+
+        if ((sts& STS$M_SEVERITY) == STS$K_SUCCESS)
+        {
+            /* Get the device operation count. */
+            sts = lib$getdvi( &((int) DVI$_OPCNT),  /* Item code. */
+                              0,                    /* Channel. */
+                              &dev_name_ret_descr,  /* Device name. */
+                              &os_info,             /* Result buffer (int). */
+                              0,                    /* Result string. */
+                              0);                   /* Result string len. */
+
+            if ((sts& STS$M_SEVERITY) == STS$K_SUCCESS)
+            {
+                /* Ignore tiny values. */
+                if (os_info > 15)
+                {
+                    /* Count the useful bits. */
+                    os_infos = os_info;
+                    for (bits = 2; (os_infos >>= 2) != 0; bits += 2);
+                    shft = 32- bits;
+                }
+            }
+        }
+        else
+        {
+            /* DEBICE_SCAN failed.  Reset the context for the next round. */
+            dev_scan_ctx[ 0] = 0;
+            dev_scan_ctx[ 1] = 0;
+        }
+    }
+
+    if (ui != NULL)
+    {
+        /* Store the result in the user's buffer. */
+        *ui = os_info;
+    }
+
+    /* Return the number of good bits. */
+    return bits;
+}
+
+
+/* 2011-05-01 SMS.
+ *
+ *       device_opcnt_32().
+ *
+ *    Fill the user's (32-bit) buffer with device-operation-count
+ *    values, smooshed together.
+ *    Return the number of bits.  If less than 32, then we've run out of
+ *    devices to check, and the next call will begin a new scan (of the
+ *    same old devices, most likely).
+ */
+
+static unsigned int junk_acc = 0;       /* 32-bit junk accumulator. */
+static int junk_acc_bit_cnt = 0;        /* Good (high) bits in the j_acc. */
+
+int device_opcnt_32( unsigned int *ui)
+{
+    int junk_bit_cnt;
+    unsigned int junk;
+    unsigned int out_buf;
+    int ret_bits;
+    int shft;
+    int sts;
+
+    junk_bit_cnt = 0;
+    ret_bits = -1;
+
+    while ((junk_acc_bit_cnt < 32) && (junk_bit_cnt >= 0))
+    {
+        junk_bit_cnt = device_opcnt_bits( &junk);
+        if (junk_bit_cnt > 0)
+        {
+            shft = 32- junk_acc_bit_cnt- junk_bit_cnt;
+            if (shft > 0)
+            {   /* Too few bits.  Shift and OR in what's available. */
+                junk_acc |= (junk << shft);
+            }
+            else
+            {
+                /* Enough bits.  Or in what's needed.  Keep residue. */
+                out_buf = junk_acc| (junk >> (-shft));
+                junk_acc = junk << (32+ shft);
+            }
+            junk_acc_bit_cnt += junk_bit_cnt;
+        }
+    }
+
+    /* Reduce junk_acc_bit_cnt after filling 32 bits. */
+    if (junk_acc_bit_cnt >= 32)
+    {
+        ret_bits = 32;
+        junk_acc_bit_cnt -= 32;
+    }
+    else
+    {
+        /* Ran out of bits. */
+        ret_bits = junk_acc_bit_cnt;
+    }
+
+    if (ui != NULL)
+    {
+        /* Store the result in the user's buffer. */
+        *ui = out_buf;
+    }
+
+    /* Return the number of good bits. */
+    return ret_bits;
+}
+
+
+/* 2011-04-21 SMS.
+ *
+ *       entropy_fun().
+ *
+ *    Fill the user's buffer with up to 8 bytes of stuff.
+ */
+
+int entropy_fun( unsigned char *buf, unsigned int len)
+{
+    union
+    {
+        unsigned char b[ 8];
+        unsigned int i[ 2];
+    } my_buf;                   /* Main buffer.  sys$gettim() results. */
+
+    union
+    {
+        unsigned char b[ 4];
+        unsigned int i;
+    } os_info;                  /* sys$getXXX() results. */
+
+    int i;
+    int sts;                    /* System service/RTL status, */
+    unsigned char bt;           /* Temporary byte. */
+    static int num = 0;         /* Use count (method choice). */
+
+    /* Get the 64-bit VMS system time (100ns units).
+     * Note: A 64-bit system time should have rapidly changing low bits,
+     * but old (VAX) systems may increment by a big number (100000?)
+     * seldom, instead of by one every 100ns.
+     */
+    sts = sys$gettim( &my_buf);
+
+    /* Mix in additional, invocation-dependent junk. */
+    switch (num)
+    {
+      case 0:   /* First invocation. */
+        /* Mix in process login time (high), and process ID (low). */
+        sts = lib$getjpi( &((int) JPI$_LOGINTIM), 0, 0, &os_info, 0, 0);
+        my_buf.i[ 1] ^= os_info.i;
+        sts = lib$getjpi( &((int) JPI$_PID), 0, 0, &os_info, 0, 0);
+        my_buf.i[ 0] ^= os_info.i;
+        num++;
+        break;
+      case 1:   /* Second invocation. */
+        /* Mix in process page fault count (high),
+         * system free pagefile count (low).
+         */
+        sts = lib$getjpi( &((int) JPI$_PAGEFLTS), 0, 0, &os_info, 0, 0);
+        my_buf.i[ 1] ^= os_info.i;
+        sts = lib$getsyi( &((int) SYI$_PAGEFILE_FREE), &os_info, 0, 0, 0, 0);
+        my_buf.i[ 0] ^= os_info.i;
+        num++;
+        break;
+      case 2:   /* Third invocation. */
+        /* Mix in process CPU time (high),
+         * and process buffered and direct IO counts (low).
+         */
+        sts = lib$getjpi( &((int) JPI$_CPUTIM), 0, 0, &os_info, 0, 0);
+        my_buf.i[ 1] ^= os_info.i;
+        sts = lib$getjpi( &((int) JPI$_BUFIO), 0, 0, &os_info, 0, 0);
+        my_buf.i[ 0] ^= (os_info.i << 16);
+        sts = lib$getjpi( &((int) JPI$_DIRIO), 0, 0, &os_info, 0, 0);
+        my_buf.i[ 0] ^= os_info.i;
+        num++;
+        break;
+      default:  /* After the third invocation. */
+        /* Mix in device operation count bits. */
+        device_opcnt_32( &os_info.i);
+        my_buf.i[ 1] ^= os_info.i;
+        device_opcnt_32( &os_info.i);
+        my_buf.i[ 0] ^= os_info.i;
+    }
+
+    /* Move the results into the user's buffer. */
+    i = IZ_MIN( 8, len);
+    memcpy( buf, &my_buf, i);
+
+    /* Return the byte count. */
+    return i;
+
+} /* entropy_fun(). */
+
+# endif /* def IZ_CRYPT_AES_WG */
+
+
+#ifdef ENABLE_USER_PROGRESS
+
+/* 2011-12-05 SMS.
+ *
+ *       establish_ctrl_t().
+ *
+ *    Establish Ctrl/T handler, if SYS$COMMAND is a terminal.
+ */
+
+int establish_ctrl_t( void ctrl_t_ast())
+{
+    int i;
+    int status;
+    short iosb[ 4];
+
+    int access_mode = PR$C_PS_USER;
+    int dev_class;
+
+/*
+ * Mask bits for Ctrl/x characters.
+ *  Z  Y  X  W  V  U  T  S  R  Q  P O N M L K J I H G F E D C B A sp
+ * 1A 19 18 17 16 15 14 13 12 11 10 F E D C B A 9 8 7 6 5 4 3 2 1  0
+ * -------- ----------- ----------- ------- ------- ------- --------
+ *        0           1           0       0       0       0        0
+ */
+    struct
+    {
+        int mask_size;
+        unsigned int mask;
+    } char_mask = { 0, 0x00100000 };    /* Ctrl/T. */
+
+    $DESCRIPTOR( term_name_descr, "SYS$COMMAND");
+    short term_chan;
+
+    status = sys$assign( &term_name_descr, &term_chan, 0, 0);
+    if ((status& STS$M_SEVERITY) != STS$K_SUCCESS)
+    {
+        fprintf( mesg, " establish_ctrl_t(): $ASSIGN sts =  %%x%08x .\n",
+         status);
+        return status;
+    }
+
+    status = lib$getdvi( &((int)DVI$_DEVCLASS), /* Item code. */
+                         &term_chan,            /* Channel. */
+                         0,                     /* Device name. */
+                         &dev_class,            /* Result buffer (int). */
+                         0,                     /* Result string. */
+                         0);                    /* Result string len. */
+
+    if ((status& STS$M_SEVERITY) != STS$K_SUCCESS)
+    {
+        fprintf( mesg, " establish_ctrl_t(): $GETDVI sts =  %%x%08x .\n",
+         status);
+        sys$dassgn( term_chan);
+        return status;
+    }
+
+    if (dev_class != DC$_TERM)
+    {
+        /* SYS$COMMAND is not a terminal.  (Batch job, for example.)
+         * Harmless, but we can't establish a Ctrl/T handler for it.
+         */
+        sys$dassgn( term_chan);
+        vaxc$errno = ENOTTY;
+        return EVMSERR;
+    }
+
+#define FUN_AST_ENA (IO$_SETMODE| IO$M_OUTBAND)
+
+    status = sys$qiow( 0,               /* Event flag. */
+                       term_chan,       /* Channel. */
+                       FUN_AST_ENA,     /* Function code. */
+                       &iosb,           /* IOSB. */
+                       0,               /* AST address. */
+                       0,               /* AST parameter. */
+                       ctrl_t_ast,      /* P1 = OOB AST addr. */
+                       &char_mask,      /* P2 = Char mask. */
+                       &access_mode,    /* P3 = Access mode. */
+                       0,               /* P4. */
+                       0,               /* P5. */
+                       0);              /* P6. */
+
+    if ((status& STS$M_SEVERITY) != STS$K_SUCCESS)
+    {
+        fprintf( mesg, " establish_ctrl_t(): $QIOW sts =  %%x%08x .\n",
+         status);
+        sys$dassgn( term_chan);
+    }
+
+    /* If successful, then don't deassign the channel. */
+    return status;
+}
+
+#endif /* def ENABLE_USER_PROGRESS */
 
 
 /* 2004-11-23 SMS.
@@ -674,8 +1146,6 @@ char *vms_file_version( char *s)
  *       rab$b_mbc         multi-block count.
  *       rab$b_mbf         multi-buffer count (used with rah and wbh).
  */
-
-#define DIAG_FLAG (verbose >= 2)
 
 /* Default RMS parameter values. */
 
@@ -792,13 +1262,13 @@ if (rms_defaults_known > 0)
 
 if (DIAG_FLAG)
     {
-    fprintf( stderr,
+    fprintf( mesg,
      "Get RMS defaults.  getjpi sts = %%x%08x.\n",
      sts);
 
     if (rms_defaults_known > 0)
         {
-        fprintf( stderr,
+        fprintf( mesg,
          "               Default: deq = %6d, mbc = %3d, mbf = %3d.\n",
          rms_ext, rms_mbc, rms_mbf);
         }
@@ -899,8 +1369,6 @@ return 0;
 
 #if !defined( __VAX) && (__CRTL_VER >= 70301000)
 
-#include <unixlib.h>
-
 /*--------------------------------------------------------------------*/
 
 /* Global storage. */
@@ -944,7 +1412,7 @@ decc_feat_t decc_feat_array[] = {
 
 /* LIB$INITIALIZE initialization function. */
 
-static void decc_init( void)
+void decc_init( void)
 {
 int feat_index;
 int feat_value;
@@ -996,36 +1464,6 @@ for (i = 0; decc_feat_array[ i].name != NULL; i++)
       }
    }
 }
-
-/* Get "decc_init()" into a valid, loaded LIB$INITIALIZE PSECT. */
-
-#pragma nostandard
-
-/* Establish the LIB$INITIALIZE PSECTs, with proper alignment and
-   other attributes.  Note that "nopic" is significant only on VAX.
-*/
-#pragma extern_model save
-
-#pragma extern_model strict_refdef "LIB$INITIALIZ" 2, nopic, nowrt
-const int spare[ 8] = { 0 };
-
-#pragma extern_model strict_refdef "LIB$INITIALIZE" 2, nopic, nowrt
-void (*const x_decc_init)() = decc_init;
-
-#pragma extern_model restore
-
-/* Fake reference to ensure loading the LIB$INITIALIZE PSECT. */
-
-#pragma extern_model save
-
-int LIB$INITIALIZE( void);
-
-#pragma extern_model strict_refdef
-int dmy_lib$initialize = (int) LIB$INITIALIZE;
-
-#pragma extern_model restore
-
-#pragma standard
 
 #endif /* !defined( __VAX) && (__CRTL_VER >= 70301000) */
 

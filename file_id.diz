@@ -1,15 +1,12 @@
-Info-ZIP's Zip 3.1: generic C sources.
-  Complete C source code for Info-ZIP's
-  PKZIP-compatible .zip archiver, for
-  all supported compilers and platforms
-  (Unix, OS/2, MS-DOS, NT, VMS, Amiga,
-  Atari, Mac, Acorn, VM/CMS, etc.), plus
-  lots of pretty decent documentation.
-  Includes Info-ZIP's ZCrypt 2.9 for
-  PKWARE-compatible standard encryption
-  and decryption support for Info-ZIP's
-  Zip 2.32, Zip 3.1, UnZip 5.52,
-  UnZip 6.0, and WiZ 5.02 (and later).
+Info-ZIP Zip 3.1 - Source and doc kit.
+ Zip is a .zip archive creator, generally
+ PKZIP-compatible, and widely portable
+ (including to Unix, Mac OS X, VMS, and
+ Windows - see documentation).  Written
+ in C (with some asm on some system
+ types).  Build scripts and examples in
+ various languages.  Multiple compression
+ and encryption methods supported.
 This is FREE (but copyrighted) software.
 See LICENSE for details on distribution
 and reuse.

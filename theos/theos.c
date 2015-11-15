@@ -1,10 +1,10 @@
 /*
-  Copyright (c) 1990-1999 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
-  If, for some reason, both of these files are missing, the Info-ZIP license
-  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
+  If, for some reason, all these files are missing, the Info-ZIP license
+  also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
 */
 /*---------------------------------------------------------------------------
 
@@ -39,7 +39,6 @@ extern struct dirent* _opendir(char* fname);
 #define RET_SUCCESS 0
 #define RET_EOF 0
 
-extern char *label;
 local ulg label_time = 0;
 local ulg label_mode = 0;
 local time_t label_utim = 0;
@@ -168,7 +167,7 @@ int caseflag;           /* true to force case-sensitive match */
     return m ? ZE_MISS : ZE_OK;
   }
 
-  /* Live name--use if file, recurse if directory or library */
+  /* Live name.  Use if file.  Recurse if directory or library. */
   if (S_ISREG(s.st_mode)) {
     if ((path = malloc(strlen(n) + 2)) == NULL)
       return ZE_MEM;
@@ -447,8 +446,7 @@ iztimes *t;             /* return value: access, modific. and creation times */
 
   if (a != NULL) {
     *a = ((ulg)s.st_mode << 16) | !(s.st_mode & S_IWRITE);
-    if ((s.st_mode & S_IFMT) == S_IFDIR
-     || (s.st_mode & S_IFMT) == S_IFLIB) {
+    if (S_ISDIR( st_mode) || S_ISLIB( s.st_mode))
       *a |= MSDOS_DIR_ATTR;
     }
     /* Map Theos' hidden attribute to DOS's hidden attribute */
@@ -457,7 +455,7 @@ iztimes *t;             /* return value: access, modific. and creation times */
     *a |= ((ulg) s.st_protect) << 8;
   }
   if (n != NULL)
-    *n = (s.st_mode & S_IFMT) == S_IFREG ? s.st_size : -1L;
+    *n = (S_ISREG( s.st_mode) ? s.st_size : -1L);
   if (t != NULL) {
     t->atime = s.st_atime;
     t->mtime = s.st_mtime;
@@ -483,7 +481,6 @@ iztimes *t;             /* return value: access, modific. and creation times */
 *   reserved        (4 bytes)
 */
 
-#define EB_L_THSIZE     4
 #define EB_L_TH_SIZE    14
 
 int set_extra_field(z, z_utim)
@@ -514,11 +511,10 @@ int set_extra_field(z, z_utim)
       return RET_ERROR;
   }
 
-  if ((extra = malloc(EB_L_TH_SIZE)) == NULL ) {
+  if ((extra = malloc(EB_HEADSIZE + EB_L_TH_SIZE)) == NULL) {
     fprintf(stderr, "set_extra_field: Insufficient memory.\n" );
     return RET_ERROR;
   }
-
 
   extra[0] = 'T';
   extra[1] = 'h';
@@ -550,7 +546,12 @@ int set_extra_field(z, z_utim)
 
 void version_local()
 {
-  printf("Compiled with THEOS C 5.28 for THEOS 4.x on %s %s.\n\n",
-    __DATE__, __TIME__);
+  printf("Compiled with THEOS C 5.28 for THEOS 4.x%s%s%s%s.\n\n",
+#if defined( __DATE__) && !defined( NO_BUILD_DATE)
+    " on ", __DATE__, " ", __TIME__
+#else
+    "", "", "", ""
+#endif
+   );
 }
 

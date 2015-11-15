@@ -4,7 +4,7 @@
 
 # TARGTYPE "Win32 (x86) Console Application" 0x0103
 
-CFG=zip - Win32 ASM Debug
+CFG=zip - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
@@ -13,7 +13,7 @@ CFG=zip - Win32 ASM Debug
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "zip.mak" CFG="zip - Win32 ASM Debug"
+!MESSAGE NMAKE /f "zip.mak" CFG="zip - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
@@ -82,13 +82,15 @@ LINK32=link.exe
 # PROP BASE Use_Debug_Libraries 0
 # PROP BASE Output_Dir "zip___Win32_Release"
 # PROP BASE Intermediate_Dir "zip___Win32_Release"
+# PROP BASE Ignore_Export_Lib 0
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir "zip___Win32_Release"
 # PROP Intermediate_Dir "zip___Win32_Release"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /FD /c
+# ADD BASE CPP /nologo /W3 /GX /O2 /D "NO_ASM" /D "LZMA_SUPPORT" /D "PPMD_SUPPORT" /D "BZIP2_SUPPORT" /D "BZ_NO_STDIO" /D "BZIP2_USEBZIP2DIR" /D "WIN32" /FD /c
 # ADD CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NO_ASM" /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
@@ -105,6 +107,7 @@ LINK32=link.exe
 # PROP BASE Use_Debug_Libraries 1
 # PROP BASE Output_Dir "zip___Win32_Debug"
 # PROP BASE Intermediate_Dir "zip___Win32_Debug"
+# PROP BASE Ignore_Export_Lib 0
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
@@ -112,7 +115,7 @@ LINK32=link.exe
 # PROP Intermediate_Dir "zip___Win32_Debug"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /FD /GZ /c
+# ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "NO_ASM" /D "LZMA_SUPPORT" /D "INCLUDE_LZMA_AS_SOURCE" /D "WIN32" /D "BZIP2_SUPPORT" /D "BZ_NO_STDIO" /D "BZIP2_USEBZIP2DIR" /D "PPMD_SUPPORT" /FR /FD /GZ /c
 # ADD CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "NO_ASM" /FR /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
@@ -136,7 +139,35 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
+SOURCE=..\..\wrap\aescrypt.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\aeskey.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\aestab.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\bzip2\blocksort.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\bzip2\bzlib.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\bzip2\compress.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\crc32.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\bzip2\crctable.c
 # End Source File
 # Begin Source File
 
@@ -144,7 +175,15 @@ SOURCE=..\..\crypt.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\bzip2\decompress.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\deflate.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\fileenc.c
 # End Source File
 # Begin Source File
 
@@ -156,7 +195,55 @@ SOURCE=..\..\globals.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\wrap\hmac.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\bzip2\huffman.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\LzFind.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\LzmaDec.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\LzmaEnc.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\nt.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\Ppmd8.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\Ppmd8Dec.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\Ppmd8Enc.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\prng.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\pwd2key.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\bzip2\randtable.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\sha1.c
 # End Source File
 # Begin Source File
 
@@ -184,6 +271,10 @@ SOURCE=..\win32zip.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\zbz2err.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\zip.c
 # End Source File
 # Begin Source File
@@ -204,6 +295,22 @@ SOURCE=..\..\zipup.c
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
+SOURCE=..\..\lzma\Alloc.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\bzip2\bzlib.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\bzip2\bzlib_private.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\control.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\crc32.h
 # End Source File
 # Begin Source File
@@ -216,6 +323,18 @@ SOURCE=..\..\ebcdic.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\lzma\LzFind.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\lzma\LzHash.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\lzma\LzmaEnc.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\nt.h
 # End Source File
 # Begin Source File
@@ -224,7 +343,23 @@ SOURCE=..\osdep.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\szip\Ppmd.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\szip\Ppmd8.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\revision.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\lzma\SzFile.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\lzma\SzVersion.h
 # End Source File
 # Begin Source File
 
@@ -233,6 +368,10 @@ SOURCE=..\..\tailor.h
 # Begin Source File
 
 SOURCE=..\..\ttyio.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\lzma\Types.h
 # End Source File
 # Begin Source File
 
@@ -284,10 +423,12 @@ InputName=crc_i386
 
 !ELSEIF  "$(CFG)" == "zip - Win32 Release"
 
+# PROP BASE Exclude_From_Build 1
 # PROP Exclude_From_Build 1
 
 !ELSEIF  "$(CFG)" == "zip - Win32 Debug"
 
+# PROP BASE Exclude_From_Build 1
 # PROP Exclude_From_Build 1
 
 !ENDIF 
@@ -323,10 +464,12 @@ InputName=match32
 
 !ELSEIF  "$(CFG)" == "zip - Win32 Release"
 
+# PROP BASE Exclude_From_Build 1
 # PROP Exclude_From_Build 1
 
 !ELSEIF  "$(CFG)" == "zip - Win32 Debug"
 
+# PROP BASE Exclude_From_Build 1
 # PROP Exclude_From_Build 1
 
 !ENDIF 

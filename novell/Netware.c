@@ -1,13 +1,24 @@
-#include <stdio.h> 
-#include <stdlib.h> 
+/*
+  netware.c
+
+  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+
+  See the accompanying file LICENSE, version 2009-Jan-2 or later
+  (the contents of which are also included in zip.h) for terms of use.
+  If, for some reason, all these files are missing, the Info-ZIP license
+  also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ntypes.h>
-#include <nwconio.h> 
+#include <nwconio.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <nit\nwdir.h>
 #include <dirent.h>
-#include <nwnamspc.h> 
+#include <nwnamspc.h>
 #include <locale.h>
 #include <nwlocale.h>
 #include <time.h>
@@ -30,13 +41,12 @@ extern void UseAccurateCaseForPaths(int);
 /* Globals */
 extern      char   *GetWorkArea(void);
 extern      char   *next_arg(char *);
-extern		int NLM_exiting;
+extern      int    NLM_exiting;
 char        fid[100];
 static      breakkey = FALSE;
 
 #define MATCH shmatch
 
-extern char *label;
 local ulg label_time = 0;
 local ulg label_mode = 0;
 local time_t label_utim = 0;
@@ -58,7 +68,7 @@ DIR *d;                 /* directory stream to read from */
 void findzip(char *s)
 {
    dowhereis(s);
-} 
+}
 
 void dowhereis(char *s)
 {
@@ -84,7 +94,7 @@ void dowhereis(char *s)
 
    //printf ("p %s, fsv %s, fdir %s, fname %s, fext %s\n", p,fsv,fdir,fname,fext);
    //getch();
-   
+
    sprintf(both,"%s%s",strupr(fname),strupr(fext));
 
    breakkey = FALSE;
@@ -104,7 +114,7 @@ char *GetWorkArea(void)
    static  char   volumeName[_MAX_VOLUME + 1];
    static  char   dirName[_MAX_DIR];
 
-   if(getcwd(cwd,_MAX_PATH) == NULL) 
+   if(getcwd(cwd,_MAX_PATH) == NULL)
       return NULL;
 
    ParsePath(cwd,serverName,volumeName,dirName);   /* shouldn't fail! */
@@ -137,103 +147,103 @@ static void findit(char *what)
 
    psz = dir;
 
-	  while (*psz)
-	  {
-		  if (*psz == ':')
-		  {
-			  strcpy (zipdir, psz + 1);
-			  break;
-		  }
-		  psz++;
-	  }
+      while (*psz)
+      {
+          if (*psz == ':')
+          {
+              strcpy (zipdir, psz + 1);
+              break;
+          }
+          psz++;
+      }
 
    dirStructPtrSave = dirStructPtr = opendir(what);
 
-	/*
-	_A_NORMAL Normal file; read/write permitted 
-	_A_RDONLY Read-only file 
-	_A_HIDDEN Hidden file 
-	_A_SYSTEM System file 
-	_A_VOLID Volume ID entry 
-	_A_SUBDIR Subdirectory 
-	_A_ARCH Archive file 
-	*/
+    /*
+    _A_NORMAL Normal file; read/write permitted
+    _A_RDONLY Read-only file
+    _A_HIDDEN Hidden file
+    _A_SYSTEM System file
+    _A_VOLID Volume ID entry
+    _A_SUBDIR Subdirectory
+    _A_ARCH Archive file
+    */
 
    if (hidden_files)
-	  SetReaddirAttribute (dirStructPtr, _A_NORMAL | _A_RDONLY | _A_HIDDEN | _A_SYSTEM | _A_ARCH);
+      SetReaddirAttribute (dirStructPtr, _A_NORMAL | _A_RDONLY | _A_HIDDEN | _A_SYSTEM | _A_ARCH);
    else
-	  SetReaddirAttribute (dirStructPtr, _A_NORMAL | _A_ARCH);
+      SetReaddirAttribute (dirStructPtr, _A_NORMAL | _A_ARCH);
 
    //while(dirStructPtr && !breakkey)
    while(dirStructPtr && !NLM_exiting)
    {
-	  //printf ("\n NLM_exiting test Line 167.... \n");
-	   
+      //printf ("\n NLM_exiting test Line 167.... \n");
+
       dirStructPtr = readdir(dirStructPtr);
       if((dirStructPtr == NULL) || (dirStructPtr == -1))
          break;
-      
-	  /* Filen er funnet */
+
+      /* Filen er funnet */
       if(dirStructPtr->d_attr & _A_SUBDIR)
-		continue;
+        continue;
 
-	  strcpy (szzipfile, zipdir);
-	  strcat (szzipfile, "/");
-	  strcat (szzipfile, dirStructPtr->d_name);
-	  procnamehho (szzipfile);
+      strcpy (szzipfile, zipdir);
+      strcat (szzipfile, "/");
+      strcat (szzipfile, dirStructPtr->d_name);
+      procnamehho (szzipfile);
 
-	  //ThreadSwitchWithDelay();
+      //ThreadSwitchWithDelay();
 
-      //if(kbhit() && getch() == 3) 
+      //if(kbhit() && getch() == 3)
         // printf("^C\n",breakkey = TRUE);
    }
 
-   if(dirStructPtrSave) 
+   if(dirStructPtrSave)
       closedir(dirStructPtrSave);
 
    if (!recurse)
-	   return;
+       return;
 
    /*  Now traverse the directories in this path */
 
    dirStructPtrSave = dirStructPtr = opendir("*.*");
-   if(dirStructPtr == NULL) 
+   if(dirStructPtr == NULL)
       return;
 
    if (hidden_files)
-		SetReaddirAttribute (dirStructPtr, _A_NORMAL | _A_RDONLY | _A_HIDDEN | _A_SYSTEM | _A_ARCH | _A_SUBDIR);
-	 else
-		SetReaddirAttribute (dirStructPtr, _A_NORMAL | _A_ARCH | _A_SUBDIR);
+        SetReaddirAttribute (dirStructPtr, _A_NORMAL | _A_RDONLY | _A_HIDDEN | _A_SYSTEM | _A_ARCH | _A_SUBDIR);
+     else
+        SetReaddirAttribute (dirStructPtr, _A_NORMAL | _A_ARCH | _A_SUBDIR);
 
    //ThreadSwitchWithDelay();
 
    while(!NLM_exiting)
    {
-	  //printf ("\n NLM_exiting test Line 204.... \n"); getch ();
+      //printf ("\n NLM_exiting test Line 204.... \n"); getch ();
 
       dirStructPtr = readdir(dirStructPtr);
       if((dirStructPtr == NULL) || (dirStructPtr == -1))
          break;
-      
+
       if(dirStructPtr->d_attr & _A_SUBDIR)
       {
-		 strcpy (szzipfile, zipdir);
-		 strcat (szzipfile, "/");
-		 strcat (szzipfile, dirStructPtr->d_name);
-	  	 procnamehho (szzipfile);
+         strcpy (szzipfile, zipdir);
+         strcat (szzipfile, "/");
+         strcat (szzipfile, dirStructPtr->d_name);
+           procnamehho (szzipfile);
 
          chdir(dirStructPtr->d_name);
-         findit(what);                
+         findit(what);
          chdir("..");
       }
 
-      //if(kbhit() && getch() == 3) 
+      //if(kbhit() && getch() == 3)
         // printf("^C\n",breakkey = TRUE);
    }
 
-   if(dirStructPtrSave) 
+   if(dirStructPtrSave)
       closedir(dirStructPtrSave);
-} 
+}
 
 
 int wild(w)
@@ -277,14 +287,14 @@ char *w;                /* path/pattern to match */
    /* startup the recursive file find operation */
 
    chdir(fsv);
-   
+
   /* Search that level for matching names */
   if ((d = opendir(both)) == NULL)
   {
     free((zvoid *)a);
     return ZE_MISS;
   }
-  
+
   f = 0;
   while ((e = readd(d)) != NULL) {
     if (strcmp(e, ".") && strcmp(e, "..") && MATCH(q, e))
@@ -361,22 +371,16 @@ int procnamehho (char *n)
     return m ? ZE_MISS : ZE_OK;
   }
 
-  /* Live name--use if file, recurse if directory */
+  /* Live name.  Recurse if directory.  Use if file. */
   for (p = n; *p; p++)          /* use / consistently */
     if (*p == '\\')
       *p = '/';
 
   //printf ("\nHHO %s\n", n);
-  if ((s.st_mode & S_IFDIR) == 0)
+
+  if (S_ISDIR( s.st_mode))
   {
-	//printf ("\nHHO1 %s\n", n);
-    /* add or remove name of file */
-	//printf ("\nAdding name %s to list.\n", n);
-    if ((m = newname(n, 0)) != ZE_OK)
-      return m;
-  } else {
-    
-	/* Add trailing / to the directory name */
+    /* Directory.  Add trailing / to the directory name. */
     if ((p = malloc(strlen(n)+2)) == NULL)
      return ZE_MEM;
     if (strcmp(n, ".") == 0 || strcmp(n, "/.") == 0) {
@@ -387,15 +391,21 @@ int procnamehho (char *n)
       if (a[-1] != '/')
         strcpy(a, "/");
     //if (dirnames && (m = newname(p, 1)) != ZE_OK) {
-	  if ((m = newname(p, 1)) != ZE_OK) {
+      if ((m = newname(p, 1)) != ZE_OK) {
         free((zvoid *)p);
         return m;
       }
-	  free ((zvoid *)p);
+      free ((zvoid *)p);
     }
-      
-	return ZE_OK;
-  }
+  } /* S_ISDIR( s.st_mode) */
+  else
+  {
+    /* Non-directory.  Add or remove name of file. */
+    //printf ("\nHHO1 %s\n", n);
+    //printf ("\nAdding name %s to list.\n", n);
+    if ((m = newname(n, 0)) != ZE_OK)
+      return m;
+  } /* S_ISDIR( s.st_mode) [else] */
   return ZE_OK;
 }
 
@@ -441,17 +451,14 @@ char *n;                /* name to process */
     return m ? ZE_MISS : ZE_OK;
   }
 
-  /* Live name--use if file, recurse if directory */
+  /* Live name.  Recurse if directory.  Use if file. */
   for (p = n; *p; p++)          /* use / consistently */
     if (*p == '\\')
       *p = '/';
-  if ((s.st_mode & S_IFDIR) == 0)
+
+  if (S_ISDIR( s.st_mode))
   {
-    /* add or remove name of file */
-    if ((m = newname(n, 0)) != ZE_OK)
-      return m;
-  } else {
-    /* Add trailing / to the directory name */
+    /* Directory.  Add trailing / to the directory name. */
     if ((p = malloc(strlen(n)+2)) == NULL)
       return ZE_MEM;
     if (strcmp(n, ".") == 0 || strcmp(n, "/.") == 0) {
@@ -492,41 +499,47 @@ char *n;                /* name to process */
       closedir(d);
     }
     free((zvoid *)p);
-  } /* (s.st_mode & S_IFDIR) == 0) */
+  } /* S_ISDIR( s.st_mode) */
+  else
+  {
+    /* Non-directory.  Add or remove name of file. */
+    if ((m = newname(n, 0)) != ZE_OK)
+      return m;
+  } /* S_ISDIR( s.st_mode) [else] */
   return ZE_OK;
 }
 
 char *szRelativParameter;
 char szRelativ[512];
-int	iRelativOK = FALSE;
-int	iRelativPakking = FALSE;
+int    iRelativOK = FALSE;
+int    iRelativPakking = FALSE;
 
 int fixRelativpath ()
 {
-	char *szp;
-	
-	szp = szRelativParameter;
+    char *szp;
 
-	if (szRelativParameter[0] == '/' || szRelativParameter[0] == '\\')
-		szp++;
+    szp = szRelativParameter;
 
-	while (*szp) {
-		if (*szp == '\\')
-			*szp = '/';
-		szp++;
-	}
+    if (szRelativParameter[0] == '/' || szRelativParameter[0] == '\\')
+        szp++;
 
-	szp = szRelativParameter;
-	if (szRelativParameter[0] == '/')
-		szp++;
+    while (*szp) {
+        if (*szp == '\\')
+            *szp = '/';
+        szp++;
+    }
 
-	strcpy (szRelativ, szp);
+    szp = szRelativParameter;
+    if (szRelativParameter[0] == '/')
+        szp++;
 
-	if (strlen(szp) == 0) {
-		szRelativ[0] = '\0';
-		return FALSE;
-	}
-	return TRUE;
+    strcpy (szRelativ, szp);
+
+    if (strlen(szp) == 0) {
+        szRelativ[0] = '\0';
+        return FALSE;
+    }
+    return TRUE;
 }
 
 
@@ -541,8 +554,7 @@ int *pdosflag;          /* output: force MSDOS file attributes? */
   char *t;              /* shortened name */
   int dosflag;
   char *sztUpper;
-  
-  
+
   /* Find starting point in name before doing malloc */
   t = *x && *(x + 1) == ':' ? x + 2 : x;
   while (*t == '/' || *t == '\\')
@@ -552,37 +564,37 @@ int *pdosflag;          /* output: force MSDOS file attributes? */
   for (n = t; *n; n++)
     if (*n == '\\')
       *n = '/';
-	
+
   if (iRelativPakking) {
-	  //printf ("\n LINE 516  *ex2ex Internt navn %s external name %s.\n", t, x); getch ();
-	  if (!iRelativOK) {
-		  if (!fixRelativpath()) {
-			iRelativOK = FALSE;
-			iRelativPakking = FALSE;
-		  }
-		  else {
-			sztUpper = malloc (strlen(t) + 10);
-			strcpy (sztUpper, t);
-			NWLstrupr (sztUpper);
-			NWLstrupr (szRelativ);
-			if (strncmp (sztUpper, szRelativ, strlen(szRelativ)) == 0) {
-				t = t + strlen(szRelativ);
-				iRelativPakking = TRUE;
-				iRelativOK = TRUE;
-			}
-			else {
-				iRelativOK = FALSE;
-				iRelativPakking = FALSE;
-			}
-			free (sztUpper);
-		  }
-	  }
-	  else 
-	  {
-		t = t + strlen(szRelativ);
-	  }
+      //printf ("\n LINE 516  *ex2ex Internt navn %s external name %s.\n", t, x); getch ();
+      if (!iRelativOK) {
+          if (!fixRelativpath()) {
+            iRelativOK = FALSE;
+            iRelativPakking = FALSE;
+          }
+          else {
+            sztUpper = malloc (strlen(t) + 10);
+            strcpy (sztUpper, t);
+            NWLstrupr (sztUpper);
+            NWLstrupr (szRelativ);
+            if (strncmp (sztUpper, szRelativ, strlen(szRelativ)) == 0) {
+                t = t + strlen(szRelativ);
+                iRelativPakking = TRUE;
+                iRelativOK = TRUE;
+            }
+            else {
+                iRelativOK = FALSE;
+                iRelativPakking = FALSE;
+            }
+            free (sztUpper);
+          }
+      }
+      else
+      {
+        t = t + strlen(szRelativ);
+      }
   }
-  
+
   if (!pathput)
     t = last(t, PATH_END);
 
@@ -682,15 +694,14 @@ iztimes *t;             /* return value: access, modific. and creation times */
   free(name);
 
   if (a != NULL) {
-	  *a = s.st_attr; // << 16) | !(s.st_mode & S_IWRITE);
+      *a = s.st_attr; // << 16) | !(s.st_mode & S_IWRITE);
     //*a = ((ulg)s.st_mode << 16) | !(s.st_mode & S_IWRITE);
-    //if ((s.st_mode & S_IFMT) == S_IFDIR) {
+    //if (S_ISDIR( s.st_mode)) {
     //*a |= MSDOS_DIR_ATTR;
     //}
   }
   if (n != NULL)
-	  *n = (s.st_mode & S_IFMT) == S_IFREG ? s.st_size : -1L;
-	    
+      *n = (S_ISREG( s.st_mode) ? s.st_size : -1L);
   if (t != NULL) {
     t->atime = s.st_atime;
     t->mtime = s.st_mtime;
@@ -739,7 +750,7 @@ iztimes *t;             /* return value: access, modific. and creation times */
   /* not all systems allow stat'ing a file with / appended */
 
   if (isstdin) {
-    /* it is common for some PC based compilers to 
+    /* it is common for some PC based compilers to
        fail with fstat() on devices or pipes */
     if (fstat(fileno(stdin), &s) != 0) {
       s.st_mode = S_IFREG; s.st_size = -1L;
@@ -756,14 +767,14 @@ iztimes *t;             /* return value: access, modific. and creation times */
 
   if (a != NULL) {
     //*a = ((ulg)s.st_mode << 16) | (isstdin ? 0L : (ulg)GetFileMode(name));
-	//*a = (ulg)s.st_mode;
-	  *a = s.st_attr;
+    //*a = (ulg)s.st_mode;
+      *a = s.st_attr;
   }
 
   printf ("\nDette er en test LINE : 721 \n"); getch();
 
   if (n != NULL)
-    *n = (s.st_mode & S_IFMT) == S_IFREG ? s.st_size : -1L;
+    *n = (S_ISREG( s.st_mode) ? s.st_size : -1L);
 #ifdef __WATCOMC__
   /* of course, Watcom always has to make an exception */
   if (s.st_atime == 312764400)
@@ -937,7 +948,7 @@ void version_local()
       " (16-bit)",
 #endif
 
-#ifdef __DATE__
+#if defined( __DATE__) && !defined( NO_BUILD_DATE)
       " on ", __DATE__
 #else
       "", ""

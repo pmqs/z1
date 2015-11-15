@@ -1,7 +1,7 @@
 /*
-  Copyright (c) 1990-2007 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 2007-Mar-4 or later
+  See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, all these files are missing, the Info-ZIP license
   also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
@@ -31,6 +31,32 @@
 #define PROCNAME(n) \
  (((action == ADD) || (action == UPDATE) || (action == FRESHEN)) ? \
  wild(n) : procname(n, filter_match_case))
+
+
+/* Progress dot control.  See fileio.c for details. */
+#define PROGRESS_DOTS_PER_FLUSH 64
+
+
+#if 0
+/* 2015-07-31 SMS.
+ * "long long" type.
+ */
+#ifdef __VAX
+# define Z_LONGLONG long
+# define UZ_LONGLONG unsigned long
+#else
+# define HAVE_LONG_LONG
+# define Z_LONGLONG long long
+# define UZ_LONGLONG unsigned long long
+#endif
+
+#ifdef __VAX
+# define API_FILESIZE_T unsigned long
+#else
+# define API_FILESIZE_T unsigned long long
+#endif
+#endif
+
 
 /* 2004-11-09 SMS.
    Large file support.
@@ -82,13 +108,27 @@
 
 typedef struct stat z_stat;
 
+#ifndef S_ISDIR                         /* VAX C V3.1-051 needs help. */
+# define S_ISDIR(m)  (((m)& S_IFMT) == S_IFDIR)
+#endif /* ndef S_ISDIR */
+
+#ifndef S_ISREG                         /* VAX C V3.1-051 needs help. */
+# define S_ISREG(m)  (((m)& S_IFMT) == S_IFREG)
+#endif /* ndef S_ISREG */
+
 #include <unixio.h>
 
-#if defined(__GNUC__) && !defined(ZCRYPT_INTERNAL)
-#  include <unixlib.h>          /* ctermid() declaration needed in ttyio.c */
+/* Need <unixlib.h> (on old VMS versions) for:
+ *    ctermid() declaration in ttyio.c,
+ *    getcwd() declaration in api.c,
+ *    getpid() declaration for srand seed.
+ */
+#if defined( __GNUC__) || defined( ZIPLIB) || defined( ZCRYPT_INTERNAL)
+#  define NEED_UNIXLIB_H
 #endif
-#ifdef ZCRYPT_INTERNAL
-#  include <unixlib.h>          /* getpid() declaration for srand seed */
+
+#ifdef NEED_UNIXLIB_H
+#  include <unixlib.h>
 #endif
 
 #if defined(_MBCS)
@@ -120,6 +160,14 @@ typedef struct stat z_stat;
 #  define VMS_PK_EXTRA 1              /* PK style VMS support is default */
 #endif
 
+/* 2014-04-18 SMS.
+ * IM-style vms/vms_im.c:vms_read() is incompatible with the any-size
+ * requests used by the LZMA compression code.
+ */
+#if defined( LZMA_SUPPORT) && defined( VMS_IM_EXTRA)
+    Bad code: error: LZMA_SUPPORT incompatible with VMS_IM_EXTRA.
+#endif
+
 /* 2007-02-22 SMS.
  * <unistd.h> is needed for symbolic link functions, so use it when the
  * symbolic link criteria are met.
@@ -135,8 +183,98 @@ typedef struct stat z_stat;
 #endif /* defined(NO_UNISTD_H) || __CRTL_VER < 70000000) */
 
 #define SSTAT vms_stat
-#define EXIT(exit_code) vms_exit(exit_code)
-#define RETURN(exit_code) return (vms_exit(exit_code), 1)
+
+/* 2013-04-11 SMS.  Have zrewind() in zipup.h. */
+#ifndef NO_ETWODD_SUPPORT
+# define ETWODD_SUPPORT
+#endif /* ndef NO_ETWODD_SUPPORT */
+
+/* 2013-11-18 SMS.
+ * Define subsidiary object library macros based on ZIPLIB.
+ * NO_ZPARCHIVE enables non-Windows api.c:comment().
+ * USE_ZIPMAIN enables zip.c:zipmain() instead of main().
+ */
+#ifdef ZIPLIB
+# ifndef NO_ZPARCHIVE
+#  define NO_ZPARCHIVE
+# endif
+# ifndef USE_ZIPMAIN
+#  define USE_ZIPMAIN
+# endif
+#endif /* def ZIPLIB */
+
+#ifdef USE_ZIPMAIN
+# define EXIT( exit_code) return( exit_code)
+# define RETURN( exit_code) return( exit_code)
+#else /* def USE_ZIPMAIN */
+# define EXIT( exit_code) vms_exit( exit_code)
+# define RETURN( exit_code) return (vms_exit( exit_code), 1)
+#endif /* def USE_ZIPMAIN [else] */
+
+/* 2011-04-21 SMS.
+ * Moved strcasecmp() stuff from vmszip.c to here.
+ * (This must follow the large-file stuff so that _LARGEFILE is defined
+ * before <decc$types.h> gets read, and <decc$types.h> does get read
+ * before this.)
+ */
+
+/* Judge availability of str[n]casecmp() in C RTL.
+ * (Note: This must follow a "#include <decc$types.h>" in something to
+ * ensure that __CRTL_VER is as defined as it will ever be.  DEC C on
+ * VAX may not define it itself.)
+ */
+#if __CRTL_VER >= 70000000
+# define HAVE_STRCASECMP
+#endif /* __CRTL_VER >= 70000000 */
+
+#ifdef HAVE_STRCASECMP
+# include <strings.h>    /* str[n]casecmp() */
+#else /* def HAVE_STRCASECMP */
+# include <limits.h>
+# ifndef UINT_MAX
+#  define UINT_MAX 4294967295U
+# endif
+# define strcasecmp( s1, s2) strncasecmp( s1, s2, UINT_MAX)
+extern int strncasecmp( char *, char *, size_t);
+#endif /* def HAVE_STRCASECMP [else] */
+
+
+/* UNICODE.  (Still in the dream stage.) */
+#if __CRTL_VER >= 60200000
+# define HAVE_WCHAR_H
+#endif
+
+
+/* Accommodation for /NAMES = AS_IS with old header files. */
+
+# define cma$tis_errno_get_addr CMA$TIS_ERRNO_GET_ADDR
+# define cma$tis_vmserrno_get_addr CMA$TIS_VMSERRNO_GET_ADDR
+# define lib$establish LIB$ESTABLISH
+# define lib$getdvi LIB$GETDVI
+# define lib$getjpi LIB$GETJPI
+# define lib$getsyi LIB$GETSYI
+# define lib$get_foreign LIB$GET_FOREIGN
+# define lib$get_input LIB$GET_INPUT
+# define lib$sig_to_ret LIB$SIG_TO_RET
+# define ots$cvt_tu_l OTS$CVT_TU_L
+# define str$concat STR$CONCAT
+# define str$find_first_substring STR$FIND_FIRST_SUBSTRING
+# define str$free1_dx STR$FREE1_DX
+# define sys$asctim SYS$ASCTIM
+# define sys$assign SYS$ASSIGN
+# define sys$bintim SYS$BINTIM
+# define sys$close SYS$CLOSE
+# define sys$connect SYS$CONNECT
+# define sys$dassgn SYS$DASSGN
+# define sys$device_scan SYS$DEVICE_SCAN
+# define sys$display SYS$DISPLAY
+# define sys$getjpiw SYS$GETJPIW
+# define sys$gettim SYS$GETTIM
+# define sys$open SYS$OPEN
+# define sys$parse SYS$PARSE
+# define sys$qiow SYS$QIOW
+# define sys$read SYS$READ
+# define sys$search SYS$SEARCH
 
 
 #ifdef __DECC

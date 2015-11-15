@@ -66,10 +66,11 @@
 
 #ifndef UTIL
 
-extern int noisy;
-
 #ifndef S_IFMT
-#define S_IFMT 0xF000
+# define S_IFMT 0xF000
+#endif
+#ifndef S_ISDIR
+# define S_ISDIR( m) (((m)& S_IFMT) == S_IFDIR)
 #endif
 
 static int attributes = _A_DIR | _A_HIDDEN | _A_SYSTEM;
@@ -123,7 +124,7 @@ DIR *opendir(const char *name)
 
 #ifndef __BORLANDC__
   /* when will we ever see a Borland compiler that can properly stat !!! */
-  if (stat(nbuf, &statb) < 0 || (statb.st_mode & S_IFMT) != S_IFDIR)
+  if (stat(nbuf, &statb) < 0 || (!S_ISDIR( statb.st_mode))
     return NULL;
 #endif
 
@@ -1181,7 +1182,7 @@ void version_local()
       " 2.x/3.x (32-bit)",
 #endif
 
-#ifdef __DATE__
+#if defined( __DATE__) && !defined( NO_BUILD_DATE)
       " on ", __DATE__
 #else
       "", ""

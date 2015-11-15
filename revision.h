@@ -1,7 +1,7 @@
 /*
   revision.h - Zip 3
 
-  Copyright (c) 1990-2010 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -19,20 +19,24 @@
 #define Z_MAJORVER   3
 #define Z_MINORVER   1
 #define Z_PATCHLEVEL 0
-#define Z_BETALEVEL "c BETA"
+#define Z_BETALEVEL "d BETA"
 
-#define VERSION "3.1c BETA"
-#define REVDATE "Jun 22nd 2010"
+/* set this to 1 for a beta, 0 for a release */
+#define BETA 1
+
+#define VERSION "3.1d-BETA"
+#define REVDATE "November 15th 2015"
+#define REVYMD  "2015-11-15"
 
 /* Setting these to the Zip version seems a waste, as the version
    structure already tells the user the Zip version through Z_MAJORVER,
    Z_MINORVER, and Z_PATCHLEVEL.  Starting with Zip 3.1c, these are now
-   only updated when the DLL interface changes.  This means that these
+   only updated when the LIB/DLL interface changes.  This means that these
    numbers might stay at 3, 1, 0 for awhile if the DLL interface stays
    backward compatible. */
-#define DW_MAJORVER    3
-#define DW_MINORVER    1
-#define DW_PATCHLEVEL  0
+#define LD_MAJORVER    3
+#define LD_MINORVER    1
+#define LD_PATCHLEVEL  0
 
 #ifndef IZ_COMPANY_NAME               /* might be already defined... */
 #  define IZ_COMPANY_NAME "Info-ZIP"
@@ -41,7 +45,7 @@
 #  define ZIP_DLL_VERSION VERSION
 #endif
 
-#if !defined(WINDLL) && !defined(IZ_VERSION_SYMBOLS_ONLY)
+#if !defined(IZ_VERSION_SYMBOLS_ONLY)
 /* Copyright notice for binary executables--this notice only applies to
  * those (zip, zipcloak, zipsplit, and zipnote), not to this file
  * (revision.h).
@@ -56,14 +60,18 @@ extern ZCONST char * far swlicense[50];
 extern ZCONST char * far versinfolines[7];
 extern ZCONST char * far cryptnote[7];
 
-#else /* DEFCPYRT */
+#else /* ndef DEFCPYRT */
 
 ZCONST char *copyright[] = {
-"Copyright (c) 1990-2010 Info-ZIP - Type '%s \"-L\"' for software license."
+# ifdef VMS
+"Copyright (c) 1990-2015 Info-ZIP - Type '%s \"-L\"' for software license."
+# else /* def VMS */
+"Copyright (c) 1990-2015 Info-ZIP - Type '%s -L' for software license."
+# endif /* def VMS [else] */
 /* XXX still necessary ???? */
 #ifdef AZTEC_C
 ,        /* extremely lame compiler bug workaround */
-#endif
+#endif /* ndef DEFCPYRT [else] */
 };
 
 ZCONST char * far versinfolines[] = {
@@ -76,19 +84,30 @@ ZCONST char * far versinfolines[] = {
 ""
 };
 
-/* new notice - 4 March 2007 */
+#if defined(IZ_CRYPT_AES_WG) || defined(IZ_CRYPT_AES_WG_NEW)
+/* new notice - 27 September 2010, updated 17 June 2015 */
+ZCONST char * far cryptAESnote[] = {
+"AES Strong Encryption notice:",
+"        This executable includes 256-bit AES strong encryption and may be",
+"        subject to export restrictions in many countries, including the USA.",
+"        US Exception TSU, Product Name: iz_aes_wg, ECCN: 5D002.C.1",
+"        See README for additional information."
+};
+#endif
+
+/* new notice - 4 March 2007, updated 27 September 2010 */
 ZCONST char * far cryptnote[] = {
-"Encryption notice:",
-"\tThe encryption code of this program is not copyrighted and is",
-"\tput in the public domain.  It was originally written in Europe",
-"\tand, to the best of our knowledge, can be freely distributed",
-"\tin both source and object forms from any country, including",
-"\tthe USA under License Exception TSU of the U.S. Export",
-"\tAdministration Regulations (section 740.13(e)) of 6 June 2002."
+"Traditional Zip Encryption notice:",
+"        The traditional zip encryption code of this program is not",
+"        copyrighted, and is put in the public domain.  It was originally",
+"        written in Europe, and, to the best of our knowledge, can be freely",
+"        distributed in both source and object forms from any country,",
+"        including the USA under License Exception TSU of the U.S. Export",
+"        Administration Regulations (section 740.13(e)) of 6 June 2002."
 };
 
 ZCONST char * far swlicense[] = {
-"Copyright (c) 1990-2010 Info-ZIP.  All rights reserved.",
+"Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.",
 "",
 "This is version 2009-Jan-02 of the Info-ZIP license.",
 "",
@@ -147,6 +166,6 @@ ZCONST char * far swlicense[] = {
 "       \"UnZipSFX,\" \"WiZ,\" \"Pocket UnZip,\" \"Pocket Zip,\" and \"MacZip\" for its",
 "       own source and binary releases."
 };
-#endif /* DEFCPYRT */
+#endif /* DEFCRYPT */
 #endif /* !WINDLL && !IZ_VERSION_SYMBOLS_ONLY */
 #endif /* !__revision_h */

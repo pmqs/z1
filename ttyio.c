@@ -1,9 +1,9 @@
 /*
   ttyio.c - Zip 3
 
-  Copyright (c) 1990-2005 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2013 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 2005-Feb-10 or later
+  See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, all these files are missing, the Info-ZIP license
   also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
@@ -31,7 +31,7 @@
 #include "zip.h"
 #include "crypt.h"
 
-#if (CRYPT || (defined(UNZIP) && !defined(FUNZIP)))
+#if defined(IZ_CRYPT_ANY) || (defined(UNZIP) && !defined(FUNZIP))
 /* Non-echo console/keyboard input is needed for (en/de)cryption's password
  * entry, and for UnZip(SFX)'s MORE and Pause features.
  * (The corresponding #endif is found at the end of this module.)
@@ -361,9 +361,9 @@ int screensize(tt_rows, tt_cols)
 #ifdef DEBUG_WINSZ
         if (firsttime) {
             firsttime = FALSE;
-            fprintf(stderr, "ttyio.c screensize():  ws_row = %d\n",
+            zfprintf(stderr, "ttyio.c screensize():  ws_row = %d\n",
               wsz.ws_row);
-            fprintf(stderr, "ttyio.c screensize():  ws_col = %d\n",
+            zfprintf(stderr, "ttyio.c screensize():  ws_col = %d\n",
               wsz.ws_col);
         }
 #endif
@@ -378,7 +378,7 @@ int screensize(tt_rows, tt_cols)
 #ifdef DEBUG_WINSZ
         if (firsttime) {
             firsttime = FALSE;
-            fprintf(stderr,
+            zfprintf(stderr,
               "ttyio.c screensize():  ioctl(TIOCGWINSZ) failed\n"));
         }
 #endif
@@ -507,13 +507,13 @@ int zgetch(__G__ f)
 #endif /* !HAVE_WORKING_GETCH */
 
 
-#if CRYPT                       /* getp() is only used with full encryption */
+#ifdef IZ_CRYPT_ANY             /* getp() is only used with full encryption */
 
 /*
  * Simple compile-time check for source compatibility between
  * zcrypt and ttyio:
  */
-#if (!defined(CR_MAJORVER) || (CR_MAJORVER < 2) || (CR_MINORVER < 7))
+#if (!defined(CR_MAJORVER) || (CR_MAJORVER* 10 + CR_MINORVER < 27))
    error:  This Info-ZIP tool requires zcrypt 2.7 or later.
 #endif
 
@@ -548,11 +548,12 @@ char *getp(__G__ m, p, n)
     __GDEF
     ZCONST char *m;             /* prompt for password */
     char *p;                    /* return value: line input */
-    int n;                      /* bytes available in p[] */
+    int n;                      /* Usable bytes available in p[] */
 {
     char c;                     /* one-byte buffer for read() to use */
     int i;                      /* number of characters input */
     char *w;                    /* warning on retry */
+    char msg[ 64];              /* Warning message text. */
 
     /* get password */
     w = "";
@@ -567,11 +568,12 @@ char *getp(__G__ m, p, n)
             if (c == 8 || c == 127) {
                 if (i > 0) i--; /* the `backspace' and `del' keys works */
             }
-            else if (i < n)
+            else if (i <= n)
                 p[i++] = c;     /* truncate past n */
         } while (c != '\n');
         PUTC('\n', stderr);  fflush(stderr);
-        w = "(line too long--try again)\n";
+        sprintf( msg, "(line too long (>%d char) -- try again)\n", n);
+        w = msg;
     } while (p[i-1] != '\n');
     p[i-1] = 0;                 /* terminate at newline */
 
@@ -600,11 +602,12 @@ char *getp(__G__ m, p, n)
     __GDEF
     ZCONST char *m;             /* prompt for password */
     char *p;                    /* return value: line input */
-    int n;                      /* bytes available in p[] */
+    int n;                      /* Usable bytes available in p[] */
 {
     char c;                     /* one-byte buffer for read() to use */
     int i;                      /* number of characters input */
     char *w;                    /* warning on retry */
+    char msg[ 64];              /* Warning message text. */
     int f;                      /* file descriptor for tty device */
 
 #ifdef PASSWD_FROM_STDIN
@@ -626,12 +629,13 @@ char *getp(__G__ m, p, n)
         echoff(f);
         do {                    /* read line, keeping n */
             read(f, &c, 1);
-            if (i < n)
+            if (i <= n)
                 p[i++] = c;
         } while (c != '\n');
         echon();
         PUTC('\n', stderr);  fflush(stderr);
-        w = "(line too long--try again)\n";
+        sprintf( msg, "(line too long (>%d char) -- try again)\n", n);
+        w = msg;
     } while (p[i-1] != '\n');
     p[i-1] = 0;                 /* terminate at newline */
 
@@ -653,11 +657,12 @@ char *getp(__G__ m, p, n)
     __GDEF
     ZCONST char *m;             /* prompt for password */
     char *p;                    /* return value: line input */
-    int n;                      /* bytes available in p[] */
+    int n;                      /* Usable bytes available in p[] */
 {
     char c;                     /* one-byte buffer for read() to use */
     int i;                      /* number of characters input */
     char *w;                    /* warning on retry */
+    char msg[ 64];              /* Warning message text. */
     FILE *f;                    /* file structure for SYS$COMMAND device */
 
 #ifdef PASSWD_FROM_STDIN
@@ -680,12 +685,13 @@ char *getp(__G__ m, p, n)
         do {                    /* read line, keeping n */
             if ((c = (char)getc(f)) == '\r')
                 c = '\n';
-            if (i < n)
+            if (i <= n)
                 p[i++] = c;
         } while (c != '\n');
         echon();
         PUTC('\n', stderr);  fflush(stderr);
-        w = "(line too long--try again)\n";
+        sprintf( msg, "(line too long (>%d char) -- try again)\n", n);
+        w = msg;
     } while (p[i-1] != '\n');
     p[i-1] = 0;                 /* terminate at newline */
 #ifndef PASSWD_FROM_STDIN
@@ -698,5 +704,5 @@ char *getp(__G__ m, p, n)
 
 #endif /* VMS || CMS_MVS */
 #endif /* ?HAVE_WORKING_GETCH */
-#endif /* CRYPT */
-#endif /* CRYPT || (UNZIP && !FUNZIP) */
+#endif /* def IZ_CRYPT_ANY */
+#endif /* defined(IZ_CRYPT_ANY) || (defined(UNZIP) && !defined(FUNZIP)) */
