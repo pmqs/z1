@@ -63,8 +63,12 @@ ZCONST uLongf *crc_32_tab;
 #  endif /* def Z_U4 [else] */
 # endif
 
+#ifndef NO_PROTO
+int set_filetype(char * out_path)
+#else
 int set_filetype(out_path)
   char *out_path;
+#endif
 {
 #ifdef __BEOS__
   /* Set the filetype of the zipfile to "application/zip" */
@@ -91,9 +95,13 @@ int set_filetype(out_path)
 /***********************************************************************
  * Issue a message for the error, clean up files and memory, and exit.
  */
+#ifndef NO_PROTO
+void ziperr(int code, ZCONST char *msg)
+#else
 void ziperr(code, msg)
     int code;               /* error code from the ZE_ class */
     ZCONST char *msg;       /* message about how it happened */
+#endif
 {
     if (mesg_line_started) {
       mesg_line_started = 0;
@@ -113,17 +121,24 @@ void ziperr(code, msg)
 /***********************************************************************
  * Print a warning message to mesg (usually stderr) and return.
  */
+#ifndef NO_PROTO
+void zipwarn(ZCONST char *a, ZCONST char *b)
+#else
 void zipwarn(a, b)
 ZCONST char *a, *b;     /* message strings juxtaposed in output */
+#endif
 {
   zipwarn_i("zipcloak warning:", 0, a, b, ADD_NL);
 }
 
 
 /* zipwarn_indent(): zipwarn(), with message indented. */
-
+#ifndef NO_PROTO
+void zipwarn_indent(ZCONST char *a, ZCONST char *b)
+#else
 void zipwarn_indent(a, b)
 ZCONST char *a, *b;
+#endif
 {
     zipwarn_i("zipcloak warning:", 1, a, b, ADD_NL);
 }
@@ -134,8 +149,12 @@ ZCONST char *a, *b;
  * cleanly using ziperr().
  */
 #ifndef NO_EXCEPT_SIGNALS
+#ifndef NO_PROTO
+local void handler(int sig)
+#else
 local void handler(sig)
     int sig;                  /* signal number (ignored) */
+#endif
 {
 # if (!defined(MSDOS) && !defined(__human68k__) && !defined(RISCOS))
     echon();
@@ -450,11 +469,15 @@ void show_options()
 
 
 /* encr_passwd() stolen from zip.c.  Should be shared. */
+#ifndef NO_PROTO
+int encr_passwd(int modeflag, char* pwbuf, int size, ZCONST char *zfn)
+#else
 int encr_passwd(modeflag, pwbuf, size, zfn)
   int modeflag;
   char *pwbuf;
   int size;
   ZCONST char *zfn;
+#endif
 {
     char *prompt;
 
@@ -474,10 +497,14 @@ int encr_passwd(modeflag, pwbuf, size, zfn)
    as multiple files may be involved and using zfn is inconsistent,
    and the UnZip return codes, such as for skipping entries, are
    not applicable here. */
+#ifndef NO_PROTO
+int simple_encr_passwd(int modeflag, char* pwbuf, size_t size)
+#else
 int simple_encr_passwd(modeflag, pwbuf, size)
   int modeflag;
   char *pwbuf;
   size_t size;
+#endif
 {
     char *prompt;
 
@@ -536,9 +563,13 @@ struct option_struct far options[] = {
  * help in help() above.
  */
 
+#ifndef NO_PROTO
+int main(int argc, char **argv)
+#else
 int main(argc, argv)
     int argc;                   /* number of tokens in command line */
     char **argv;                /* command line tokens */
+#endif
 {
     int attr;                   /* attributes of zip file */
     zoff_t start_offset;        /* start of central directory */
