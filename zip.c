@@ -420,7 +420,7 @@ local void freeup()
     free(charsetname);
     charsetname = NULL;
   }
- 
+
   /* free any suffix lists */
   for (j = 0; mthd_lvl[j].method >= 0; j++)
   {
@@ -2144,7 +2144,7 @@ local void help_extended()
 "  On ports with Unicode enabled, can use either UTF-8 or Unicode escapes",
 "  as well as the local character set (code page in Windows) in a path or",
 "  pattern on command line to match files in archive.  Zip first checks",
-"  for a direct match, then converts escapes to Unicode and tries again.",  
+"  for a direct match, then converts escapes to Unicode and tries again.",
 "",
 "  Zip 3.1 no longer transliterates characters.  If there is no exact",
 "  match for a char in the destination charset, a Unicode escape is used.",
@@ -2762,7 +2762,7 @@ local void version_info()
 # if defined( IZ_CRYPT_ANY) || defined( IZ_CRYPT_AES_WG_NEW)
   zprintf("\n");
 # endif
-  
+
   if (charsetname)
   {
     zprintf("Current charset/code page:  %s\n", charsetname);
@@ -3000,7 +3000,7 @@ local ulg get_needed_unzip_features()
 #  ifndef RISCOS
     int i;
 #  endif
-    
+
     /* check the global compression method */
     if (method == BZIP2) {
       needed_unzip_features |= UNZIP_BZIP2_SUPPORT;
@@ -3469,7 +3469,7 @@ local int check_unzip_version(unzippath, needed_unzip_features)
     /* unzip_version and unzip_supported_features are global to zip.c */
     get_unzip_features(unzippath, &unzip_version, &unzip_supported_features);
   }
-  
+
   if (show_what_doing) {
     sprintf(errbuf, "sd:  unzip version:  %4.2f", unzip_version);
     sdmessage(errbuf, "");
@@ -3614,7 +3614,7 @@ local void warn_unzip_return(status)
   int status;
 {
   /* Output warning appropriate for UnZip return code. */
-  
+
   if (status == 0) {
     zipwarn("unzip returned 0 (success)", "");
   } else if (status == 1) {
@@ -4325,7 +4325,7 @@ local void check_zipfile(zipname, zippath, is_temp)
       zipwarn(errbuf, "");
     }
   }  /* result > 0 */
-    
+
   if (unzip_string) {
     free(unzip_string);
     unzip_string = NULL;
@@ -5306,7 +5306,7 @@ local ulg datetime(arg, curtime)
   hr = 0;
   mn = 0;
   sc = 0;
-  
+
   cyr = 0;
   cmo = 0;
   cdy = 0;
@@ -6684,7 +6684,7 @@ char **argv;            /* command line tokens */
   set_locale();
 
   /* Keeping copy of this comment here for historical reasons. */
-  
+
   /* For Unix, we either need to be working in some UTF-8 environment or we
      need help elsewise to see all file system paths available to us,
      otherwise paths not supported in the current character set won't be seen
@@ -6724,7 +6724,7 @@ char **argv;            /* command line tokens */
      do all that.  For instance, the handling of surrogates.  Best to leave
      converting Windows wide strings to UTF-8 to Windows.)  has_win32_wide()
      is used to determine if the Windows port supports wide characters.
-     
+
      Note that paths displayed in a Windows command prompt window will likely
      be escaped.  If a Unicode supporting font is loaded (like Lucida Console)
      and the code page is set to UTF-8 (chcp 65001), then most Western
@@ -6743,7 +6743,7 @@ char **argv;            /* command line tokens */
      (double byte character set) environment that seems to mirror somewhat
      Windows wide functionality, but this is reported to be insufficient.  IBM
      support is still rough and untested.
-     
+
      AIX will support the UTF-8 locale, but it is an optional feature, so one
      must do a test to see if it is present.  Some specific testing is needed
      and is being worked on.
@@ -7452,14 +7452,14 @@ char **argv;            /* command line tokens */
     env_argv[0] = argv[0];
     env_argv[1] = NULL;
     env_argc = 1;
-    
+
     /* Get options from environment. */
     envargs(&env_argc, &env_argv, "ZIPOPT", "ZIP");
 
     /* Get Win32 wide command line converted to UTF-8. */
     utf8_argv = get_win32_utf8_argv();
     utf8_argc = arg_countz(utf8_argv);
-    
+
 #if 0
     printf("{2}\n");
 #endif
@@ -7587,7 +7587,7 @@ char **argv;            /* command line tokens */
     if (value && (MAX_OPTION_VALUE_SIZE) &&
         strlen(value) > (MAX_OPTION_VALUE_SIZE)) {
       sprintf(errbuf, "command line argument larger than %d - truncated: ",
-              MAX_OPTION_VALUE_SIZE); 
+              MAX_OPTION_VALUE_SIZE);
       zipwarn(errbuf, value);
       value[MAX_OPTION_VALUE_SIZE] = '\0';
     }
@@ -9529,7 +9529,7 @@ char **argv;            /* command line tokens */
   if (calc_crc32) {
     unsigned long checksum;
     int ret;
-    
+
     ret = CalcCrc32File(zipfile, &checksum);
 
     zfprintf(mesg, "%08x\n", checksum);
@@ -9636,7 +9636,7 @@ char **argv;            /* command line tokens */
   /* Show method-level suffix lists. */
   if (show_suffixes)
   {
-    char level_str[ 8];
+    char level_str[12];
     char *suffix_str;
     int any = 0;
 
@@ -10464,7 +10464,7 @@ char **argv;            /* command line tokens */
           ZIPERR(ZE_CRYPT, "AES128 password too short");
         }
       }
-    
+
       if ((e = malloc(MAX_PWLEN+2)) == NULL) {
         ZIPERR(ZE_MEM, "was verifying encryption password (1)");
       }
@@ -10669,7 +10669,7 @@ char **argv;            /* command line tokens */
     cd_only = 1;
   }
 #endif
-  
+
   if (have_out && in_path && namecmp(in_path, out_path) == 0) {
     sprintf(errbuf, "--out path must be different from in path: %s", out_path);
     ZIPERR(ZE_PARMS, errbuf);
@@ -11628,7 +11628,7 @@ char **argv;            /* command line tokens */
     /* if -u or -f with no args, do all, but, when present, apply filters */
     for (z = zfiles; z != NULL; z = z->nxt) {
 #ifdef UNICODE_SUPPORT_WIN32
-      char *uzname = wchar_to_utf8_string(z->znamew); 
+      char *uzname = wchar_to_utf8_string(z->znamew);
       z->mark = pcount ? filter(uzname, filter_match_case) : 1;
       free(uzname);
 #else
@@ -12129,7 +12129,7 @@ char **argv;            /* command line tokens */
 
 #if 0
           WIN32_FILE_ATTRIBUTE_DATA    fileInfo;
- 
+
           if(GetFileAttributesEx(f->name, 0, &fileInfo))
           {
             usize = fileInfo.nFileSizeLow;
@@ -12879,7 +12879,7 @@ char **argv;            /* command line tokens */
         strcpy(e, "entry");
       else
         strcpy(e, "entries");
-      
+
       if (bytes == 1)
         strcpy(b, "byte");
       else
@@ -13503,7 +13503,7 @@ char **argv;            /* command line tokens */
           sprintf(errbuf, "was zipping %s", z->name);
           ZIPERR(r, errbuf);
         }
-        
+
         if (filesync && z->current)
         {
           /* if filesync if entry matches OS just copy */
@@ -13536,7 +13536,7 @@ char **argv;            /* command line tokens */
           }
           */
         } /* filesync && z->current */
-        
+
         if (r == ZE_OPEN || r == ZE_MISS || r == ZE_SKIP || r == ZE_SAME)
         {
           o = 1;
@@ -14905,7 +14905,7 @@ char **argv;            /* command line tokens */
         }
 
         new_read = (int)strlen(new_zcomment + new_zcomlen);
-      
+
         if (comment_from_tty) {
           /* If the first line is empty or just a newline, keep current comment */
           if (new_zcomlen == 0 &&
