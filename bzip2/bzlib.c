@@ -8,8 +8,8 @@
    This file is part of bzip2/libbzip2, a program and library for
    lossless, block-sorting data compression.
 
-   bzip2/libbzip2 version 1.0.6 of 6 September 2010
-   Copyright (C) 1996-2010 Julian Seward <jseward@bzip.org>
+   bzip2/libbzip2 version 1.0.8 of 13 July 2019
+   Copyright (C) 1996-2019 Julian Seward <jseward@acm.org>
 
    Please read the WARNING, DISCLAIMER and PATENTS sections in the 
    README file.
@@ -43,12 +43,12 @@ void BZ2_bz__AssertH__fail ( int errcode )
    fprintf(stderr, 
       "\n\nbzip2/libbzip2: internal error number %d.\n"
       "This is a bug in bzip2/libbzip2, %s.\n"
-      "Please report it to me at: jseward@bzip.org.  If this happened\n"
+      "Please report it to: bzip2-devel@sourceware.org.  If this happened\n"
       "when you were using some program which uses libbzip2 as a\n"
       "component, you should also report this bug to the author(s)\n"
       "of that program.  Please make an effort to report this bug;\n"
       "timely and accurate bug reports eventually lead to higher\n"
-      "quality software.  Thanks.  Julian Seward, 10 December 2007.\n\n",
+      "quality software.  Thanks.\n\n",
       errcode,
       BZ2_bzlibVersion()
    );
@@ -1361,27 +1361,21 @@ int BZ_API(BZ2_bzBuffToBuffDecompress)
 
 /*---------------------------------------------------*/
 /*--
-   2005-10-03 SMS.
-   return version like "1.0.3, 15-Feb-2005".
+   return version like "0.9.5d, 4-Sept-1999".
 --*/
 const char * BZ_API(BZ2_bzlibVersion)(void)
 {
    static char vers[ 32] = BZ_VERSION_BASE;
-   static int done = False;
 
-   if (!done)
-   {
-      done = True;
-      strcat( vers, ", ");
-      strcat( vers, BZ_VERSION_DATE);
-   }
+   strcat( vers, ", ");
+   strcat( vers, BZ_VERSION_DATE);
    return vers;
 }
 
-/*---------------------------------------------------*/
+
 /*--
    2005-10-03 SMS.
-   Actually return version like "0.9.0c".
+   Return version like "0.9.0c".
 --*/
 const char * BZ_API(BZ2_bzlibVersionBase)(void)
 {

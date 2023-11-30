@@ -1,7 +1,7 @@
 /*
   util.c
 
-  Copyright (c) 1990-2009 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -55,6 +55,10 @@ uch upper[256], lower[256];
 #endif
 #ifndef DIRSEP_CHR
 #  define DIRSEP_CHR '/'
+#endif
+
+#ifdef LCC_WIN32
+#  include <wchar.h>
 #endif
 
 /* Local functions */
@@ -1058,10 +1062,10 @@ int printnames()
  */
 int is_text_buf(buf_ptr, buf_size)
     ZCONST char *buf_ptr;
-    unsigned buf_size;
+    size_t buf_size;
 {
     int result = 0;
-    unsigned i;
+    size_t i;
     unsigned char c;
 
     /* If user wants all files handled as text, we're done.  This
@@ -1464,6 +1468,7 @@ int abbrevmatch (matchstring, abbrev, case_sensitive, minmatch)
 
   for (; *m && *a; m++, a++) {
     cnt++;
+
     if (case_sensitive) {
       if (*m != *a) {
         /* mismatch */
@@ -1535,4 +1540,147 @@ int strmatch (string1, string2, case_sensitive, maxmatch)
   }
   /* strings match */
   return 1;
+}
+
+/* get_flags - parses a comma-separated list of flags
+ *
+ *   instring  - input string to parse
+ *   flags     - output array of flags (flag_name == NULL at end)
+ *
+ * Returns number of flags found, or -1 if error.
+ *
+ * The returned flags array should be free'd using free_flags().
+ *
+ * A leading dash negates a flag.
+ * Note that flag names can't contain whitespace or commas.
+ *
+ * Given the string:
+ *   usize,-comment,csize
+ * get_flags() generates the following flags array:
+ *   flag_name    negated
+ *   ---------    -------
+ *   usize        0
+ *   comment      1
+ *   ssize        0
+ *   NULL         0
+ *
+ * The flags - and + are special:
+ *   -     tells caller to remove any flags already set
+ *   +     tells caller to set all flags
+ *
+ * Flags should be processed by caller left to right.
+ */
+#ifndef NO_PROTO
+int get_flags (char *instring, option_flag *flags[])
+#else
+int get_flags (instring, flags)
+  char *instring;
+  option_flag flags[];
+#endif
+{
+  int cnt = 0;
+  size_t len;
+  char *flag_name;
+  size_t flag_start = 0;
+  size_t flag_end = 0;
+  size_t flag_name_len;
+  int negated;
+  option_flag *flags_array = NULL;
+  int flags_array_size = 0;
+  int asize;
+  size_t i;
+  size_t j;
+
+  if (!instring) {
+    return -1;
+  }
+
+  len = strlen(instring);
+
+  while (flag_start < len) {
+    negated = 0;
+    /* find next comma or end of string */
+    for (i = flag_start; i < len && instring[i] != ','; i++) ;
+    flag_end = i - 1;
+
+    flag_name_len = flag_end - flag_start + 1;
+
+    if (flag_name_len == 1 && instring[flag_start] == '-') {
+      /* special "-" case (remove all) - just pass back to caller */
+    }
+    else if (flag_name_len == 1 && instring[flag_start] == '+') {
+      /* special "+" case (add all) - just pass back to caller */
+    }
+    else {
+      /* handle negation */
+      if (instring[flag_start] == '-') {
+        flag_start++;
+        negated = 1;
+      }
+    }
+
+    if (cnt == flags_array_size) {
+      /* Allocate space for more flags if needed */
+      flags_array_size += 10;
+      asize = (flags_array_size + 1) * sizeof(option_flag);
+      if ((flags_array = (option_flag *) realloc(flags_array, asize)) == NULL) {
+        ZIPERR(ZE_MEM, "could not allocate flags_array");
+      }
+    }
+
+    /* get storage for flag_name */
+    if ((flag_name = (char *) malloc(flag_name_len + 1)) == NULL) {
+      ZIPERR(ZE_MEM, "could not allocate flag_name");
+    }
+
+    /* copy flag name into flag_name */
+    for (j = flag_start; j <= flag_end; j++) {
+      flag_name[j - flag_start] = instring[j];
+    }
+    flag_name[j - flag_start] = '\0';
+
+    /* store the flag */
+    flags_array[cnt].flag_name = flag_name;
+    flags_array[cnt].negated = negated;
+
+    flag_start = flag_end + 2;
+    cnt++;
+
+  } /* while */
+
+  /* mark end of flags array */
+  flags_array[cnt].flag_name = NULL;
+  flags_array[cnt].negated = 0;
+
+  *flags = flags_array;
+
+  return cnt;
+}
+
+/* free_flags - frees a flags array created by get_flags()
+ *
+ *   flags     - flags array to free
+ *
+ * No return.
+ */
+#ifndef NO_PROTO
+void free_flags (option_flag *flags[])
+#else
+void free_flags (flags)
+  option_flag flags[];
+#endif
+{
+  int i;
+  option_flag *flags_array;
+  
+  if (flags == NULL) {
+    return;
+  }
+
+  flags_array = *flags;
+
+  for (i = 0; flags_array[i].flag_name; i++) {
+    free(flags_array[i].flag_name);
+  }
+  free(flags_array);
 }

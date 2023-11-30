@@ -1,7 +1,7 @@
 /*
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2016 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 2000-Apr-09 or later
+  See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, all these files are missing, the Info-ZIP license
   also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
@@ -113,7 +113,7 @@ int caseflag;           /* true to force case-sensitive match */
   struct stat s;        /* result of stat() */
   struct zlist far *z;  /* steps through zfiles list */
 
-  if (strcmp(n, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(n, "-") == 0))   /* if compressing stdin */
     return newname(n, 0, caseflag);
   else if (LSSTAT(n, &s))
   {
@@ -304,7 +304,7 @@ iztimes *t;             /* return value: access, modific. and creation times */
   if (name[len - 1] == '/')
     name[len - 1] = '\0';
   /* not all systems allow stat'ing a file with / appended */
-  if (strcmp(f, "-") == 0) {
+  if (is_stdin || (!no_stdin && strcmp(f, "-") == 0)) {
     if (fstat(fileno(stdin), &s) != 0) {
       free(name);
       error("fstat(stdin)");

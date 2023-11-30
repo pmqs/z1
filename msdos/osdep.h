@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2008 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2007-Mar-4 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -15,6 +15,9 @@
 #ifndef DOS
 #  define DOS
 #endif
+
+/* aSc needed in zip.c line 12992 */
+#define FOPW_STDOUT "wb"
 
 /* The symbol MSDOS is consistently used in the generic source files
  * to identify code to support for MSDOS (and MSDOS related) stuff.

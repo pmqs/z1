@@ -1,7 +1,7 @@
 /*
   netware.c
 
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2016 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -345,7 +345,7 @@ int procnamehho (char *n)
   if (n == NULL)        /* volume_label request in freshen|delete mode ?? */
     return ZE_OK;
 
-  if (strcmp(n, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(n, "-") == 0))   /* if compressing stdin */
     return newname(n, 0);
   else if (stat(n, &s)
 #if defined(__TURBOC__) || defined(__WATCOMC__)
@@ -425,7 +425,7 @@ char *n;                /* name to process */
   if (n == NULL)        /* volume_label request in freshen|delete mode ?? */
     return ZE_OK;
 
-  if (strcmp(n, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(n, "-") == 0))   /* if compressing stdin */
     return newname(n, 0);
   else if (stat(n, &s)
 #if defined(__TURBOC__) || defined(__WATCOMC__)
@@ -680,7 +680,7 @@ iztimes *t;             /* return value: access, modific. and creation times */
   if (name[len - 1] == '/')
     name[len - 1] = '\0';
   /* not all systems allow stat'ing a file with / appended */
-  if (strcmp(f, "-") == 0) {
+  if (is_stdin || (!no_stdin && strcmp(f, "-") == 0)) {
     if (fstat(fileno(stdin), &s) != 0)
       error("fstat(stdin)");
   }
@@ -730,7 +730,7 @@ iztimes *t;             /* return value: access, modific. and creation times */
 {
   struct stat s;        /* results of stat() */
   char *name;
-  int len = strlen(f), isstdin = !strcmp(f, "-");
+  int len = strlen(f), isstdin = is_stdin || (!no_stdin && !strcmp(f, "-"));
 
   if (f == label) {
     if (a != NULL)

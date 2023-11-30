@@ -78,7 +78,7 @@ void ChangeNameForFAT(char *name);
 
 char *GetLongNameEA(const char *name);
 char *GetLongPathEA(const char *name);
-void GetEAs(char *name, char **bufptr, size_t *size,
-                        char **cbufptr, size_t *csize);
+void GetEAs(char *name, char **bufptr, ush *size,
+                        char **cbufptr, ush *csize);
 
 char *StringLower(char *);

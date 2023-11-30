@@ -35,11 +35,13 @@ Installation on Unix (see below for installation on other systems)
           gzip -dc zip31.tgz | tar xf -
           cd zip31
 
-     (For the Zip 3.1d beta kit, replace zip31 with zip31d.)
+     (For the Zip 3.1e beta kit, replace zip31 with zip31e.)
 
      Procedures used to build the programs are described below.  Before
      doing that, it's important to get any optional extra source kits
-     for the features you need.
+     for the features you need.  However, at this time the standard kit
+     now includes all compression and encryption methods, so no additional
+     kits should be needed.
 
 
      Compression Source Kits
@@ -63,13 +65,16 @@ Installation on Unix (see below for installation on other systems)
      Encryption Source Kits
      ----------------------
 
+     Traditional Encryption
+
      Zip now includes the original encryption code (called "CRYPT" or "ZCRYPT")
      as part of the base Zip kit that was previously supplied in the separate
      package zcrypt29.zip.  Also called "IZ CRYPT TRAD" (for Info-ZIP Crypt
      Traditional), this original zip encryption is now considered weak by
      today's standards and should not be used for any serious data protection.
      Zip 3.1 now includes a slightly updated version, CRYPT 3.0, but the
-     algorithms are essentially the same.
+     algorithms are essentially the same.  This encryption is also known as
+     "ZipCrypto" or "Traditional" encryption.
   
      Traditional Zip encryption is enabled by default, but you can disable it
      by specifying -DNO_CRYPT_TRAD (for "no traditional encryption") or
@@ -81,19 +86,39 @@ Installation on Unix (see below for installation on other systems)
      encryption to releases before Zip 2.31) and README_CR.txt for more on the
      legal details of CRYPT.
 
-     This Zip release has optional support for Advanced Encryption Standard
-     (AES) encryption, which is considered relatively strong encryption.  The
-     strong encryption code is distributed separately, requiring the Info-ZIP
-     AES source kit (iz_aes_wg.zip) be installed to add AES encryption.  The
-     kit adds AES WinZip/Gladman (WG) encryption, an AES encryption method
-     based on the Gladman AES code and compatible with WinZip AES encryption.
-     Files encrypted with AES WG encryption can be decrypted using many other
-     utilities, such as WinZip and 7-Zip.  The AES source kit must be unpacked
-     in the Zip source top directory, where it creates and populates the
-     "aes_wg" subdirectory.  File and path names may vary, but commands like
-     the following should extract the AES WG source kit in the right place:
+     AES Encryption
 
-          cd zip31                      # If not already there
+     This Zip release includes support for Advanced Encryption Standard (AES)
+     encryption, which is considered relatively strong encryption.
+
+     WARNING:  As of Zip 3.1e, AES encryption is now included in the Zip source
+     kit.  This makes the kit export controlled and should not be downloaded
+     or used by anyone in a country that does not permit use of strong
+     encryption.  AES strong encryption code is also distributed separately as
+     the AES source kit (iz_aes_wg.zip).  See README for more information.
+     
+     Info-ZIP AES encryption adds AES WinZip/Gladman (WG) encryption, an AES
+     encryption method based on the Gladman AES code and compatible with WinZip
+     AES encryption.  Files encrypted with AES WG encryption can be decrypted
+     using many other utilities, such as WinZip and 7-Zip.  If the AES source
+     kit is used to add AES encryption, it must be unpacked in the Zip source
+     top directory, where it creates and populates the "aes_wg" subdirectory.
+     Again, Info-ZIP AES encryption is now included in the base Zip source kit
+     and the aes_wg directory should already be populated and AES encryption
+     already enabled.  Before changing the contents of this directory check
+     the documentation in the replacement kit for compatibility.
+     
+     TO DISABLE AES ENCRYPTION SUPPORT:  Delete the aes_wg directory.  On
+     Windows, you also need to edit control.h and set the AES flag to 0
+     (zero) following the instructions in that file.
+     
+     To retrieve and use the separate Info-ZIP AES kit, download the kit and
+     create/replace the aes_wg directory.  File and path names may vary, but
+     commands like the following (which assume the AES kit is in the directory
+     above the zip31 directory) should extract the AES WG source kit in the
+     right place:
+
+          cd zip31                      # If you're not already there
           unzip ../iz_aes_wg.zip        # Unpack the AES WG kit
 
      The AES source kit can be found on our server at:
@@ -107,12 +132,15 @@ Installation on Unix (see below for installation on other systems)
      WARNING:  The Info-ZIP AES source kit is subject to US export control
                laws.  BEFORE downloading this kit, read the Encryption Notice
                in the Zip source kit file README.  You agree to follow these
-               terms when you download and/or use the AES source kit.
+               terms when you download and/or use the AES source kit.  These
+               terms also apply if you download or use a Zip source kit (such
+               as this one) that already includes AES encryption.
 
-     See aes_wg/README_AES_WG.txt in the AES source kit for more information
-     about Info-ZIP's implementation of AES WG encryption.
+     See aes_wg/README_AES_WG.txt in the aes_wg directory or the AES source kit
+     for more information about Info-ZIP's implementation of AES WG encryption.
 
-     See below for AES encryption build instructions.
+     See below for AES encryption build instructions.  AES encryption is
+     included and enabled by default when this kit is used to build zip.
 
 
   Building Zip
@@ -173,7 +201,8 @@ Installation on Unix (see below for installation on other systems)
 
      The problem has been observed on HP-UX version 11.11 (PA-RISC), and
      not on 11.31 (IA64).  A discussion may be available at:
-          http://h30499.www3.hp.com/t5/x/x/m-p/4166878
+          https://community.hpe.com/t5/x/x/m-p/4166878
+          (previously http://h30499.www3.hp.com/t5/x/x/m-p/4166878)
 
      For proper operation on systems with the defective mkstemp(), the C
      macro NO_MKSTEMP must be specified during the Zip build.  For example:
@@ -208,6 +237,8 @@ Installation on Unix (see below for installation on other systems)
      Encryption
      ----------
 
+     Traditional zip encryption
+     
      Traditional zip encryption is enabled by default.  To disable it on
      Unix-like systems, the C macro NO_CRYPT_TRAD (to disable just traditional
      encryption) or NO_CRYPT (to disable all encryption) must be defined at
@@ -221,11 +252,23 @@ Installation on Unix (see below for installation on other systems)
      NO_CRYPT_TRAD (or NO_CRYPT) in control.h.  Read the comments there for
      how to do this.
      
-     AES encryption is not included in the base Zip source kit.  To add it,
-     download the separate AES WG source kit as explained above.  Unpack the
-     kit into the Zip source kit top directory and it should populate the
-     aes_wg directory of the Zip source kit.  Then follow the instructions
-     below to rebuild.
+     Note that the Traditional Encryption code is merged into the source kit.
+     Removing that code requires replacing specific files with files that
+     include non-encryption replacements for the encryption functions.
+     Contact us if you need a totally encryption free kit.
+     
+     AES encryption
+     
+     AES encryption is now included in the base Zip source kit.  Follow the
+     instructions above to remove AES encryption.  Contact us if a kit without
+     AES encryption or a kit totally free of encryption is needed.
+     
+     The current version of AES encryption code as of this release is included
+     in the aes_wg directory.  To replace that code, or add AES to a Zip source
+     kit without it, download the separate AES WG source kit as explained
+     above.  Unpack the kit into the Zip source kit top directory and it should
+     populate the aes_wg directory of the Zip source kit.  Then follow the
+     instructions below to rebuild.
 
      On Unix, Mac OS X, and VMS, the AES WG source kit should be detected
      by the build scripts.  Rebuild and AES WG encryption should now be
@@ -343,9 +386,9 @@ Installation on other systems
      free GNU C implementations, respectively.  More detailed instructions
      can be found in the respective makefiles.
 
-     Note that many of these are a bit stale and may need some work to build
+     Note that all of these may be a bit stale and may need some work to build
      Zip 3.1.  It's also possible there are constructs in Zip 3.1 that some
-     of these can't handle.
+     of these can't handle.  Please let us know of any issues.
 
 
   WIN32 (Windows NT/2K/XP/2K3/VISTA/7/8/... and Windows 95/98/ME):
@@ -512,9 +555,8 @@ Compiler Flags
     In Zip 3.1, Zip now defaults to storing paths in the main path field as
     UTF-8.  This is backward compatible with 7-bit ASCII paths, but not with
     other character sets unless the unzip at the other end understands UTF-8.
-    The Zip command option -UN=local can be used to restore the Zip 3.0 default
-    of storing Unicode in extra fields and the local path in the main path
-    field.
+    The Zip command option -UL can be used to restore the Zip 3.0 default of
+    storing Unicode in extra fields and the local path in the main path field.
 
     On some ports UNICODE_SUPPORT is set automatically if wide characters are
     supported.
@@ -565,10 +607,10 @@ Compiler Flags
     a stored local character path (main path).  Since OEM character sets
     are used only for the main path fields, Unicode paths when set replace
     the main OEM character paths.  If Unicode is being stored natively in the
-    main path (the default now), then OEM characters are not stored.
+    main path (the default now), then OEM conversions are not done.
 
     The default on WIN32 now is to store UTF-8, and OEM conversions are no
-    longer done unless -UN=LOCAL is used to restore the Zip 3.0 behavior.
+    longer done unless -UL is used to restore the Zip 3.0 behavior.
 
     This flag is on by default on most Win32 ports.  Some ports apparently
     have problems with OEM conversions.  If your port or compiler does
@@ -582,7 +624,8 @@ Compiler Flags
     version of Zip includes an advanced algorithm for correctly finding these
     signatures, but if an archive is "broke", there is no telling what's
     where.  This is only a problem if an archive becomes broke for some
-    reason, but to be safe define this.
+    reason, but to be safe define this, which forces compression to always be
+    done when streaming.
 
   ALLOW_REGEX
     For MSDOS and Windows, now "[list]" wildcard matching (where any
@@ -593,9 +636,10 @@ Compiler Flags
 
   CRYPT_AES_WG
     Enable AES/WG encryption capability.  This is now the default if the
-    AES WG kit is installed.  (On Windows, control.h must also be updated to
-    enable AES encryption.)  See aes_wg/README_AES_WG.txt in the Info-ZIP
-    AES kit for more on AES WG encryption.
+    AES WG kit is installed (which is now the default).  (On Windows,
+    control.h must also be updated to enable AES encryption.)  See
+    aes_wg/README_AES_WG.txt in the Info-ZIP AES kit for more on AES WG
+    encryption.
 
   CRYPT_TRAD
     Enable Traditional (ZipCrypto) encryption.  This is the default.
@@ -624,11 +668,52 @@ Compiler Flags
   NO_USE_ZIP64_PLACEHOLDER
     Zip 3.1 now uses a placeholder extra field to allow switching to
     Zip64 when needed.  Defining this will prevent the use of that
-    extra field.
+    extra field; however, doing so may force the use of Zip64 in more
+    situations where it's actually not needed.  There are still some
+    utilities out there that do not support the Zip64 extensions.  In
+    contrast, the placeholder extra field is generally not recognized
+    and so is harmlessly ignored by utilities, including older ones.
 
+  NO_TEST_ZIPFILE
+    In the standard Zip build, the -T option to test the resulting
+    zipfile is enabled by default.  Setting this will remove the -T
+    (--test) option and the related -TT, -TU, and -TV options, disabling
+    the ability to test the resulting archive before the original is
+    deleted and replaced.  Note that Zip calls UnZip to do the testing.
+    Some ports still have issues with this code, such as lack of
+    support for popen().
+
+  NO_CHECK_UNZIP
+    When archive (zipfile) testing is enabled (the default), before
+    testing an archive with UnZip, Zip will determine what features
+    UnZip must have to test the resulting archive and will check UnZip
+    for those features.  (Note that this is the UnZip that Zip has been
+    told to use for zipfile testing or, if not specified, the default
+    UnZip.)  The current check uses popen().  If for some reason this
+    check is not supported, specifying NO_CHECK_UNZIP will disable
+    looking at UnZip before trying to use it for testing.  It will be
+    assumed that all needed features are present.  Normally if there
+    are compatibility issues with UnZip, Zip returns ZE_UNZIP (26) and
+    ZE_TEST (8) is returned if the zipfile is actually defective.  When
+    NO_CHECK_UNZIP is used, Zip has no way to determine if UnZip is
+    incompatible and ZE_TEST is used for all compatibility and test
+    errors.
+
+    This may be needed on some systems (for example, VMS V5.x) which
+    lack support for the pclose() and popen() fuctions used for this
+    purpose.  With this version check disabled, it becomes the user's
+    responsibility to makes sure that Zip finds an appropriate UnZip
+    program.  See the -TT (--unzip-command) and -TU (--unzip-path)
+    (/TEST=UNZIP) options for more information.
+
+  NO_BUILD_DATE
+    When defined, removes the build date from the executable.  The
+    build date adds a changing component that may be detected as a
+    change by automated checks.  This removes the changing date.
 
 For command help on any of the zip* utilities, simply enter
-the name with no arguments.
+the name with no arguments.  (This may not work for CYGWIN unless the
+new option --stdinout-tty is set in the environment.)
 
 
 __________________________________________________________________________
@@ -679,4 +764,4 @@ environments where trouble was expected.
 _________________________________________________________________________
 
 
-Last updated 15 November 2015.
+Last updated 7 February 2019.

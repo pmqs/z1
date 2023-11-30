@@ -18,7 +18,7 @@
 
 #ifdef _WIN32
 
-#define BZ2_LIBNAME "libbz2-1.0.2.DLL" 
+#define BZ2_LIBNAME "libbz2.DLL" 
 
 #include <windows.h>
 static int BZ2DLLLoaded = 0;
@@ -46,6 +46,7 @@ int BZ2DLLLoadLibrary(void)
        || !BZ2_bzread || !BZ2_bzwrite || !BZ2_bzflush
        || !BZ2_bzclose || !BZ2_bzerror) {
       fprintf(stderr,"GetProcAddress failed.\n");
+      FreeLibrary(hLib);
       return -1;
    }
    BZ2DLLLoaded=1;

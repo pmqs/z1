@@ -2,7 +2,7 @@ Acorn-specific compile instructions
 -----------------------------------
 
 The default makefile is configured without the support for the
-Extended Timestamp Extra Field. If you wan to enable it you have to
+Extended Timestamp Extra Field. If you want to enable it you have to
 add "-DUSE_EF_UT_TIME" to CFLAGS (see makefile). Without the Extended
 Timestamp Field support, zipfiles created by zip are identical to the
 zipfiles created by SparkFS. However, the Extended Timestamp Field can
@@ -20,12 +20,20 @@ for you.
 Compilation under GCC on RISC OS
 --------------------------------
 
-It is recommended that you use gcc 3.4.6 release 3 or higher and the corresponding
-'make' utility. Both are available from <URL:http://gccsdk.riscos.info/>.
+It is recommended that you use gcc 3.4.6 release 3 or higher and the
+corresponding 'make' utility. Both are available from
+<URL:http://gccsdk.riscos.info/>.
+
+Set the filetype of 'acorn/RunMe1st' to Obey.
 
 Use the "RunMe1st" file (it is an Obey file) to convert all the files from
-"filename/[chs]" to "[chs].filename" (so that zip could be easily compiled
+"filename.[chs]" to "[chs]/filename" (so that zip can be easily compiled
 under RISC OS). It will also set the correct makefile.
+
+Open Tasks window and set Next to >64000k (needed by gcc) and set back 
+to 640k after opening new TaskWindow.
+
+Open TaskWindow.
 
 To compile just set the CSD to the main zip directory and run 'make'.
 

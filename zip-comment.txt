@@ -1,4 +1,4 @@
-Info-ZIP Zip source kit,  Version 3.1d (BETA) 2015-11-15.
+Info-ZIP Zip source kit,  Version 3.1e (BETA) 2018-12-19.
 
 Zip -- Package and compress (archive) files
 

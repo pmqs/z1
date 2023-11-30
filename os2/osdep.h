@@ -98,6 +98,7 @@
 #define FOPR "rb"
 #define FOPM "r+b"
 #define FOPW "wb"
+#define FOPW_STDOUT "wb"
 
 #ifdef __32BIT__
 #  define CBSZ 0x40000
@@ -166,8 +167,15 @@
 #endif
 
 #ifdef __IBMC__
+#  define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+#  define S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
+#  define NO_CHECK_UNZIP
 #  define NO_UNISTD_H
 #  define NO_MKTEMP
 #  define timezone _timezone            /* (underscore names work with    */
 #  define tzset _tzset                  /*  all versions of C Set)        */
 #endif
+
+#define strcasecmp(X,Y)  stricmp(X,Y)
+#define STRCASECMP(X,Y)  stricmp(X,Y)
+#define NO_LOCALTIME_R

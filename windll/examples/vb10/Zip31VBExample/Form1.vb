@@ -430,4 +430,53 @@ Version_Continue:
 
   End Sub
 
+  Private Sub Label10_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Label10.Click
+
+  End Sub
+
+  Private Sub CRC32_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles CRC32_Button.Click
+    Dim fd As OpenFileDialog = New OpenFileDialog()
+    Dim file_path As String
+    Dim CRC As UInt32
+    Dim s As String
+    Dim ba As Byte()
+    Dim ba_len As UInt32
+    Dim ba2 As Byte()
+    Dim ba2_len As UInt32
+    Dim file_bytes() As Byte
+
+    s = "abcdef"
+    ba = System.Text.Encoding.Unicode.GetBytes(s)
+    ba2 = New Byte() {1, 2, 3, 4, 5, 6}
+
+    ba_len = ba.GetLength(0)
+    ba2_len = ba2.GetLength(0)
+
+    CRC = ZpCalcCrc32(ba2, ba2_len)
+
+    MsgBox("CRC32 of ba2 = " & Hex(CRC), MsgBoxStyle.OkOnly, "ZpCalcCrc32")
+
+    fd.Title = "Select file to calculate CRC32 of"
+    fd.InitialDirectory = "C:\"
+    fd.Filter = "All files (*.*)|*.*|All files (*.*)|*.*"
+    fd.FilterIndex = 2
+    fd.RestoreDirectory = True
+
+    If fd.ShowDialog() = DialogResult.OK Then
+      file_path = fd.FileName
+
+      Try
+        file_bytes = IO.File.ReadAllBytes(file_path)
+      Catch ex As System.IO.IOException
+        MsgBox("File read failed", MsgBoxStyle.OkOnly, "Reading: " & file_path)
+        Exit Sub
+      End Try
+
+      CRC = ZpCalcCrc32(file_bytes, file_bytes.GetLength(0))
+
+      MsgBox("File:  " & file_path & vbCrLf & _
+             "CRC32: " & Hex(CRC) & "'", _
+           MsgBoxStyle.OkOnly, "ZpCalcCrc32")
+    End If
+  End Sub
 End Class

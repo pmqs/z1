@@ -1,4 +1,4 @@
-#                                               29 November 2010.  SMS.
+#                                               14 August 2019.  SMS.
 #
 #    BZIP2 1.0 for VMS - MMS Dependency Description File.
 #
@@ -6,11 +6,13 @@
 #    dependencies file.  Unsightly errors result when /EXTENDED_SYNTAX
 #    is not specified.  Typical usage:
 #
-#    $ MMS /EXTEND /DESCRIP = [.vms]descrip_mkdeps.mms /SKIP
+#    $ MMS /EXTEND /DESCRIP = [.vms]descrip_mkdeps.mms /SKIP -
+$       /MACRO = ("CCOPTS=/NAMES=AS_IS")
 #
 #    which discards individual source dependency files, or:
 #
-#    $ MMS /EXTEND /DESCRIP = [.vms]descrip_mkdeps.mms /MACRO = NOSKIP=1
+#    $ MMS /EXTEND /DESCRIP = [.vms]descrip_mkdeps.mms -
+$       /MACRO = (NOSKIP=1, "CCOPTS=/NAMES=AS_IS")
 #
 #    which retains them.  Retaining them can save time when doing code
 #    development.
@@ -90,7 +92,7 @@ UNK_MMSD = 1
  "   To retain the .MMSD files, specify ""/MACRO = NOSKIP=1""."
 	@ exit %x00000004
 .ENDIF
-	$(CC) $(CFLAGS_INCL) $(MMS$SOURCE) /NOLIST /NOOBJECT -
+	$(CC) $(CFLAGS_INCL) $(CCOPTS) $(MMS$SOURCE) /NOLIST /NOOBJECT -
 	 /MMS_DEPENDENCIES = (FILE = $(MMS$TARGET), NOSYSTEM_INCLUDE_FILES)
 
 # List of MMS dependency files.

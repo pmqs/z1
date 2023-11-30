@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2014 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2016 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -750,7 +750,7 @@ int wild( char *p)
   char *dir_start;      /* First character of the directory part. */
 
   /* special handling of stdin request */
-  if (strcmp(p, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(p, "-") == 0))   /* if compressing stdin */
     return newname(p, 0, 0);
 
   /* Determine whether this name has an absolute or relative directory
@@ -837,7 +837,7 @@ int procname( char *n, int caseflag)
   if (n == NULL)        /* volume_label request in freshen|delete mode ?? */
     return ZE_OK;
 
-  if (strcmp(n, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(n, "-") == 0))   /* if compressing stdin */
     return newname(n, 0, caseflag);
   else if (LSSTAT(n, &s)
 #if defined(__TURBOC__) || defined(VMS) || defined(__WATCOMC__)
@@ -1525,7 +1525,7 @@ ulg filetime( char *f, ulg *a, zoff_t *n, iztimes *t)
     name[len - 1] = '\0';
   /* not all systems allow stat'ing a file with / appended */
 
-  if (strcmp(f, "-") == 0) {
+  if (is_stdin || (!no_stdin && strcmp(f, "-") == 0)) {
     if (fstat(fileno(stdin), &s) != 0) {
       free(name);
       name = NULL;

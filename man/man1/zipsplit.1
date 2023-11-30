@@ -1,5 +1,5 @@
 .\" =========================================================================
-.\" Copyright (c) 1990-2014 Info-ZIP.  All rights reserved.
+.\" Copyright (c) 1990-2018 Info-ZIP.  All rights reserved.
 .\"
 .\" See the accompanying file LICENSE, version 2009-Jan-2 or later
 .\" (the contents of which are also included in zip.h) for terms of use.
@@ -9,64 +9,42 @@
 .\"
 .\" zipsplit.1 by E. Gordon for Zip 3.0, 3.1
 .\"
-.TH ZIPSPLIT 1 "6 November 2015 (v3.1)" Info-ZIP
+.TH ZIPSPLIT 1 "29 July 2018 (v3.1)" Info-ZIP
 .SH NAME
 zipsplit \- split a zipfile into smaller zipfiles (v3.1)
 
 .SH SYNOPSIS
-.I zipsplit
+.B zipsplit
 .RB [ \-t ]
 .RB [ \-i ]
 .RB [ \-p ]
 .RB [ \-s ]
-.RB [ \-n\ size ]
-.RB [ \-r\ room ]
-.RB [ \-b\ path ]
+.RB [ \-n\ \fPsize ]
+.RB [ \-r\ \fProom ]
+.RB [ \-b\ \fPpath ]
 .RB [ \-h ]
 .RB [ \-v ]
 .RB [ \-L ]
 zipfile
 
 .SH ARGUMENTS
-.in +13
-.ti -13
-zipfile  Zipfile to split.
+.TP
+zipfile
+Zipfile to split.
+
+.SH DESCRIPTION
+.B zipsplit
+reads a zipfile and splits it into smaller zipfiles.
+
+Where as \fBzip\fR's \fB\-s\fR option creates a single archive split into
+pieces, \fBzipsplit\fR creates independent zipfiles with the contents of
+the input archive split among them.  An advantage is one lost or defective
+archive does not impact the other component archives, but a lost or damaged
+\fBzip\fR split impacts the entire archive.  A disadvantage is the component
+entries must all fit in the split size chosen--an entry will not be spread
+over multiple zipfiles, which can happen with \fBzip\fR splitting.
 
 .SH OPTIONS
-.TP
-.PD 0
-.B \-t
-.TP
-.PD
-.B \-\-total-only
-Report how many files it will take, but don't make them.
-
-.TP
-.PD 0
-.B \-i
-.TP
-.PD
-.B \-\-index-file
-Make index (zipsplit.idx) and count its size against first zip file.
-
-.TP
-.PD 0
-.B \-n\ \fRsize
-.TP
-.PD
-.B \-\-split-size\ \fRsize
-Make zip files no larger than "size" (default = 1440k).  Size can be just a
-number or a number followed by a prefix.  For instance, 10k = 10 x 1024 bytes.
-Can use k = 1 KiB, m = 1 MiB, or g = 1 GiB.
-
-.TP
-.PD 0
-.B \-r\ \fRroom
-.TP
-.PD
-.B \-\-room\ \fRroom
-Leave room for "room" bytes on the first disk (default = 0).
-
 .TP
 .PD 0
 .B \-b\ \fRpath
@@ -74,46 +52,6 @@ Leave room for "room" bytes on the first disk (default = 0).
 .PD
 .B \-\-outdir\ \fRpath
 Use path for the output zip files.
-
-.TP
-.PD 0
-.B \-q
-.TP
-.PD
-.B \-\-quiet
-Quieter operation, suppress some informational messages.
-
-.TP
-.PD 0
-.B \-p
-.TP
-.PD
-.B \-\-pause
-Pause between output zip files.
-
-.TP
-.PD 0
-.B \-s
-.TP
-.PD
-.B \-\-sequential
-Do a sequential split (maintain entry order) even if it takes more zip files.
-
-.TP
-.PD 0
-.B \-v
-.TP
-.PD
-.B \-\-version
-Show version information.
-
-.TP
-.PD 0
-.B \-L
-.TP
-.PD
-.B \-\-license
-Show software license.
 
 .TP
 .PD 0
@@ -131,15 +69,122 @@ Show a short help.
 .B \-\-more-help
 Show more help.
 
-.SH DESCRIPTION
-.I zipsplit
-reads a zipfile and splits it into smaller zipfiles.
+.TP
+.PD 0
+.B \-i
+.TP
+.PD
+.B \-\-index-file
+Make index (zipsplit.idx) and count its size against first zip file.
+
+.TP
+.PD 0
+.B \-L
+.TP
+.PD
+.B \-\-license
+Show software license.  (\fB\-l\fR also works, but should be considered
+deprecated.)
+
+.TP
+.PD 0
+.B \-n\ \fRsize
+.TP
+.PD
+.B \-\-split-size\ \fRsize
+Make zip files no larger than "size" (default = 1440k).  Size can be just a
+number or a number followed by a suffix.  For instance, 10k = 10 x 1024 bytes.
+Can use k = 1 KiB, m = 1 MiB, or g = 1 GiB.
+
+.TP
+.PD 0
+.B \-p
+.TP
+.PD
+.B \-\-pause
+Pause between output zip files.
+
+.TP
+.PD 0
+.B \-q
+.TP
+.PD
+.B \-\-quiet
+Quieter operation, suppress some informational messages.
+
+.TP
+.PD 0
+.B \-r\ \fRroom
+.TP
+.PD
+.B \-\-room\ \fRroom
+Leave room for "room" bytes on the first disk (default = 0).
+
+.TP
+.PD 0
+.B \-s
+.TP
+.PD
+.B \-\-sequential
+Do a sequential split (maintain entry order) even if it takes more zip files.
+Without this option, \fBzipsplit\fR will try to fit the component entries
+into as few output zipfiles as possible.
+
+.TP
+.PD 0
+.B \-so
+.TP
+.PD
+.B \-\-show-options
+Show all available options on this system.
+
+.TP
+.PD 0
+.B \-t
+.TP
+.PD
+.B \-\-total-only
+Report how many files it will take, but don't make them.
+
+.TP
+.PD 0
+.B \-v
+.TP
+.PD
+.B \-\-version
+Show version information.
 
 .SH EXAMPLES
-To be filled in.
+Given the input zipfile \fIsplittest.zip\fR with a size of 429 KiB, the
+following splits it into multiple archives of up to 300 KiB each:
+.IP
+.nf
+\fBzipsplit splittest -n 300k\fR
+2 zip files will be made (100% efficiency) using simple splitting
+creating: splittest_1.zip
+creating: splittest_2.zip
+.fi
+.LP
+
+\fIsplittest_1.zip\fR is 301 KiB and \fIsplittest_2.zip\fR is 129 KiB.
+
+To maintain the order of the entries to that in the original archive add
+the \fB\-s\fR option.  The below does that and adds creation of an index
+file:
+.IP
+.nf
+\fBzipsplit splittest -isn 300k\fR
+2 zip files will be made (100% efficiency) using simple splitting
+creating: zipsplit.idx
+creating: splittest_1.zip
+creating: splittest_2.zip
+.fi
+.LP
 
 .SH BUGS
-Does not yet support writing large (> 2 GB) or split archives.
+Does not yet support writing large (> 2 GB) or split archives as members of
+the group of archives being created.  Does support reading large or split
+archives to split.
 
 .SH SEE ALSO
 zip(1), unzip(1)

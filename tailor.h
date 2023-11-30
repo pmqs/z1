@@ -1,7 +1,7 @@
 /*
   tailor.h - Zip 3.1
 
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -36,74 +36,152 @@
 # endif
 #endif
 
-/* This needs fixing, but currently assume that we don't have full
-   Unicode support unless UNICODE_WCHAR is set.
+/* This may still need fixing, but currently assume that we don't have full
+   Unicode support unless UNICODE_WCHAR or UNICODE_ICONV are set.
 
    For Unicode support, both UNICODE_SUPPORT must be defined (to enable the
    Unicode parts of the code) and either UNICODE_WCHAR (Unicode using the
-   ANSI wide functions) and/or UNICODE_ICONV (to do local <-> UTF-8 encoding
-   translations) needs to be set.  As iconv does not support things like
-   uppercase to lowercase conversions, some features may be disabled if
-   the port does not address them.
+   ANSI wide functions and a Unicode wchar_t encoding) or UNICODE_ICONV (same
+   as UNICODE_WCHAR, but using iconv to do local and wchar_t translations
+   since we can't trust the wchar_t encoding) needs to be set.  Currently
+   we require wchar_t support to enable UNICODE_SUPPORT.
 
-   It's important to realize that zipfiles are now ASCII UTF-8 by default,
-   meaning that the native character set paths are stored in a zip archive
-   is now UTF-8.  This is per the AppNote zip standard.  Any ports where
-   the local character set is not ASCII, such as EBCDIC, needs to take care
-   to distinguish between internal names (which tend to be ASCII UTF-8) and
-   external names (which may be ASCII or EBCDIC).
-   
-   These are possible:
+   It's important to realize that zipfiles created by Zip 3.1 are now
+   ASCII/UTF-8 by default, meaning that paths are stored in a zip archive
+   as either ASCII or UTF-8.  This is per the AppNote zip standard.  Any
+   ports where the local character set is not ASCII, such as EBCDIC, needs
+   to take care to distinguish between internal names (which tend to be
+   ASCII or UTF-8) and external names (which are in the local character
+   set).
+
+   For now we assume that wchar_t is needed to support Unicode operations
+   as we don't have replacements for some of the wchar_t functions.  And
+   besides, that's what the wchar_t functions are there to do.  So we
+   don't enable UNICODE_SUPPORT unless HAVE_WCHAR is set.  (These macros
+   are defined below.)  In addition, we need a way to convert between
+   UTF-8 and wchar_t and between the local character set and wchar_t.
+
+   Let's break up the needed conversion operations:
+
+   UTF-8 to wchar_t      This is needed to convert UTF-8 in an archive to
+                         wchar_t we can manipulate using wchar_t functions.
+
+   wchar_t to UTF-8      This is needed to create the UTF-8 that gets stored
+                         in an archive.
+
+   local to wchar_t      This is needed to process the input command line.
+                         It may also be used to process paths.  Note that
+                         local may be UTF-8.
+
+   wchar_t to local      This is needed to output to the console in the local
+                         character set.  It may also be needed to process
+                         local paths.  Note that local may be UTF-8.
+
+   wchar_t char to       This is needed to handle Unicode escapes, where
+   Unicode char code     a wide character may be replaced by its Unicode
+                         character code encoded as a string in #U1234 or
+                         #L123456 format.
+
+   As mbstowcs() and related functions work with the local character set,
+   we really can't use these to do the UTF-8 conversions, as we'd be forced
+   to change the local character set back and forth between local and UTF-8.
+   So we need something else to do that.  We may be able to use those
+   functions for local to wchar_t and wchar_t to local conversions.
+
+   Windows is a special case, as the API includes the needed conversion
+   functions, and they handle the UTF-16 encoding Windows uses for storing
+   wide characters in 16-bit ints.  So that case should be handled, and so
+   we don't consider Windows in this discussion.
+
+   For the most part, we don't care what the wchar_t encoding is.  As long
+   as wide characters are handled properly (towupper('a') gives 'A') and
+   we can get to and from wchar_t, we can process wide character strings
+   using the wchar_t functions normally.  We do not need to care about how
+   the wchar_t strings are encoded internally.  (Sorting is impacted, but
+   that would be a "feature" of that port based on how that port orders its
+   character encodings.)
+
+   To handle Unicode escapes (like #U1234), we do need to convert between
+   a wchar_t character and the Unicode character code and back.  If we
+   have a way to go between UTF-8 and wchar_t, we can get the Unicode
+   character codes from the UTF-8.  If wchar_t is STDC_ISO_10646 compliant,
+   then the character codes are, in fact, Unicode character codes, making
+   handling escapes easy.  If the port is not (such as Free BSD), then
+   we still can use wchar_t functions, but need another way to go
+   between UTF-8 and wchar_t.  For instance, iconv might do that.
+
+   So this leads to the following methods for conversions:
+
+   UTF-8 <--> wchar_t    If STDC_ISO_10646, just use the wide code and
+                         do wide code to/from UTF-8 conversions.
+
+                         If not, use iconv, as can't trust local encoding.
+
+   local <--> wchar_t    mbstowcs() and wcstombs() or related functions.
+                         This assumes the input to Zip and the output
+                         displayed is in the local character set.
+                         
+                         (It's reported that some ports, such as some
+                         of the IBM ports, don't support the concept
+                         of a current character set.  So there is likely
+                         still work to do regarding these ports.  However,
+                         lack of development team access to these ports
+                         continues to stagnate progress in this area.)
+
+   wchar_t char <-->     Same as UTF-8 <--> wchar_t.
+   Unicode char code     
+
+   We require ways to do all this to enable UNICODE_SUPPORT.  Here are the
+   macros used:
 
    UNICODE_SUPPORT       = Enables cross-platform character set support via
-                           storage of UTF-8.  Requires either UNICODE_WCHAR or
-                           UNICODE_ICONV to convert between local paths and
-                           UTF-8.
+                           storage of UTF-8 in the zip archive.  Requires either
+                           UNICODE_WCHAR or UNICODE_ICONV.
 
    UNICODE_WCHAR         = We have the wide character support we need for
                            Unicode.  This should only be set if wide characters
-                           are represented in Unicode (see tests in
+                           are represented in Unicode (essentially this means
+                           __STDC_ISO_10646__ is set; see tests in
                            unix/configure) and the port has working versions of
                            towupper(), towlower(), and iswprint() (and maybe
-                           other wide functions).  This is set for Windows in
-                           win32/osdep.h.  For Unix, if unix/configure found
-                           the port is missing something, the port needs to
-                           provide it and can turn UNICODE_WCHAR back on
+                           other wchar_t functions).  This is set for Windows
+                           in win32/osdep.h (even though the wide encoding is
+                           UTF-16 rather than UCS4LE, but that seems close
+                           enough).  For Unix, this is set by unix/configure
+                           if testing shows the conditions are met.  If the
+                           port is missing something, UNICODE_WCHAR is not
+                           set.   If STDC_ISO_10646 is all that is missing,
+                           HAVE_WCHAR is still set, and if iconv is supported,
+                           UNICODE_ICONV is set.  If neither condition is met,
+                           UNICODE_SUPPORT is not set.  In that case, the port
+                           would need to do some work and set UNICODE_SUPPORT
                            manually.
-
-                           Only this mode supports Unicode directory scans and
-                           so only this mode can archive all files on a file
-                           system, even those not representable in the local
-                           character set.  If full file system scanning using
-                           Unicode is supported, UNICODE_FILE_SCAN is set.
-                           Note that this is also set if the native charset
-                           when Zip is compiled is a UTF-8 one.
-
-                           This is the preferred mode to operate in, as all
-                           Unicode operations can be done using the port's wide
-                           API functions and so is likely to be more consistent.
 
    UNICODE_FILE_SCAN     = If set, the port does file system scans using
                            Unicode.  This allows reading and storing files that
                            are not readable using the local character set, so
-                           may allow a more complete file system scan.
+                           may allow a more complete file system scan.  This
+                           does not automatically mean a port will do a full
+                           Unicode scan.  For instance, if the port supports
+                           UTF-8, but a non-UTF-8 character set is active.
+                           If the local character set is UTF-8, then it's
+                           implied that the directory scan will return UTF-8
+                           paths and so all file paths can be represented and
+                           found.
 
    HAVE_WCHAR            = This is set when wide characters are not known to be
-                           represented in Unicode, but otherwise the conditions
-                           of UNICODE_WCHAR are met.  If this is defined, then
-                           it is assumed that working versions of wide character
-                           functions, such as towlower(), exist and conversions
-                           to and from wide characters are supported.  This
-                           might be used with UNICODE_ICONV, where character
-                           set translations are done by iconv, but command line
-                           processing is done using a known character set and
-                           wide functions such as towupper and iswprint should
-                           work correctly in this case.  Note that HAVE_WCHAR
-                           is only a flag of capability and does not enable any
-                           functionality on its own.  The port must do that.
-                           The path case conversion functions (-Cl and -Cu) are
-                           disabled unless USE_WCHAR_CASE_CONV or
-                           USE_PORT_CASE_CONV is set.
+                           encoded using Unicode character codes, but otherwise
+                           the conditions of UNICODE_WCHAR are met.  If this is
+                           defined, then it is assumed that working versions of
+                           wide character functions, such as towlower(), exist
+                           and conversions between the local character set and
+                           wide characters are supported.  This is one of the
+                           conditions required to set UNICODE_ICONV, the other
+                           being a working iconv.  Note that HAVE_WCHAR is
+                           only a flag of capability and does not enable any
+                           functionality on its own.  If unix/configure sees
+                           that both HAVE_WCHAR and HAVE_ICONV are both set,
+                           then UNICODE_ICONV is set.
                            
    USE_WCHAR_CASE_CONV   = Use the wchar_t wide functions towlower and towupper
                            to convert letter case in paths.  This is set if
@@ -148,6 +226,7 @@
                            functions, but the new options --iconv-from-code
                            and --iconv-to-code are available to convert paths
                            in other known character sets to and from UTF-8.
+                           (These options were apparently never implemented.)
                            If UNICODE_WCHAR is not set, conversions from and
                            to UTF-8 use iconv.  The port must supply working
                            versions of astring_upper_lower() and
@@ -155,6 +234,39 @@
                            if path case conversion is to be supported.
                            (HAVE_WCHAR is not enough to enable this by
                            default.)
+
+                           UPDATE:  Actually this can be broken into two
+                           distinct sets of operations.  As suggested above,
+                           if wchar_t exists and the wchar_t functions we
+                           use exist (such as iswupper), then we should be
+                           able to trust those functions.  If UNICODE_WCHAR
+                           is not set, we can't trust the underlying code
+                           to be Unicode.  However, if HAVE_ICONV is set
+                           then we have iconv to do the conversions.  This
+                           setup is enabled if USE_ICONV_WCHAR is set.
+                           Typically unix/configure sets this.  Then
+                           USE_ICONV_WCHAR will set UNICODE_ICONV.  Currently
+                           HAVE_WCHAR has to be set to use UNICODE_ICONV,
+                           as we rely on wchar_t for things like a port
+                           specific iswupper.  (We're too lazy to write
+                           our own.)
+
+                           What of the mbstowcs() function and its mate?
+                           If wchar_t support is there, and conversion
+                           from and to UTF-8 is supported, then what the
+                           actual codes are probably don't matter.
+                           Multibyte character 'a' (we'll use 'a' as an
+                           example, though it's clearly not multibyte)
+                           gets converted to wide character 'a' (we'll
+                           call this L'a')  We can uppercase L'a' to
+                           L'A'.  Then we can use wtctombs() to convert
+                           it back to UTF-8, getting 'A'.  If we need
+                           the Unicode code, we can get it from the UTF-8,
+                           either by converting that to UCS-4 using our
+                           function for that, or using iconv.  We don't
+                           convert from the wchar_t representation, as
+                           we can't trust it.  So in this case HAVE_WCHAR
+                           looks to be enough.
 
    UTF8_MAYBE_NATIVE     = This flag indicates that the local character set
                            may be UTF-8.  UNICODE_WCHAR is required, which
@@ -278,6 +390,10 @@
 #include "cmsmvs.h"
 #endif
 
+#if defined(__LCC__) && defined(WIN32)
+# define LCC_WIN32
+#endif
+
 #ifdef WIN32
 #include "win32/osdep.h"
 #endif
@@ -297,19 +413,23 @@
 
 
 /* ---------------------------------------------------------------------- */
-/* Currently UNICODE_SUPPORT requires UNICODE_WCHAR and/or UNICODE_ICONV. */
+/* Currently UNICODE_SUPPORT requires UNICODE_WCHAR or UNICODE_ICONV. */
 
 
 /* --------------------------------------
-   Right now UNICODE_ICONV is not used.
-   HAVE_ICONV enables support for iconv,
-   which it should exist before setting
-   this.
+   In brief:
+   
+   UNICODE_SUPPORT  requires  UNICODE_WCHAR  or   UNICODE_ICONV
+   
+   UNICODE_WCHAR    requires  HAVE_WCHAR     and  __STDC_ISO_10646__
+   
+   UNICODE_ICONV    requires  HAVE_WCHAR     and  HAVE_ICONV
+   
    -------------------------------------- */
 
-/* Ports that do not use unix/configure need to set UNICODE_WCHAR,
-   HAVE_ICONV, UNICODE_ICONV, and UNICODE_SUPPORT in their osdep.h
-   file.  See above for guidance. */
+/* Ports that do not use unix/configure need to set HAVE_WCHAR,
+   UNICODE_WCHAR, HAVE_ICONV, and/or UNICODE_ICONV, as appropriate, in
+   their osdep.h file.  See above comments for guidance. */
 
 
 /* Allow disabling UNICODE_WCHAR */
@@ -319,27 +439,32 @@
 # endif
 #endif
 
-/* UNICODE_ICONV requires HAVE_ICONV */
+/* UNICODE_WCHAR requires HAVE_WCHAR, and __STDC_ISO_10646__
+   except on Windows (so we can't check for it here) */
+#ifdef UNICODE_WCHAR
+# ifndef HAVE_WCHAR
+#  undef UNICODE_WCHAR
+# endif
+#endif
+
+/* UNICODE_ICONV requires HAVE_WCHAR and HAVE_ICONV */
 #ifdef UNICODE_ICONV
-# ifndef HAVE_ICONV
+# if !defined(HAVE_WCHAR) || !defined(HAVE_ICONV)
 #  undef UNICODE_ICONV
 # endif
 #endif
 
 /* UTF8_MAYBE_NATIVE requires UNICODE_WCHAR */
+/* Right now UTF8_MAY_BE_NATIVE is not used anywhere. */
 #ifdef UTF8_MAYBE_NATIVE
 # ifndef UNICODE_WCHAR
 #  undef UTF8_MAYBE_NATIVE
 # endif
 #endif
 
-/* If UNICODE_WCHAR is not defined, try UNICODE_ICONV if HAVE_ICONV */
-#ifndef UNICODE_WCHAR
-# ifdef HAVE_ICONV
-#  ifndef UNICODE_ICONV
-#   define UNICODE_ICONV
-#  endif
-# endif
+/* Give UNICODE_WCHAR preference over UNICODE_ICONV */
+#if defined(UNICODE_WCHAR) && defined(UNICODE_ICONV)
+# undef UNICODE_ICONV
 #endif
 
 /* Win32 Unicode support requires UNICODE_WCHAR */
@@ -351,28 +476,26 @@
 
 /* UNICODE_SUPPORT requires either UNICODE_WCHAR and/or UNICODE_ICONV */
 #ifdef UNICODE_SUPPORT
-# if !(defined(UNICODE_WCHAR) || defined(UNICODE_ICONV))
+# if !defined(UNICODE_WCHAR) && !defined(UNICODE_ICONV)
 #  undef UNICODE_SUPPORT
 # endif
 #endif
 
-/* if UNICODE_WCHAR, assume UNICODE_FILE_SCAN unless port says otherwise */
-#ifdef UNICODE_WCHAR
-# ifndef NO_UNICODE_FILE_SCAN
-#  ifndef UNICODE_FILE_SCAN
-#   define UNICODE_FILE_SCAN
-#  endif
+/* The port must set UNICODE_FILE_SCAN */
+#ifdef NO_UNICODE_FILE_SCAN
+# ifdef UNICODE_FILE_SCAN
+#  undef UNICODE_FILE_SCAN
 # endif
 #endif
 
-/* if UNICODE_WCHAR, use WCHAR functions for case conversion */
-#ifdef UNICODE_WCHAR
+/* if HAVE_WCHAR, use WCHAR functions for case conversion */
+#ifdef HAVE_WCHAR
 # ifndef USE_WCHAR_CASE_CONV
 #  define USE_WCHAR_CASE_CONV
 # endif
 #endif
 
-/* Windows unique Unicode code is in UNICODE_SUPPORT_WIN32 blocks */
+/* Windows unique Unicode code are in UNICODE_SUPPORT_WIN32 blocks */
 #if defined(UNICODE_SUPPORT) && defined(WIN32)
 # ifndef UNICODE_SUPPORT_WIN32
 #  define UNICODE_SUPPORT_WIN32
@@ -398,7 +521,7 @@
 
 
 #ifdef NEED_STRERROR
-   char *strerror();
+   char *strerror(int err);
 #endif /* def NEED_STRERROR */
 
 
@@ -545,16 +668,19 @@
 #  include <strings.h>
 #endif /* NO_STRING_H */
 
-#ifdef NO_VOID
-#  define void int
+#ifndef ZVOID_DEFINED
+# ifdef NO_VOID
+#   define void int
    typedef char zvoid;
-#else /* !NO_VOID */
-# ifdef NO_TYPEDEF_VOID
-#  define zvoid void
-# else
+# else /* !NO_VOID */
+#  ifdef NO_TYPEDEF_VOID
+#   define zvoid void
+#  else
    typedef void zvoid;
-# endif
-#endif /* ?NO_VOID */
+#  endif
+# endif /* ?NO_VOID */
+# define ZVOID_DEFINED
+#endif /* not ZVOID_DEFINED */
 
 #ifdef NO_STRRCHR
 #  define strrchr rindex
@@ -635,7 +761,7 @@ IZ_IMP char *mktemp();
  * (differently) when <locale.h> is read later.
  */
 #ifdef UNICODE_SUPPORT
-# ifdef UNICODE_WCHAR
+# if defined(UNICODE_WCHAR) || defined(UNICODE_ICONV)
 #  include <stdlib.h>
 /* wchar support may be in any of these three headers */
 #  ifdef HAVE_CTYPE_H
@@ -657,6 +783,8 @@ IZ_IMP char *mktemp();
 #endif /* UNICODE_SUPPORT */
 
 #ifdef HAVE_LANGINFO_H
+/* aSc don't merge this # include <langinfo.h> not found on my MSYS2 (need to look for it) */
+/* EG: Need to either unset HAVE_LANGINFO_H for this platform or find langinfo.h */
 # include <langinfo.h>
 #endif
 
@@ -1011,11 +1139,11 @@ typedef struct ztimbuf {
 #     define zlstat lstat
 
       /* 64-bit fseeko */
-      /* function in win32.c */
+      /* function in win32i64.c */
       int zfseeko OF((FILE *, zoff_t, int));
 
       /* 64-bit ftello */
-      /* function in win32.c */
+      /* function in win32i64.c */
       zoff_t zftello OF((FILE *));
 
       /* 64-bit fopen */
@@ -1058,11 +1186,11 @@ typedef struct ztimbuf {
 #     define zlstat lstat
 
       /* 64-bit fseeko */
-      /* function in win32.c */
+      /* function in win32i64.c */
       int zfseeko OF((FILE *, zoff_t, int));
 
       /* 64-bit ftello */
-      /* function in win32.c */
+      /* function in win32i64.c */
       zoff_t zftello OF((FILE *));
 
       /* 64-bit fopen */
@@ -1086,7 +1214,7 @@ typedef struct ztimbuf {
 
 #     if (_MSC_VER >= 1400)
         /* Beginning with VS 8.0 (Visual Studio 2005, MSC 14), the Microsoft
-           C rtl publishes its (previously internal) implmentations of
+           C rtl publishes its (previously internal) implementations of
            "fseeko" and "ftello" for 64-bit file offsets. */
         /* 64-bit fseeko */
 #       define zfseeko _fseeki64
@@ -1100,11 +1228,11 @@ typedef struct ztimbuf {
            that provide fseeko and ftello, but our implementations will do
            for now. */
         /* 64-bit fseeko */
-        /* function in win32.c */
+        /* function in win32i64.c */
         int zfseeko OF((FILE *, zoff_t, int));
 
         /* 64-bit ftello */
-        /* function in win32.c */
+        /* function in win32i64.c */
         zoff_t zftello OF((FILE *));
 
 #     endif /* ? (_MSC_VER >= 1400) */
@@ -1127,11 +1255,11 @@ typedef struct ztimbuf {
       /* 64-bit stat functions */
 
       /* 64-bit fseeko */
-      /* function in win32.c */
+      /* function in win32i64.c */
       int zfseeko OF((FILE *, zoff_t, int));
 
       /* 64-bit ftello */
-      /* function in win32.c */
+      /* function in win32i64.c */
       zoff_t zftello OF((FILE *));
 
       /* 64-bit fopen */

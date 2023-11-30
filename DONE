@@ -1,0 +1,1071 @@
+DONE list for Zip (last updated 2018-12-31)
+
+===============================================================================
+
+This DONE list records what work from the TODO list has been either completed
+or rejected.  See TODO for a list of work in progress or in the queue.
+
+
+See TODO for definitions of terms.
+
+
+Completed/Rejected
+------------------
+(Latest at top)
+
+1133 - BUG - zipcloak "Zip64 margin not set" error when decrypt AES archive.
+    [2018-06-18 EG]
+    (Needed to set localz->threshold_mthd.  Removed password length check if
+    using keyfile.  2018-07-29 EG)
+    (This looks fixed.  2018-07-30 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1     Estimated Work:  SMALL
+
+1135 - FEATURE - zip should have a way to output the zipfile comment.
+    [2018-07-29 EG]
+    Maybe -zc (--show-zip-comment).
+    Done.
+    Priority:  1
+    This may get done before Zip 3.1 goes out.
+    (Done.  New option -zc.  2018-07-30 EG)
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1131 - Utilities.
+    [2018-07-25 EG]
+    Step through utilities to make sure adequate for Zip 3.1 release.
+    (Basic tests done while updating the man pages.  A couple code updates.
+    Utilities seem to be working.  Additional updates unlikely before Zip 3.1e
+    goes out.  2018-08-01 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1082 - Review and update extended help (-hh).
+    [2017-07-28 EG]
+    (Assigned to Priority 2.  2017-08-17 EG)
+    (Assigned Priority 1.  2018-06-17 EG)
+    (Stepped through extended help.  Except for any additional changes to Zip
+    that need documenting, should be done for Zip 3.1e.  2018-07-16 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1032 - Allow archive name to occur before --.
+    (Forum:  Info-ZIP Bugs > UnZip Bugs > Missing -- option)
+  	(2016-10-25 EG)
+    (Need to take a look.  Not a big thing as someone can just rename the
+    archive after creation.  Depends on work involved if this gets done for
+    Zip 3.1e.  If not, probably would not make release as this could impact
+    core command line processing code and should be done before Zip 3.1e goes
+    out.  And it would be a feature change, and changes are to be avoided after
+    Zip 3.1e goes out.  2018-06-17 EG)
+    (Looks like just need to remove check if first non-option arg.  Zip seems
+    to handle various cases correctly.  2018-07-25 EG)
+    (Considering this done, though should be tested more thoroughly before
+    Zip 3.1 goes out.  2018-07-29 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+
+1116 - Review rest of below list for items that should be done for Zip 3.1e.
+    [2018-06-17 EG]
+    Generally lower down items get ignored.  Make sure any key items bubble
+    up to Priority 1 (any feature changes) or Priority 2 (bug fixes, minor
+    tweaks, documentation) before Zip 3.1e goes out.
+    (Looks like any major feature changes will be in Zip 3.1e.  Any other issues
+    will get worked before Zip 3.1 goes out, or get pushed to the next release.
+    2018-07-29 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1031 - Merge in Immediate List to this list.  (2017-06-17 EG)
+    (May be done.  2017-06-17 EG)
+    (Sufficiently done for now.  2017-07-29 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+
+1122 - BUG - -td bug (VMS vs. dos2unixtime()).
+    {email, SMS, June 17, 2018, 3:16 PM}
+    [2018-06-18 EG]
+    (This was fixed using the change provided by SMS:
+      ITS $ gdiff fileio.c_orig fileio.c
+      1856,1857c1856,1857
+      < #if ((defined(OS2) || defined(VMS)) && defined(ZP_NEED_GEN_D2U_TIME))
+      <    /* OS/2 and VMS use a special solution to handle time-stams of files. */
+      ---
+      > #if (defined(OS2) && defined(ZP_NEED_GEN_D2U_TIME))
+      >    /* OS/2 uses a special solution to handle time-stamps of files. */
+    2018-07-06 EG)
+    (Seems fixed.  2018-07-25 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1125 - BUG - stream bug.
+    {email, Stephen Muccione, July 15, 2018, 10:04 AM}
+    [2018-07-15 EG]
+    zip on Windows using -fz -fd creates corrupted (?) archive.
+    From email:
+        zip.exe -fz -fd -r x2.zip test.txt
+      adding: test.txt (172 bytes security) (deflated 46%)
+      and then on the same newly built archive you get:
+        zip.exe -fz -fd x2.zip test.txt
+        zip warning: expected 1 entries but found 0
+        zip error: Zip file structure invalid (x2.zip)
+    (Looks like Zip 3.0 is buggy in this regard, but is still creating
+    good archives.  Zip 3.1e does not have this issue.  It also looks
+    like the user has an old binary that does not seem compiled from
+    our Zip 3.0 source.  As there seems no Zip 3.1e issue, closing
+    this ticket.  2018-07-15 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1033 - Single "@" arg when not part of arg list sets zip to reading something.
+    (suggested by email 2016-07-26 9:10 AM) (2016-07-26 EG)
+    (This has not recured during normal testing, but specific tests should be
+    done.  2018-06-17 EG)
+    (This does not seem an issue with latest beta.  "- @" tries to read stdin
+    as expected, and "@" would then be handled as a filename.  "-@" tries to
+    read a file list from stdin, as expected.  Added note to add case to
+    testing.  Closing this ticket.  2018-07-15 EG)
+    REFERENCES:  1052
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+
+1024 - Update Visual Basic 2010 example to work with changes to API.  Verify all
+    works.
+    (VB10 example runs without change and seems fully working with latest API
+    changes.  2018-07-15 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1107 - TEST - Check --skip-scan with LIB/DLL.
+    {Forum, Performance improvements (--skip-scan related), 2017-09-07}
+    (This should be a set of basic functional tests of the LIB/DLL before
+    Zip 3.1e goes out.  Including Windows.  2018-06-17 EG)
+    (Currently --skip-scan is disabled for LIB/DLL, so easy enough to just
+    leave it that way and look at it later.  Most efficiency improvements are
+    already in the main code, so --skip-scan may be dropped soon after some
+    performance testing.  2018-07-08 EG)
+    (Verified that Zip VB10 example gracefully exits when given --skip-scan
+    option.  2018-07-15 EG)
+    Priority:  1
+    REFERENCES:  1112
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+
+1039 - Document use of "zip backup  -ry  -dbdcdude  -lilalF  -S!  -3  -wl  c:\"
+    for Windows.  (2016-12-16 EG)
+    (This should be quick.  2017-08-06 EG)
+    (Plan to add example to zip.1 manual EXAMPLES section breaking this down.
+    2018-06-17 EG)
+    (Zip manual EXAMPLES section updated.  2018-07-15 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1049 - zip -v abrupt exit from LIB.  When called as LIB, "zip -v" forces caller
+    to exit after version information is displayed.
+    [2017-07-21 EG]
+    (The LIB and DLL can get version information through the entry point,
+    so calling zip -v may not be needed.  Still, the app calling the LIB
+    should not be forced to exit.  Moving this to Priority 1 to resolve.
+    2017-08-06 EG)
+    (The fix may be as simple as using "return" when the LIB/DLL does
+    "zip -v".  2017-08-06 EG)
+    (This looks fixed when tested with Windows C LIB example.  2018-07-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1124 - BUG - -T, -TT vulnerability, zip_warn buffer overflow.
+    {emails, sehun.oh, Jul 5, 2018, 8:30 PM; SMS, Jul 5, 2018, 11:46 PM}
+    Report that -TT creates a vulnerability.  However, the version of Zip
+    this is reported for is not clear.  (Ubuntu version given, but that
+    does not say what Zip version it's based on.)  Requested additional
+    information.
+    [2018-07-06 EG]
+    (This was an issue with Zip 3.0, which is what the test was originally run
+    against, but not with Zip 3.1d.  However, the user found a separate issue
+    with that (Jul 6 4:41 PM email):
+    user:
+      $  touch p
+      $ ./zip a.zip p
+      $ ./zip `python -c 'print "A"*0x103bd'`
+      zip error: Internal logic error (zfprintf buf overflow)
+      $ ./zip `python -c 'print "A"*0x103be'`
+      *** buffer overflow detected ***: ./zip terminated
+      ======= Backtrace: =========
+      /lib/x86_64-linux-gnu/libc.so.6(+0x777e5)[0x7f6634b077e5]
+      ...
+      void zipwarn_i(mesg_prefix, indent, a, b)
+        char *mesg_prefix;      /* message prefix string */
+        int indent;
+        ZCONST char *a, *b;     /* message strings juxtaposed in output */
+      /* Print a warning message to mesg (usually stderr) and return. */
+      {
+        char *prefix;
+        char *warning;
+        char ebuf[ERRBUF_SIZE + 1];
+      ...
+        sprintf(ebuf, "%s%s %s%s\n", prefix, warning, a, b); <---- 
+  
+    my reply:  
+      The current Zip beta is Zip 3.1e10.  Testing using that on CYGWIN Unix:
+
+          $ /c/bins/zip.exe `python -c "print 'A'*0x732a"`
+          zip error: Nothing to do! (AAAAAAAAAAAAAAAAAAAAAAAAAAAA...)
+
+      The A's go on for quite some time as expected.
+
+      Increasing the length:
+
+          $ /c/bins/zip.exe `python -c "print 'A'*0x103be"`
+          -bash: /c/bins/zip.exe: Argument list too long
+
+      So in this configuration it does not look like BASH will let me break Zip.
+      However, the fixed size of errbuf could be an issue, I agree, though that
+      buffer is very large (#define ERRBUF_SIZE (FNMAX + 65536)) and the OS
+      should not be passing in args that large.  I'm updating the message
+      functions (like zip_warn()) to check arg sizes in the current beta.  I
+      can provide a link to that beta when done.
+    )
+    (Updated zipmessage(), zipwarn_i() and ziperr() to not use errbuf, but instead
+    allocate storage on the fly sufficient for the input parameters, avoiding
+    buffer overflow regardless of parameter size.  2018-07-06 EG)
+    (User did not get back to us, so I assume this issue is addressed.
+    2018-07-07 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1036 - Implement option to corrupt size for testing.  (Similar to --corrupt-crcs.)
+    (2016-12-03 EG)
+    (Consider renaming this option --corrupt and allowing this one option to
+    corrupt multiple things for testing.  2016-12-03 EG)
+    (This may be a candidate for an option flags list.  2017-06-17)
+    (Option name changed to --corrupt.  Option value list looks appropriate.
+    This could be useful for release testing.  Bumping up to Priority 1.
+    2017-08-06 EG)
+    (Still need to add size corruption to new --corrupt option.  2018-02-24 EG)
+    (Looks done.  Updated zipwarn_i() to support embedded \n to break message
+    over multiple lines.  2018-05-13 EG)
+    (Done.  Added compressed and uncompressed size.  Still need to test.
+    2018-05-13 EG)
+    (Tested.  The particular item specified is corrupted by adding 1 to the
+    value.  Multiple items can be specified and are corrupted as expected.
+    Can corrupt local and/or central CRC, usize and/or csize.  Verified with
+    zipsleuth.  2018-07-07 EG)
+    Priority:  1
+    References:  1081
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1123 - BUG - -F and -FF not working.
+    {email, SMS, June 18, 2018, 6:52 PM}
+    Possibly -U being disabled is breaking -F.
+    [2018-06-18 EG]
+    (Looks like the action for -F and -FF was ADD, but was changed to ARCHIVE
+    as the fix modes are essentially copy operations.  But the check was still
+    looking for ADD.  Fixed.  2018-07-06 EG)
+    (There is a bug creating an abort when -FF used.  2018-07-07 EG)
+    (The bug was generated when a NULL was passed for the string to is_utf8_string().
+    This is a WIN32 issue that happened when OEM conversion was disabled for
+    UTF-8.  Fix is to skip check if no comment to convert and to handle NULL in
+    is_utf8_string().  2018-07-07 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1121 - DOC - Manual page patches from Eric Raymond.
+    {email, esr@thyrsus.com, June 12, 2018, 3:16 PM}
+    These are a bunch of small changes their automated system doclifter wants
+    made to the four Zip manual pages.
+    http://catb.org/~esr/doclifter/bugs.html
+    [2018-06-17 EG]
+    (These changes were made.  2018-07-06 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1119 - FEATURE - -sF without -sf should not be allowed.
+    [2018-06-17 EG]
+    (As a user could set -sF in the environment so -sf uses those settings when
+    -sf is used, this change is rejected.  2018-07-06 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  REJECTED        Target Release:  3.1e    Estimated Work:  TRIVIAL
+    
+1118 - BUG - Rename corrupt vars.
+    {SMS email, 2018-06-17}
+    Rename variables to the following to avoid exceeding 31 character
+    variable name limit on one target system:
+    purposely_corrupt_loc_crc, purposely_corrupt_cen_crc,
+    purposely_corrupt_loc_csize, purposely_corrupt_cen_csize,
+    purposely_corrupt_loc_usize, purposely_corrupt_cen_usize.
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+    
+1117 - BUG - Comment bug on CYGWIN.
+    This bug introduced when added console UTF-8 comment support to Windows.
+    Been fixed.  See CHANGES.
+    Priority:  1
+    REFERENCES:  1041
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+
+1074 - FEATURE - Windows GetVersion() deprecated.  (SMS)
+    [2017-06-25 EG]
+    (Duplicate.  2017-08-06 EG)
+    (Moving to DONE.  Still the original task out there.  2018-06-17 EG)
+    REFERENCES:  1066
+    Status:  DUPLICATE       Target Release:          Estimated Work:
+
+1081- Document the --corrupt option.
+    [2017-07-27 EG]
+    (Assigned to Priority 2.  2017-08-17 EG)
+    (Done with 1036.  2018-05-13 EG)
+    Priority:  2
+    References:  1036
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1041 - Read Unicode comments from console on Windows.  (2016-03-16, from below.)
+    (Requires opening input stream for comments as Unicode on Windows.)
+    (Support Unicode comments on Windows.  May need to use wide version of
+    fgets() (fgetws()) or ReadConsoleW() to read Unicode input.)
+    (This should be included in Zip 3.1e as part of full Unicode support.
+    Should be simple enough to use Windows wide read to get Unicode comments
+    from the console at the comment prompt.  Moved this to Priority 1.
+    2017-08-06 EG)
+    (Ended up using CreateFileW and ReadConsoleW.  Seems to work.  Created
+    Win32 function to package as read_utf8_line_from_console(), which also
+    converts the wide characters to UTF-8.  Ran into issue with OEM conversion
+    of UTF-8 comments, which messes them up.  Disabled OEM when UTF-8 bit set.
+    Also implemented -c="comment string" and -cc="commentfile.txt" to match
+    -z and -zz for archive comments.  2018-05-08 EG)
+    (See bug fix, task 1117.  2018-06-17 EG)
+    Priority:  1
+    REFERENCES:  1089, 1117
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+
+1089 - Should be possible to specify the file the archive comment is in, rather
+    than be forced to pipe it into stdin.  May need to reconsider using
+    -z="comment" as -z=commentfile.txt seems to make sense.  May need
+    another way to specify the comment on the command line.  Maybe use
+    -zz="comment" for that.
+    [2017-08-06 EG]
+    (Assigned to Priority 2.  2017-08-17 EG)
+    (New option -zz takes a file path.  2018-02-24 EG)
+    (This may be done.  2018-04-08 EG)
+    (Look at reversing roles of -z= and -zz=.  2018-05-03 EG)
+    (-c/-cc and -z/-zz should be handled same way.  2018-05-05 EG)
+    (Now -z="comment string" and -zz="commentfile.txt" as -c and -cc.  Looks
+    done.  2018-05-08 EG)
+    Priority:  1
+    REFERENCES:  1041
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL 
+    
+1053 - Automated testing.
+    (Being looked at.)
+    (See Python Test Script item.  2017-06-17 EG)
+    (Python may not be the answer.  Just one thing to look at.  2017-08-06 EG)
+    =
+    (Looking at Tush as a possible answer.  (The command line test utility,
+    not the ZZ Top reference nor the hero Tush-Tush.)  This is essentially an
+    awk script wrapped in a Bash script.  It allows easy and terse running of
+    command lines and verifying the responses, and can be set up to record the
+    responses automatically.  What it lacks is flow control, but that may not
+    be needed, and since the source is available some flow control and logging
+    capabilities might be added.  Although for Unix, it may also work for
+    Windows using Cygwin.  It lacks ability to interactively respond, such as
+    to prompts, which could be a factor.  Some testing is needed to determine
+    viability.  ( https://github.com/darius/tush )
+    
+    Another possibility is Python doctest, but that looks more focused on
+    testing embedded Python and looks to be more work for testing Zip and
+    UnZip than Tush.
+    
+    Then there's BATS ( https://github.com/sstephenson/bats ).  BATS (Bash
+    Automated Testing System) is a TAP-compliant testing framework for Bash.
+    It's intended for testing Unix commands, but might be usable on Windows
+    using Cygwin.  As with Tush, BATS lacks the ability to interact with the
+    application.
+
+    Expect ( http://expect.sourceforge.net/ ) is a tool for interacting with
+    command line applications as well as the shell.  Expect is available on
+    both Unix and Windows.  The ability to interact with a program allows
+    decisions to be made as the application runs and creates output, such as
+    prompting for input.  Setting up an Expect script is considerably more
+    work than using Tush or BATS, but then there's AutoExpect that can
+    record interactions and create the script for you.  Still, the majority
+    of tests that Zip and UnZip should be put through for regression testing
+    require no interaction.  It may make sense to use Expect to just fill in
+    the holes that Tush or BATS can't handle, such as testing the prompting
+    for a password.
+
+    Then there's Empty ( http://empty.sourceforge.net/ ).  This C program
+    supports a subset of what Expect does and could possibly fill in the gaps
+    left by a Tush or BATS test sequence that Expect might otherwise fill.
+
+    By the way, much of this I got from this article:
+    https://spin.atomicobject.com/2016/01/11/command-line-interface-testing-tools/
+    And this article also had some useful tidbits:
+    https://stackoverflow.com/questions/353198/best-way-to-test-command-line-tools
+
+    Another tool to mention is cram ( https://bitheap.org/cram/ ), which is
+    somewhat similar to Tush, but is Python dependent.
+
+    And there's test::more:
+    http://search.cpan.org/~exodist/Test-Simple-1.001014/lib/Test/More.pm
+    based on Perl.
+
+    A possible automated test solution may consist of multiple tools.  For
+    instance, Tush could be used to perform the bulk of the testing where
+    a command line is run and the results are checked.  This could include
+    checks after the command is run where a diff is performed on output files
+    to see if the generated archive is as expected, for instance.  All this
+    can be quickly automated by Tush.  Tush could be used for each group of
+    tests, and a top-level script used to launch each Tush script.  Then any
+    interactive tests, such as accepting a password or comment, can be done
+    using something like Expect.  These tests take longer to create, but there
+    should only be a few of them.  If the same scripts can be run on both
+    Unix and Windows (using Cygwin), then most of the tests can be common
+    to both Unix and Windows and only some specific tests need be added for
+    each platform.
+    2017-08-26 EG)
+    (Nothing above fully met the requirements for a command line tester that
+    was quick and easy, provided logging, handled exception cases, and could
+    learn the proper responses automatically.  Currently a solution using
+    bash and Cygwin is being looked at, allowing testing on Unix platforms
+    with bash as well as on Windows platforms using Cygwin to test zip compiled
+    on Windows.  BUG 1098 will need a workaround, though.  2018-01-21 EG)
+    (A new test tool has been put together.  This is a BASH script that can
+    be run on Linux platforms as well as with CYGWIN on Windows.  Seems to
+    get the job done.  It allows learning the status and output associated
+    with a test, so adding a test just requires adding the test case to the
+    test script and any input files required by the test to the IN directory.
+    Beta mostly debugged and looks sufficient to handle testing Zip.  Adding
+    test cases to the test script.  At this point this seems (by far?) the
+    easiest and fastest way to create a thorough Zip regression testing
+    framework.  Note that CYGWIN can run Windows binaries, and so test them.
+    2018-02-24 EG)
+    (Latest version of BASH tool seems to get the job done.  Still need test
+    cases.  2018-04-08 EG)
+    (Creating more test cases moved to 1113.  2018-05-03 EG)
+    (Consider this task done.  Coming up with adequate test cases now covered
+    by other tasks.  2018-05-29 EG)
+    REFERENCES:  1051, 1052, 1098, 1113
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  MEDIUM
+
+1037 - Support ISO 8601 date/time standard.  At least support T as separator
+    between date and time.  (2016-12-03 EG)
+    (Done.  2018-05-13 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1137 - BUG - Dup entries created, not updated, when path contains Unicode
+    [2018-09-02 EG]
+    When zipping an entry where path contains Unicode, creates dup rather than
+    update existing entry.
+    (Turns out it was !strcmp() should have been strcmp().  Fixed.
+    2018-09-02 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1138 - BUG - zip -FF should handle Unicode extra fields
+    [2018-09-08 EG]
+    (Looks fixed.  Default is for -F and -FF to use UTF-8 names from Unicode
+    extra fields as main names and set UTF-8 bit.  If -UL is used with -F or
+    -FF, local extra fields are created/recreated.  2018-12-26 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1040 - On Windows, "zip archive -", when not in pipe, seems broke.
+    (May be addressed before Zip 3.1 is released.)
+    (Does look to be working now.)
+    (Moved this to Priority 1 for testing.  2017-08-06 EG)
+    (Assume done.  2018-04-08 EG)
+    Priority:  1
+    Status: DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1035 - Update manuals, to include changes from Pol (forum).  (2016-07-11)
+    (May have been done.  2017-08-06 EG)
+    (With crash of forum assume done.  2018-04-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1026 - Go through Forum postings and emails and make sure all ToDo items are in
+    this ToDo list.  (2017-06-21 EG)
+    (With crash of forum, this is more or less OBE.  2018-05-03 EG)
+    Priority:  1
+    Status:  OBE             Target Release:  3.1e    Estimated Work:  SMALL
+    
+1025 - Rubson Performance improvements.  See Forum topic "Info-ZIP Bugs / Zip
+    Bugs / Performance improvements (--skip-scan related)".
+    [2017-06-21 EG]
+    (Provided code needs to be reviewed and results tested.  2017-06-08 EG)
+    (Changes merged into Zip 3.1e07a.  Being reviewed.  2017-08-20 EG)
+    (Updates made in Zip 3.1e07b.  Tested on Linux and minor changes made in
+    Zip 3.1e07c.  2017-08-27 EG)
+    (May be done.  2017-08-28 EG)
+    (Assume done.  2018-04-08 EG)
+    Priority:  1
+    REFERENCES:  1112
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  MEDIUM
+
+1045 - Update Unicode in fileio.c.  See line 5090 or around there.
+    [2017-07-09 EG]
+    (This may get worked when the Free BSD Unicode issue is worked.
+    2017-07-09 EG)
+    (Could be done.  2017-07-28 EG)
+    (Moved to Priority 1 to resolve.  2017-08-06 EG)
+    (With crash of forum no easy way to verify so assume done.  2018-04-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1047 - -sF probably should take "none" and "all".
+    [2017-08-06 EG]
+    (Moved to Priority 1 as should be a quick thing.  And I find I want to
+    use it.  2017-08-06 EG)
+    (Was quick fix.  2018-02-24 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+    
+1093 - API mem and resource leaks.
+    {email, Andreas Schniertshauer <Andreas.Schniertshauer@inform-software.com>,
+    2017-09-05}
+    [2017-09-04 EG]
+    (Done.  2017-09-05 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1023 - Unicode on Free BSD may be buggy.  See "Board index / Info-ZIP Bugs / Zip
+    Bugs / FreeBSD & UNICODE".  Apparently Free BSD does not define
+    __STDC_ISO_10646__, and that's because they apparently use their own
+    wchar_t mappings, which means any Zip (or UnZip) operations relying on
+    that mapping may create gibberish.  unix/configure checks for that
+    define before enabling Unicode, and it looks like it did its job
+    correctly, not enabling full Unicode on Free BSD.  Now we need to
+    see if we are, in fact, dependent on that mapping for Unix ports.
+    An alternative may be iconv.  [2017-07-09 EG, reported by BenRubson]
+    =
+    (Looks like iconv might be used to do UTF-8 to wchar_t conversions
+    and back, if iconv is available.  Then the wchar_t wide functions
+    can be used to do case conversion and white space detection.  A new
+    unix/configure flag, USE_ICONV, can be used when HAVE_ICONV and
+    HAVE_WCHAR are both set, but STDC_ISO_10646 is not.  Then configure
+    can still enable Unicode support.  Most path parsing on Unix is done
+    as UTF-8, but some character detection functions, like case and white
+    space, use wide characters.  For those uses it may make sense to allow
+    Unicode support in this case.  2017-07-09 EG)
+    =
+    (The handling of Unicode escapes also needs to be considered.  Though
+    mbstowcs() should be able to convert UTF-8 to wide, the wide may not
+    match the Unicode character codes, so translating a wide character to
+    an escape or an escape to a wide character now probably needs to go
+    through a new step where the character code is converted to the wide
+    character and vice versa.  iconv may do that conversion directly.
+    2017-07-10 EG)
+    =
+    (Updated large top comment in tailor.h to detail how Unicode is
+    handled.  Most of the code looks OK, but the wchar_t <--> UTF-8
+    conversions were lacking iconv parts.  Fixing.  2017-07-13 EG)
+    =
+    (As zwchar is actually UCS4LE, plan to change the zwchar type to
+    the UCS4 type (just a name change).  That makes it more clear
+    maybe what's going on.
+    
+    Zip is now requiring wchar_t support to enable Unicode support, as
+    it uses some wide functions.
+    
+    The following encodings are used:
+    - UTF-8               - Used to store Unicode in an archive entry.
+    - UCS4                - Just the 32-bit Unicode encoding.  Used by
+                            Zip to do some processing and as a middle
+                            step between UTF-8 and wchar_t.  Currently
+                            this is the zwchar type.
+    - wchar_t             - Used for wide character processing.  If
+                            wchar_t is supported, a set of wide character
+                            functions should be available for things like
+                            detecting white space.
+    - local               - This is the local character set of the
+                            environment, and the character set of the
+                            command line.  Could be UTF-8.  For Windows
+                            this is the current code page.
+    
+    It looks like Unicode support can be separated into a few distinct
+    tasks:
+    - UTF-8 <--> UCS4     - This is just repackaging of the same integer
+                            value and Zip already has code to do this.
+    
+    - UCS4 <--> wchar_t   - This conversion is dependent on the encoding
+                            wchar_t uses.
+                            - If STDC_ISO_10646, then the same integer
+                            values are used in wchar_t as UCS4, and the
+                            conversion is again just repackaging.
+                            - If not, then something needs to do the
+                            conversion.  Currently Zip only supports
+                            iconv to do that, so iconv is required to
+                            enable Unicode Support if STDC_ISO_10646 is
+                            not defined.
+    
+    - wchar_t <--> local    - The wchar_t functions already handle this.
+    
+    Other conversions can be done using these.  In some cases Zip functions
+    are defined for other conversions (such as UTF-8 <--> wchar_t).  These
+    can be implemented as two or more of the above conversions.
+    
+    Windows is an exception and has its own way of doing things.
+    
+    Modifying Zip to more cleanly use these guidelines.  2017-07-15 EG)
+    =
+    (This looks done.  Needs testing on Windows and Unix.  2017-07-28 EG)
+    =
+    (Tests by BenRubson on FreeBSD show that locale on FreeBSD can't take a
+    named locale, like "UTF-8".  He has made some changes that seem to
+    get Unicode to work.  Waiting for clarification before making changes
+    to Zip main source.  2017-08-13 EG)
+    (Looks like Unicode is now working on BSD using iconv.  Waiting for
+    confirmation from BenRubson.  2017-08-27 EG)
+    (With crash of forum assume done.  2018-04-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVAL
+
+1022 - Windows LIB/DLL updates.  Complete updates to Windows C LIB example, then
+    update Windows C DLL example.  Test with various input parameters.
+    [2017-07-09 EG]
+    (Windows DLL example updated similar to Windows LIB example.  Seems to
+    work fine.  Some updates made to both to clarify use.  2017-07-12 EG)
+    (The Unix LIB example and the Windows LIB and DLL C examples all look
+    updated now.  Some testing done.  2017-07-28 EG)
+    (Seems to be working.  2018-05-03 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+
+1019 - Make sure to document that long options are not case sensitive.
+    (2017-06-03 EG)
+    (Could be done.  2017-08-06 EG)
+    (Added note to Zip manual.  2018-05-03 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+
+1017 - Make sure all options are addressed in -hh and manual.  For instance,
+    new option --print0.  (2017-01-19 EG)
+    (Looks to be the case now.  2017-07-28 EG)
+    (--print0 added to manual.  2018-05-03 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  MEDIUM
+    
+1103 - BUG - filterlist_to_patterns() corruption
+    {SMS email, 2018-03-03}
+    [2018-03-31 EG]
+    "-x" is broke for some cases due to corrupted pattern.
+    (This seems the result of sloppy allocation and, in particular, freeing
+    in filterlist_to_patterns().  A possibly modified copy of filterlist->pattern
+    is put into pattern and that value assigned to fields in patterns[].  Then
+    pattern is freed, which it shouldn't be here.  Also, filterlist->pattern is
+    directly assigned in one spot, instead of using the copy in pattern.  And
+    it looks like filterlist->pattern is never freed.  Fixed.  2018-03-31 EG)
+    (Looks like it's working.  2018-05-03 EG)
+    REFERENCES:
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1102 - SMS 08 fixes
+    {SMS emails, late 2018-03-01}
+    [2018-03-02 EG]
+    Various bugs to fix:
+      - (tf != -1), zip.c, line 11778, 11785  ->  (tf != (ulg)-1)
+      - ZpZip_root_dirw = utf8_to_wchar_string(currentDir);, api.c, line 1266, 1504
+      - aa = ..., bb = ..., missing ;, unix/unix.c, line 606, 620
+      - MAX_COM_LEN, %d -> %ld, zip.c, line 8815
+      - MAX_COM_LEN, %d -> %ld, fileio.c, line 4093
+      - $() -> ``, old shells, unix/configure, line 2546
+      - "]; -> " ];, old shells, unix/configure, line 2547
+    (Fixes:
+    tf - Added (ulg) where needed.
+    aa, bb - Added missing ";".
+    MAX_COM_LEN - %d to %ld.
+    $() -> `` - done.
+    "];" -> " ];" - done.
+    ZpZip_root_dirw - Now only used for UNICODE_SUPPORT_WIN32.
+    Looks done.  2018-05-03 EG)
+    (No issues seen on Windows or Linux.  2018-05-03 EG)
+    REFERENCES:
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+      
+1110 - DOCS - Pull items from the Info-ZIP private lists on the forum site.
+    [2017-09-01 EG]
+    (With crash of forum, this may be mute.  Closing this item.  2018-04-08 EG)
+    Status:  OBE             Target Release:  3.1e    Estimated Work:  SMALL  
+
+1111 - FEATURE - Add support for NO_UNICODE_SUPPORT to unix/configure
+    Was not able to force compiling without UNICODE on a UNICODE platform
+    before this change.
+    [2018-04-28 EG]
+    (Added.  Tested.  2018-04-29 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL  
+    
+1108 - FEATURE - Rubson --skip-scan patch.
+    {Forum, Performance improvements (--skip-scan related), 2017-09-07}
+    (Has this been added already?  2018-02-24 EG)
+    (Believe these changes were added and Rubson verified.  As forum is wiped,
+    consider this done.  2018-04-22 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL  
+    
+1105 - DOCS - Add NO_BUILD_DATE description to INSTALL.
+    {Forum, "How can we eliminate the build differences caused by the time
+    stamps for reproducible build?", 2017-09-05}
+    [2017-09-08 EG]
+    (NO_BUILD_DATE added to INSTALL.  2018-04-22 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL  
+    
+1109 - FEATURE - zip -qv to pipe
+    "zip -qv" should just output quick version, even if output is not terminal.
+    {EG}
+    [2017-09-05 EG]
+    (May be done.  2018-04-08 EG)
+    (The option for quick version is -vq, not -qv.  -vq works with pipes.
+    Could add -qv as a synonym for -vq, but the proper thing to do is require
+    use of -qv for quick version.  Rejecting this change.  2018-04-22 EG)
+    Priority:  1
+    Status:  REJECTED        Target Release:  3.1e    Estimated Work:  SMALL  
+
+1097 - Memory/resource leaks.
+    In api.c:
+      args[] not freed.
+      ZpZip_root_dir not freed.
+      ZpZip_root_dirw not freed.
+      ParseString(), str1 not freed.
+      In insert_args_from_file(), argfile not closed all cases.
+    In fileio.c(350):
+      In fexpel(), missing free(f->oname).
+    {email, Andreas.Schniertshauer@inform-software.com, 2017-09-06 641 AM}
+    [2017-09-06 EG]
+    (Fixed.  2017-09-07 EG)
+    (Assume done.  2018-04-08 EG)
+    (ZpZip_root_dir and ZpZip_root_dirw are freed in api.c at the end of
+    ZpZip() and ZpZipArgs().  For ZpZipArgs, args[] is an input parameter and
+    freeing it is the responsibility of the caller.  For ParseString(), added
+    missing free(str1) for error return.  In insert_args_from_file(), added
+    fclose(argfile) after error returns.  2018-04-22 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  MEDIUM
+    
+1100 - BUG - -sf issue
+    {forum, "FreeBSD & UNICODE", 2017-09-05}
+    [2017-09-06 EG]
+    (This issue is -sf not returning all needed information as a result of
+    the Rubson updates.  This was tracked down to the show_files flag not
+    added to the if deciding when to do stats on files.  Fixed.
+    2018-02-24 EG)
+    REFERENCES:
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+
+1098 - BUG - Windows isatty() under Cygwin not working.
+    For Windows executable compiled with VS 2010, isatty() apparently does
+    not work under Cygwin (always returns 0), but does in command prompt
+    (returning 1 for ttys).
+    [2018-01-21 EG]
+    (Turns out this is a known issue:
+    https://github.com/BurntSushi/ripgrep/issues/94  2018-01-21 EG)
+    (Apparently Cygwin uses a pipe for stdin, which native Windows apps (like
+    zip compiled for Windows but run on Cygwin) see as pipes and not character
+    devices.  So isatty() returns 0 for stdin.  GetFileType returns 2 (character
+    device for a Windows cmd window and 3 (FIFO) when in a Cygwin window.
+    Both GetConsoleMode() and GetFileInformationByHandleEx() fail when running
+    in a Cygwin window.  No one seems to have a good answer for that.
+    
+    For the most part this should not impact zip, but it does mess up displaying
+    help when run with no arguments, as zip instead tries to read stdin as a
+    filter.  A workaround being considered is adding an option to zip to tell
+    it to assume stdin is a tty.  This would allow testing those features in
+    Cygwin windows.  The option could then be negated to use zip as a filter,
+    but "zip - -" would allow the same functionality.  2018-01-21 EG)
+    
+    (The fix looks to be allowing --stdinout_tty to be set in the environment
+    and looking for this long option before using ISATTY().  That way the
+    flag can be set before help or version would normally be displayed.  The
+    environment args are not included in the arg count when deciding to
+    display help or version.  The ISATTY() macro is defined as:
+      (isatty(fd) || (stdinout_tty && (fd == 0 || fd == 1)))
+    This seems to work.  Currently --stdinout_tty is only enabled for the
+    Windows port.  2018-01-22 EG)
+    (Considered fixed.  2018-02-24 EG)
+    REFERENCES:  1053
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1099 - BUG - Do environment variables work on Cygwin?  (Env vars and help/version)
+    Yes, using declare -x, but when defined will never see the help.
+    Maybe options in an environment variable should not be counted
+    when deciding to display help information.
+    
+    That is the case.
+    [2018-01-21 EG]
+    (The arg count was off when environment variables were defined, preventing
+    no args help and version from working.  This was fixed by counting command
+    line args before adding in the environment variables args.  2018-02-24 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+
+1021 - Unix LIB example updates.  Copy updates from Windows LIB example to
+    Unix LIB example.  Verify all works there on Linux.
+    [2017-07-09 EG]
+    (Updated similar to Windows LIB example.  2017-07-12 EG)
+    (The Unix LIB example and the Windows LIB and DLL C examples all look
+    updated now.  Some testing done.  2017-07-28 EG)
+    (Considering this done.  When we have regression testing, this is one of
+    the things that should be tested.  2017-08-27 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1020 - Allow negation of all options that it makes sense for.  (From email
+    2017-05-31 SMS) (2017-06-03 EG)
+    (Partly done.  2017-07-08 EG)
+    (Could be done.  2017-06-08 EG)
+    (Calling it done.  Any missed can be new task to fix.  2017-09-05 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1018 - Perhaps white space should not be trimmed when reading paths from a file.
+    (2016-07-25 EG)
+    (-p0 (--print0) implemented and can be used to avoid trimming.  But
+    question remains.  When -p0 not used, quoted paths are not trimmed.
+    2016-12-03 EG)
+    (Currently trailing space and trailing '.' still trimmed on Windows.
+    Should -p0 turn this off in getnam() also?  2016-12-03 EG)
+    (Trimming leading and trailing white space in general is now turned off,
+    restoring previous behavior of taking the entire line as the path.
+    Except for the above Windows trimming.  2017-07-28 EG)
+    (Considering this done.  2017-08-27 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+
+1046 - Do we need to set a UTF-8 locale in configure when doing the wchar_t test?
+    [2017-08-06 EG]
+    (configure updated to set a UTF-8 locale when doing the wchar_t tests.
+    2017-08-06 EG)
+    (Moved to Priority 1 to resolve.  2017-08-06 EG)
+    (BenRubson changed this to setting the " " locale.  Need to test building
+    in a non-UTF-8 locale.  2017-08-27 EG)
+    (Apparently setting the locale to a non-UTF-8 locale before building Zip
+    does not impact Unicode detection.  Zip also seems to be able to find
+    Japanese and other paths while locale is not UTF-8.  So it looks like it's
+    good like it is, at least on Linux.  2017-08-27 EG)
+    REFERENCES:  1048
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+    
+1092 - Change Rubson to BenRubson in CHANGES and TODO
+    {BenRubsom 2017-09-03}
+    [2017-09-04 EG]
+    (Done.  2017-09-05 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1016 - SMS notes (Other Schniertshauer Zip complaints (VS 2017?), 2017-06-22 SMS)
+    [2017-06-22 EG]
+    (Looks like the LIB/DLL changes cover the concerns in that email chain.
+    2017-07-09 EG)
+    Priority:  1
+    Status:  DUPLICATE       Target Release:  3.1e  Estimated Work:  SMALL
+  
+1015 - In api.c, fix isspace to use unsigned char.  Document that \" should not
+    appear in strings to LIB/DLL unless a quote is in the string.  User should
+    verify that the string passed to the DLL does not include those.  Test DLL
+    with UTF-8 paths.
+    (email 2017-06-26) [2017-06-27 EG]
+    (isspace() looks fixed.  2017-07-09 EG)
+    (Bad coding in commandline_to_argv assumed quotes are needed around args
+    with white space, but it isn't.  Redid and simplified commandline_to_argv.
+    Looks like it works now.  Does leave embedded quotes, but strips quotes
+    off ends (if both ends have quotes).  Does not handle escapes, just passes
+    what it gets on.  2017-07-09 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+    
+1014 - When get "name not matched" error in LIB, first part of name chopped up
+    to ".".  (2017-07-09 EG)
+    (Bad strip_rootdir().  2017-07-09 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+    
+1013 - Strip root dir from fully qualified paths.  Old DLL used to do this.
+    Should new DLL do this?  Should Zip do it for non-API?
+    [2017-06-24 EG]
+    (Now strip_rootdir() converts the paths from \\ to / before it
+    looks for the root directory.  Requires rootdir specified in ZpZip or
+    ZpZipArgs to be in same form as input paths, i.e. if paths start with
+    "C:\dir1\dir2" then rootdir needs to start with the same so beginning
+    of paths match in order for the root dir to be stripped from path.
+    2017-07-09 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+    
+1012 - API protos for api.h and api.c.  (SMS)
+    [2017-06-25 EG]
+    (May be done.  2017-07-09 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+    
+1011 - Make sure cd_only is documented.
+    [2017-07-08 EG]
+    (Manual updated.  -hh already updated.  2017-07-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+    
+1010 - Consider changing all long options to lower case.  Update manual and
+    -hh.  [SMS email 2017-06-08]  (2017-0608 EG)
+    (Changed "dos-names", "mvs", "q-flag", "vms-portable", "vms-specific",
+    "vms-versions", "vms-dot-versions".  Still need to make sure -hh and
+    manual are updated.  2017-06-16 EG)
+    (Looks done.  2017-07-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+    
+1009 - Add zip version to log?  (2016-12-16 EG)
+    (Done.  2017-07-08 EG)
+    Priority:  2
+    Status:  DONE            Target Release:  3.1e
+
+1008 - VMS option changes.  (SMS email 2017-06-03) (2017-06-03 EG)
+    (Pulled what was on SMS site.  2017-07-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+
+1007 - SMS changes.  http://antinode.info/ftp/info-zip/zip31e05/
+    (email 2017-05-31 SMS) [2017-06-03 EG]
+    crypt.c, (2017-06-25 EG)
+    (Pulled what was on SMS site.  2017-07-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+
+1006 - Add warning to manual for use of -UN=no.  (From 2017-05-24 SMS email)
+    (2017-06-03 EG))
+    (This is dependent on what we do with -UN.  2017-06-17 EG)
+    (Manual partially updated.  Should be cleaned up when manual is reviewed
+    for public beta release.  2017-07-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+
+1005 - Consider breaking out NO value of unicode_mismatch to separate variable.
+    (From 2017-05-24 SMS email) (2017-06-03 EG))
+    (new global unicode_dont_use replaces
+    unicode_mismatch = UNICODE_MISMATCH_NO_UNICODE.  New option -UD
+    (--unicode-dont-use) sets it.  2017-07-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+
+1004 - Break out Unicode extra field part of -UN to new -UL (--unicode-store-local)
+    option.  (From 2017-05-24 SMS email) (2017-06-03 EG))
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+
+1003 - Consider defining macros for values unicode_mismatch can take.  (From
+    2017-05-24 SMS email) (2017-06-03 EG))
+    (Need to determine what makes most sense for this code.  2017-06-17 EG)
+    (-UN option split into:
+      -UE (--unicode-escapes) - replace Unicode characters with escapes
+      -UL (--unicode-local)   - store local path (and UTF-8 in extra field)
+      -UN (--unicode)         - On Unicode error (quit/warn/ignore/no)
+      -US (--unicode-show)    - force show Unicode (should be automatic)
+    Defined the following macros:
+      #define UNICODE_MISMATCH_ERROR       0
+      #define UNICODE_MISMATCH_WARN        1
+      #define UNICODE_MISMATCH_IGNORE      2
+      #define UNICODE_MISMATCH_NO_UNICODE  3
+    which are used with -UN.
+    Looks done.  2017-07-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+
+1002 - Zip comment as parameter?  (2016-12-16 EG)
+    (May be implemented.  However, as there now is duplicate code
+    between reading the archive comment from the console, from stdin, and
+    as an option value, some cleanup is needed.  2017-06-16 EG)
+    (Looks done.  Removed end \r\n when read from console as 7-Zip adds
+    blank line for it.  Handles stdin comment, console comment, and
+    -z="comment".  Still some duplicate code that could be cleaned up,
+    but all seems to work.  2017-07-08 EG)
+    Priority:  1
+    Status:  DONE            Target Release:  3.1e
+
+1001 - Support option settings lists, like:  -sF=-usize,comment  (From email
+    2017-05-31 SMS) (2017-06-03 EG)
+    (Option flags lists now implemented using get_flags() and
+    free_flags().  Supports flag negation with leading '-' and
+    use of "-" and "+" to remove all and add all flags, respectively.
+    -sF converted to use.  2017-06-17 EG)
+    Priority:  -
+    Status:  DONE            Target Release:  3.1e  Estimated Work:  SMALL
+
+
+    
+    
+
+Resolved Immediate List Items
+-----------------------------
+
+- Add --print0 to support reading paths that "find" outputs using -print0 (with
+    NULL separators).  (Forum "Files' list separator" topic.  2016-03-31)
+	(-p0 option.)
+  -p0 (--print0) option added.  Names read by getnam() assumed NULL
+    terminated when used.  (2016-12-03 EG)
+
+- Perhaps arg files should not be enabled by default, but require -AF.
+    Maybe add compile option to enable by default.  (2016-07-26 EG)
+    Names/paths starting with @ are now not handled special unless option
+    -AF preceeds the path when processing the command line.  (2016-12-03 EG)
+
+- Address making inclusion of AES the default.  (Nov 2016 email?)
+    Should be taken care of now.  (2016-12-03 EG)
+
+- Make sure only INSTALL points to the AES kit and all other docs point to
+    INSTALL (like VMS docs).  (2016-04-21 EG)
+    May be OBE with inclusion of AES in base Zip source kit.  (2016-12-03 EG)
+
+- When NO_TEST_ZIPFILE used, should list in --version list.  Also, when
+    defined and -T used, Zip should display warning saying option is
+	disabled.  (2016-11-08 SMS)
+	zip -v now outputs TEST_ZIPFILE if enabled, NO_TEST_ZIPFILE if not.
+  Also outputs NO_CHECK_UNZIP if -T enabled but NO_CHECK_UNZIP defined.
+	Options -T, -TT, -TU, and -TV now are always available, but issue
+	error and exit if not enabled.  (2016-12-3 EG)
+
+- Fix symlinks when streaming.  (Fixed.  Encrypting symlink targets left for
+    another day.  2016-03-05)
+- --skip-scan option. (forum topic "Compress while/avoiding scanning files",
+    http://www.info-zip.org/phpBB3/viewtopic.php?f=6&t=514)  (First attempt
+    looks done.  2016-03-08)
+- -tn does not work for Unix.  (Fixed.  2016-03-05)
+- Tries to read "-" archive.  (Fixed.  "-" archives now skipped.  Not really
+    a problem as "-" was skipped within the read routine.)
+- Add -@=file as alternative to -@@.  (Looks done.  2016-03-08)
+- -sd should show elapsed time.  Maybe when used with -pt.  (Forum.
+    2016-03-23)  (Done in Zip 3.1e02.  2016-03-24)
+- Allow -tn=a to remove access times.  (Added.  2016-03-05)
+- Fix -SI to only rename stdin, instead of any entry named "-".
+    (This should be a quick check that the "-" entry came from stdin.)
+    (For now, user is responsible for not using -SI on non-stdin file,
+    not that that usage would hurt anything.  User file system files should
+    not be named "-" to avoid confusion.)  (This is no longer an issue
+    now that z->is_stdin is used to flag stdin entry.  2016-04-12)
+- -SI dup names issue.  -SI currently renames "-" late, when writing headers.
+    This can result in duplicate entries in archive.  Perhaps -SI rename should
+    happen just before dup check.  This requires using "-" to indicate stdin
+    to be dropped, probably replaced by full dependency on z->is_stdin.
+    (2016-04-12 EG)
+    (This should now be fixed.  2016-04-29 EG)
+- -SI does not handle UTF-8 well.  (2016-04-12 EG)
+    (This should now be fixed.  2016-04-29 EG)
+- For --skip-scan, add trailing / for directories (in zipup()).  (Forum
+    "Compress while/avoiding scanning files".  2016-03-31)
+    (This should now be fixed.  2016-04-29 EG)
+
+    
+    

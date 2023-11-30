@@ -827,7 +827,7 @@ static UInt32 ReadMatchDistances(CLzmaEnc *p, UInt32 *numDistancePairsRes)
       printf("%2d %6d   | ", p->matches[i], p->matches[i + 1]);
   }
 #endif
-  if (numPairs > 0)
+  if (numPairs > 1)
   {
     lenRes = p->matches[numPairs - 2];
     if (lenRes == p->numFastBytes)

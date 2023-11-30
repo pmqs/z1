@@ -12,8 +12,11 @@ EXPORTS
      ZpTestComParse
      ZpTestCallbackStruct
      ZpTestCallback
+     ZpCalcCrc32
      ZpZipTest
      ZpZip
+     ZpZipArgs
+     ZpArgvToCommandlineString
      ZpStringCopy
      ZpArchive
      ZpVersion

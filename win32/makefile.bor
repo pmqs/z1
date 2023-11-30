@@ -31,8 +31,8 @@ CRCA_O = crc_i386.obj
 ASCPUFLAG = __$(CPU_TYP)86
 
 VPATH=.;win32
-CC = bcc32
-CFLAGS=-w -w-aus -w-ccc -w-par -w-sig -O2 -I. -DWIN32 $(LOC)
+CC := bcc32
+CFLAGS :=-w -w-aus -w-ccc -w-par -w-sig -O2 -I. -DWIN32 $(LOC)
 UTILFLAGS=-DUTIL $(CFLAGS) -o
 
 !ifdef USETASM16
@@ -43,7 +43,7 @@ AS=tasm32
 ASFLAGS=-ml -t -m2 -D$(ASCPUFLAG) $(LOC)
 
 LD=ilink32
-LDFLAGS=
+LDFLAGS :=
 
 # variables
 OBJZ1 = zip.obj crypt.obj ttyio.obj zipfile.obj zipup.obj fileio.obj util.obj \
@@ -162,9 +162,10 @@ zip.res:        win32/zip.rc revision.h
 
 # Split the command line to fit in the MS-DOS 128 byte limit by using
 # Borland-Make specific response file syntax:
-zip.exe: $(OBJZ) zip.res
-	$(LD) -Gn -x -c -ap -Tpe @&&|
-c0x32.obj $(OBJZ),$@,,import32.lib cw32.lib,,zip.res
+# aSc removed zip.res behind $(OBJZ) and ,,
+zip.exe: $(OBJZ)
+	$(LD) $(LDFLAGS) -Gn -x -c -ap -Tpe @&&|
+c0x32.obj $(OBJZ),$@,,import32.lib cw32.lib,,
 |
 
 zipcloak.exe: $(OBJC)

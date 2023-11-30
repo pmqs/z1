@@ -1,7 +1,7 @@
 /*
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2016 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 2000-Apr-09 or later
+  See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, all these files are missing, the Info-ZIP license
   also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
@@ -403,7 +403,7 @@ int procname(n, caseflag)
   struct stat s;        /* result of stat() */
   struct zlist far *z;  /* steps through zfiles list */
 
-  if (strcmp(n, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(n, "-") == 0))   /* if compressing stdin */
     return newname(n, 0, caseflag);
   else if (stat(n, &s))
   {
@@ -425,7 +425,7 @@ int procname(n, caseflag)
   }
 
   /* Live name.  (No "Recurse if directory" on Tandem?)  Use if file. */
-  if ((S_ISDIR( s.st_mode))
+  if ((S_ISDIR( s.st_mode)))
   {
     /* Directory. */
     if ((p = malloc(strlen(n)+4)) == NULL)
@@ -555,7 +555,7 @@ ulg filetime(f, a, n, t)
   struct stat s;
   nsk_stat_ov *nsk_ov;
 
-  if (strcmp(f, "-") == 0) {    /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(f, "-") == 0)) {    /* if compressing stdin */
     if (n != NULL) {
       *n = -1L;
     }

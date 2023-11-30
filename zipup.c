@@ -1,7 +1,7 @@
 /*
   zipup.c - Zip 3.1
 
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -21,6 +21,12 @@
 #include "zip.h"
 #include <ctype.h>
 #include <errno.h>
+
+/* aSc added,  Missing prototype for towupper, ... */
+#ifdef LCC_WIN32
+# include <wchar.h>
+#endif
+
 
 #ifndef UTIL            /* This module contains no code for Zip Utilities */
 
@@ -242,7 +248,6 @@ local ftype ifile;              /* file to compress */
 local char l_str[ 4];
 local char *l_str_p;
 
-
 /* 2012-02-07 SMS.
  * Pulled these declarations out of bzip2- and zlib-specific blocks into
  * this once-for-all set.  Changed the type from char to unsigned char,
@@ -298,7 +303,6 @@ uzoff_t isize;               /* input file size. global only for debugging */
 local uzoff_t isize;         /* input file size. global only for debugging */
 #endif /* ?DEBUG */
 
-
 /* file_binary is set using initial buffer or buffers read and initial
    binary/text decision is made based on file_binary.  file_binary_final
    is set based on all buffers, and is updated as each buffer is read.
@@ -312,7 +316,7 @@ local int file_binary = 0;
 local int file_binary_final = 0;
 
 /* This is set when a text file is found to be binary and we are allowed
-   to restart the compression/store. */
+   to restart the compression/store operation for this file. */
 local int restart_as_binary = 0;
 
 /* open_for_append()
@@ -551,7 +555,8 @@ char *sufx_list;                /* list of filetypes separated by : or ; */
  * approach we use is to read the file once, calculating the CRC as we
  * go, and then store the CRC in a data descriptor at the end.  ETWODD
  * uses this function to calculate the CRC before the main file read and
- * encryption starts.
+ * encryption starts.  This extra step allows the actual CRC to be put
+ * in the header.
  */
 int zread_file( z, l)
 struct zlist far *z;    /* Zip entry being processed. */
@@ -613,6 +618,31 @@ int l;                  /* True if this file is a symbolic link. */
 #endif /* def ETWODD_SUPPORT */
 
 
+void set_method_string(int mthd)
+{
+  strcpy(method_string, "(unknown method)");
+#ifdef BZIP2_SUPPORT
+  if (mthd == BZIP2)
+    strcpy(method_string, "bzip");
+  else
+#endif
+#ifdef LZMA_SUPPORT
+  if (mthd == LZMA)
+    strcpy(method_string, "LZMA");
+  else
+#endif
+#ifdef PPMD_SUPPORT
+  if (mthd == PPMD)
+    strcpy(method_string, "PPMd");
+  else
+#endif
+  if (mthd == DEFLATE)
+    strcpy(method_string, "deflate");
+  else if (mthd == STORE)
+    strcpy(method_string, "store");
+}
+
+
 /* Note: a zip "entry" includes a local header (which includes the file
    name), an encryption header if encrypting, the compressed data
    and possibly an extended local header. */
@@ -629,14 +659,22 @@ struct zlist far *z;    /* zip entry to compress */
   ulg a = 0L;           /* attributes returned by filetime() */
   char *b;              /* malloc'ed file buffer */
   extent k = 0;         /* result of zread */
+#ifndef RISCOS
+  /* aSc not used */
   int j;
+#endif
   int l = 0;            /* true if this file is a symbolic link */
   int mp = 0;           /* true if mount point (Win32 junction) to save */
   int mthd;             /* Method for this entry. */
   int mthd_adj;         /* Method for this entry, adjusted. */
+#ifndef RISCOS
   int lvl;
-
-  zoff_t o = 0, p;      /* offsets in zip file */
+#endif
+  zoff_t o = 0;         /* offsets in zip file */
+#if 0
+/* aSc not used */
+  zoff_t p;
+#endif
   zoff_t q = (zoff_t) -3; /* size returned by filetime */
   uzoff_t uq;           /* unsigned q */
   uzoff_t s = 0;        /* size of compressed data */
@@ -695,12 +733,14 @@ struct zlist far *z;    /* zip entry to compress */
 
   int is_fifo_to_skip = 0;
 
-  is_fifo_to_skip = IS_ZFLAG_FIFO(z->zflags) && !allow_fifo;
+  /* start with global setting */
+  use_data_descriptor = use_descriptors;
 
   /* This is set when a text file is later found to contain binary and
      we are allowed to restart the compression/store.  Currently not
      supported if using descriptors (streaming) or output is split.
-     This just forces file_binary = 1 at first read. */
+     This just forces file_binary = 1 at first read when restart
+     compression/store. */
   restart_as_binary = 0;
 
   /* local variable may be updated later */
@@ -726,7 +766,7 @@ struct zlist far *z;    /* zip entry to compress */
 
   strcpy(method_string, "(unknown method)");
 
-#if defined(UNICODE_SUPPORT) && defined(WIN32)
+#ifdef UNICODE_SUPPORT_WIN32
   if ((!no_win32_wide) && (z->namew != NULL))
     tim = filetimew(z->namew, &a, &q, &f_utim);
   else
@@ -735,13 +775,98 @@ struct zlist far *z;    /* zip entry to compress */
   tim = filetime(z->name, &a, &q, &f_utim);
 #endif
 
+#ifdef UNIX
+  /* Make sure this element can be processed, as:
+     - it may not have been stated yet (to avoid performance penalty (*)) ;
+     - depending on how the file tree is traversed (readdir, fts...),
+       z->zflags may not be fully populated (**).
+     (*) see zip.c, (**) see unix/unix.c */
+  if (!(z->zflags)) {
+    /* FIFO (Named Pipe) - handle as normal file by adding
+     * name of FIFO.  As of Zip 3.1, a named pipe is always
+     * included.  Zip will stop if FIFO is open and wait for
+     * pipe to be fed and closed, but only if -FI.
+     * Skipping read of FIFO is done below.
+     */
+    if (!a)
+      return ZE_MISS;
+    if (S_ISFIFO(a >> 16)) {
+      if (noisy) {
+        if (allow_fifo)
+          zfprintf(mesg," (reading FIFO (Named Pipe))");
+        else
+          zfprintf(mesg," (skipping read of FIFO (Named Pipe) - use -FI to read)");
+      }
+      if (logall) {
+        if (allow_fifo)
+          zfprintf(logfile," (reading FIFO (Named Pipe))");
+        else
+          zfprintf(logfile," (skipping read of FIFO (Named Pipe) - use -FI to read)");
+      }
+      z->zflags = ZFLAG_FIFO; /* this enforcement also solves an issue where zipup()
+                                 was trying to read pipes even when !allow_fifo,
+                                 when updating an existing zip file */
+    }
+    else
+    /* Skip special files */
+    if (!(S_ISDIR(a >> 16)) && !(S_ISREG(a >> 16)) && !(S_ISLNK(a >> 16))) {
+      return ZE_SKIP;
+    }
+  }
+#endif /* UNIX */
+
+  is_fifo_to_skip = IS_ZFLAG_FIFO(z->zflags) && !allow_fifo;
+
+  /* If --skip-scan, assume a dir without end / is still a dir to archive.  If
+     updating an archive, this could result in a file being overwritten.  As
+     --skip-scan does fewer checks, it's also possible that an existing entry
+     isn't recognized as a match for a file found on the file system and so
+     duplicate entries may result.  Therefore, --skip-scan is not allowed when
+     archive already has entries (only no archive or empty archive allowed). */
+  if (skip_file_scan) {
+    isdir = (a & MSDOS_DIR_ATTR) != 0;
+
+    if (isdir) {
+      /* make sure / at the end of directories */
+      size_t len;
+      char *new_iname;
+
+# ifdef UNICODE_SUPPORT_WIN32
+      /* windows wide name */
+      if ((!no_win32_wide) && (z->namew != NULL))
+      {
+        wchar_t *new_inamew;
+
+        len = wcslen(z->inamew);
+        if (len > 0 && z->inamew[len - 1] != L'/') {
+          /* dir without end /, so add it */
+          /* dup the string, adding 1 char of fluff at end for adding / */
+          new_inamew = string_dupw(z->inamew, "new_inamew (zipup)", ADD_FLUFF(1));
+          wcscat(new_inamew, L"/");
+          free(z->inamew);
+          z->inamew = new_inamew;
+        }
+      }
+# endif
+      len = strlen(z->iname);
+      if (len > 0 && z->iname[len - 1] != '/') {
+        /* dir without end /, so add it */
+        /* dup the string, adding 1 char (byte) of fluff at end for adding / */
+        new_iname = string_dup(z->iname, "new_iname (zipup)", ADD_FLUFF(1));
+        strcat(new_iname, "/");
+        free(z->iname);
+        z->iname = new_iname;
+      }
+    }
+  } /* skip_file_scan */
+
 
 /* symlinks and mount point */
 #ifdef WINDOWS_SYMLINKS
   /* ---------------------------------------------------------- */
   /* Handle Windows symlinks, reparse points, and mount points. */
   /* Skip check if stdin */
-  if (strcmp(z->name, "-") != 0)  {
+  if (!z->is_stdin)  {
 
     /* WinDirObjectInfo() requires a wide path. */
     if (z->uname) {
@@ -798,6 +923,7 @@ struct zlist far *z;    /* zip entry to compress */
         }
       }  /* reparse point */
     }  /* WinDirObjectInfo */
+    free(wpath);
   }
   /* ---------------------------------------------------------- */
 #else /* Not WINDOWS_SYMLINKS */
@@ -812,6 +938,11 @@ struct zlist far *z;    /* zip entry to compress */
      support for other platforms coming soon. */
   mp = 0;
 #endif
+
+if (l) {
+  /* we will have the size so don't need to use a data descriptor */
+  use_data_descriptor = 0;
+}
 
 
 #ifdef UNIX_APPLE
@@ -865,7 +996,7 @@ struct zlist far *z;    /* zip entry to compress */
      q = 0;
   } else if (!(l || mp) && isdir != ((a & MSDOS_DIR_ATTR) != 0)) {
      /* don't overwrite a directory with a file and vice-versa */
-     return ZE_MISS;
+     return ZE_SAME;
   }
   /* reset dot_count for each file */
   if (!display_globaldots)
@@ -896,50 +1027,6 @@ struct zlist far *z;    /* zip entry to compress */
 
   last_progress_chunk = 0;
 
-#ifdef ZIP_DLL_LIB
-
-  /* Initial progress callback.  Updates in iz_file_read(). */
-/*  if (progress_chunk_size > 0) { */
-  if (progress_chunk_size > 0 && lpZipUserFunctions->progress != NULL) {
-    API_FILESIZE_T bytes_expected = (API_FILESIZE_T)bytes_expected_this_entry;
-
-    if (bytes_total > 0) {
-      if (bytes_total < ((uzoff_t)1 << (sizeof(uzoff_t) * 8 - 15))) {
-        percent_all_entries_processed = (long)((10000 * bytes_so_far) / bytes_total);
-      } else {
-        /* avoid overflow, but this is inaccurate for small numbers */
-        bytetotal = bytes_total / 10000;
-        if (bytetotal == 0) bytetotal = 1;
-        percent_all_entries_processed = (long)(bytes_so_far / bytetotal);
-      }
-    } else{
-      percent_all_entries_processed = 0;
-    }
-    percent_this_entry_processed = 0;
-    /* This is a kluge.  The numbers should add up. */
-    if (percent_all_entries_processed > 10000) {
-      percent_all_entries_processed = 10000;
-    }
-
-/*
-    zprintf("\n  progress %5.2f%% all  %5.2f%%  %s\n", (float)percent_all_entries_processed/100,
-                                                      (float)percent_this_entry_processed/100,
-                                                       entry_name);
-*/
-
-    if ((*lpZipUserFunctions->progress)(entry_name,
-                                        unicode_entry_name,
-                                        percent_this_entry_processed,
-                                        percent_all_entries_processed,
-                                        bytes_expected,
-                                        usize_string,
-                                        action_string,
-                                        method_string,
-                                        info_string)) {
-      ZIPERR(ZE_ABORT, "User terminated operation");
-    }
-  }
-#endif /* ZIP_DLL_LIB */
 
 
 #ifdef UNIX_APPLE
@@ -1056,7 +1143,7 @@ struct zlist far *z;    /* zip entry to compress */
      input is streamed from stdin and we are copying entries.  This is
      now properly handled. */
 #ifdef NO_STREAMING_STORE
-  if (use_descriptors && m == STORE)
+  if (use_data_descriptor && m == STORE)
   {
       m = DEFLATE;
   }
@@ -1068,7 +1155,7 @@ struct zlist far *z;    /* zip entry to compress */
   /* If we are converting line ends or character set using -l, -ll or -a,
      and a file labeled as "text" using first buffers is later found to
      be "binary", we reset some things and jump back here to reprocess
-     the file as binary.  Output must be seekable (!use_descriptors) and
+     the file as binary.  Output must be seekable (!use_data_descriptor) and
      output can't be split archive.  Restarting when output is split is
      more work, but may be added soon. */
   saved_bytes_this_split = bytes_this_split;
@@ -1087,17 +1174,17 @@ Restart_As_Binary:
 #endif
 
   /* Open file to zip up unless it is stdin */
-  if (strcmp(z->name, "-") == 0)
+  if (z->is_stdin)
   {
     ifile = (ftype)zstdin;
 #if defined(MSDOS) || defined(__human68k__)
-    if (isatty(zstdin) == 0)  /* keep default mode if stdin is a terminal */
+    if (ISATTY(zstdin) == 0)  /* keep default mode if stdin is a terminal */
       setmode(zstdin, O_BINARY);
 #endif
     z->tim = tim;
   }
   else
-  {
+  { /* !z->is_stdin */
 #if !(defined(VMS) && defined(VMS_PK_EXTRA))
     if (extra_fields && !restart_as_binary) {
       /* create select extra fields and change z->att and z->atx if desired */
@@ -1125,7 +1212,7 @@ Restart_As_Binary:
       /* For now allow store for testing */
 #ifdef NO_STREAMING_STORE
       /* For now force deflation if using data descriptors. */
-      if (use_descriptors && (mthd == STORE))
+      if (use_data_descriptor && (mthd == STORE))
       {
         mthd = DEFLATE;
       }
@@ -1262,7 +1349,7 @@ Restart_As_Binary:
     }
 #endif /* MMAP || BIG_MEM */
 
-  } /* strcmp(z->name, "-") == 0 */
+  } /* !z->is_stdin */
 
   if (extra_fields == 2) {
     unsigned lenl, lenc;
@@ -1344,6 +1431,12 @@ Restart_As_Binary:
   /* Need PKUNZIP 2.0 except for store */
   z->ver = (ush)(mthd == STORE ? 10 : 20);
 
+
+  /* Using 63 and later may not make sense.  Either the unzip
+     can handle the compression method or it can't.  The
+     63 version doesn't clarify just what is needed to read
+     this entry and may prevent reading it when otherwise
+     the unzip can. */
 #if defined( LZMA_SUPPORT) || defined( PPMD_SUPPORT)
   if ((mthd == LZMA) || (mthd == PPMD))
       z->ver = (ush)(mthd == STORE ? 10 : 63);
@@ -1383,15 +1476,15 @@ Restart_As_Binary:
        open_for_append() returns 0.  Windows is handled elsewhere.  Other
        ports not implemented and open_for_append() always returns 0. */
     if (open_for_append(y)) {
-      use_descriptors = 1;
+      use_data_descriptor = 1;
     }
 
     /* If existing file is encrypted, need to keep data descriptor. */
     if (z->flg & 9) {
-      use_descriptors = 1;
+      use_data_descriptor = 1;
     }
 
-    if (use_descriptors)
+    if (use_data_descriptor)
     {
       z->flg |= 8;              /* Explicit request for extended header. */
     }
@@ -1415,7 +1508,7 @@ Restart_As_Binary:
       {
         /* If using traditional encryption with data descriptors, don't
             allow deflate to change method. */
-        use_descriptors = 1;
+        use_data_descriptor = 1;
       }
 
       if (have_crc == 0)      /* We want/need to use an extended header. */
@@ -1663,6 +1756,130 @@ Restart_As_Binary:
   }
 #endif
 
+
+  isize = 0L;
+  crc = CRCVAL_INITIAL;
+
+#ifdef SYMLINKS
+  if (l || mp) {
+    /* symlink or mount point */
+
+    if ((b = malloc(SBSZ)) == NULL)
+       return ZE_MEM;
+
+    k = rdsymlnk(z->name, b, SBSZ);
+    b[k] = '\0';
+
+    if (l) {
+      /* symlink */
+#ifdef WIN32
+      char *local_string = utf8_to_local_stringz(b);
+
+      sprintf(errbuf, " (symlink to:  \"%s\")", local_string);
+      free(local_string);
+#else
+      sprintf(errbuf, " (symlink to:  \"%s\")", b);
+#endif
+      zipmessage_nl(errbuf, 0);
+    } /* symlink */
+
+#ifdef WIN32
+    if (mp) {
+      /* mount point */
+      char *local_string = utf8_to_local_stringz(b);
+
+      size_t i;
+      size_t len = strlen(local_string);
+
+      for (i = 0; i < len; i++) {
+        if (local_string[i] == '\n')
+          break;
+      }
+
+      sprintf(errbuf, " (mount point to:  \"%s\")", local_string + i + 1);
+      free(local_string);
+      zipmessage_nl(errbuf, 0);
+    } /* mount point */
+#endif
+
+/*
+ * compute crc first because zfwrite will alter the buffer b points to !!
+ */
+    crc = crc32(crc, (uch *) b, k);
+    isize = k;
+
+    s = k;
+
+    /* set local header information */
+    z->len = (zoff_t)s;
+    z->siz = (zoff_t)s;
+    /* for now symlinks and mount points are always stored */
+    mthd = STORE;
+    z->how = (ush)mthd;
+    /* for now symlinks and mount points are never encrypted */
+    z->encrypt_method = NO_ENCRYPTION;
+    /* version needed to extract varies by type of symlink or
+       mount point, but since this feature is not supported by
+       the AppNote, there is no clear way to represent the UnZip
+       version needed using this.  So we go with PK Version 2.0
+       as UnZip started supporting symlinks about then. */
+    z->ver = 20;
+    z->crc = crc;
+
+#ifdef MINIX
+    q = k;
+#endif /* MINIX */
+
+  } /* symlink or mount point */
+#endif /* SYMLINKS */
+
+  set_method_string(mthd);
+
+#ifdef ZIP_DLL_LIB
+  /* Initial progress callback.  Updates in iz_file_read(). */
+  /*  if (progress_chunk_size > 0) { */
+  if (progress_chunk_size > 0 && lpZipUserFunctions->progress != NULL) {
+    API_FILESIZE_T bytes_expected = (API_FILESIZE_T)bytes_expected_this_entry;
+
+    if (bytes_total > 0) {
+      if (bytes_total < ((uzoff_t)1 << (sizeof(uzoff_t) * 8 - 15))) {
+        percent_all_entries_processed = (long)((10000 * bytes_so_far) / bytes_total);
+      } else {
+        /* avoid overflow, but this is inaccurate for small numbers */
+        bytetotal = bytes_total / 10000;
+        if (bytetotal == 0) bytetotal = 1;
+        percent_all_entries_processed = (long)(bytes_so_far / bytetotal);
+      }
+    } else{
+      percent_all_entries_processed = 0;
+    }
+    percent_this_entry_processed = 0;
+    /* This is a kluge.  The numbers should add up. */
+    if (percent_all_entries_processed > 10000) {
+      percent_all_entries_processed = 10000;
+    }
+
+/*
+    zprintf("\n  progress %5.2f%% all  %5.2f%%  %s\n", (float)percent_all_entries_processed/100,
+                                                      (float)percent_this_entry_processed/100,
+                                                       entry_name);
+*/
+
+    if ((*lpZipUserFunctions->progress)(entry_name,
+                                        unicode_entry_name,
+                                        percent_this_entry_processed,
+                                        percent_all_entries_processed,
+                                        bytes_expected,
+                                        usize_string,
+                                        action_string,
+                                        method_string,
+                                        info_string)) {
+      ZIPERR(ZE_ABORT, "User terminated operation");
+    }
+  }
+#endif /* ZIP_DLL_LIB */
+
+
   /* Update method as putlocal needs it.  z->how may be something like
       99 if AES encryption was used. */
   z->thresh_mthd = mthd;
@@ -1721,71 +1938,22 @@ Restart_As_Binary:
     ZIPERR(ZE_BIG, "seek wrap - zip file too big to write");
   }
 
+
   /* Write stored or deflated file to zip file */
-  isize = 0L;
-  crc = CRCVAL_INITIAL;
 
 #ifdef SYMLINKS
   if (l || mp) {
     /* symlink or mount point */
 
-    if ((b = malloc(SBSZ)) == NULL)
-       return ZE_MEM;
-
-    k = rdsymlnk(z->name, b, SBSZ);
-    b[k] = '\0';
-
-    if (l) {
-      /* symlink */
-#ifdef WIN32
-      char *local_string = utf8_to_local_string(b);
-
-      sprintf(errbuf, " (symlink to:  \"%s\")", local_string);
-      free(local_string);
-#else
-      sprintf(errbuf, " (symlink to:  \"%s\")", b);
-#endif
-      zipmessage_nl(errbuf, 0);
-    }
-
-#ifdef WIN32
-    if (mp) {
-      /* mount point */
-      char *local_string = utf8_to_local_string(b);
-
-      size_t i;
-      size_t len = strlen(local_string);
-
-      for (i = 0; i < len; i++) {
-        if (local_string[i] == '\n')
-          break;
-      }
-
-      sprintf(errbuf, " (mount point to:  \"%s\")", local_string + i + 1);
-      free(local_string);
-      zipmessage_nl(errbuf, 0);
-    }
-#endif
-
-/*
- * compute crc first because zfwrite will alter the buffer b points to !!
- */
-    crc = crc32(crc, (uch *) b, k);
+    /* write data after local header */
     if (zfwrite(b, 1, k) != k)
     {
       free((zvoid *)b);
       return ZE_TEMP;
     }
-    isize = k;
-
-    s = k;
-
-#ifdef MINIX
-    q = k;
-#endif /* MINIX */
-
-  } else
-#endif
+  }
+  else
+#endif /* SYMLINKS */
 
   if (isdir) {
 
@@ -1807,25 +1975,27 @@ Restart_As_Binary:
     /* ... is finally set in file compression routine */
 #ifdef BZIP2_SUPPORT
     if (mthd == BZIP2) {
+      /* bzip2 */
       s = bzfilecompress(z, &mthd);
     }
     else
 #endif /* BZIP2_SUPPORT */
 #ifdef LZMA_SUPPORT
     if (mthd == LZMA) {
-
+      /* lzma */
       s = lzma_filecompress(z, &mthd);
     }
     else
 #endif /* LZMA_SUPPORT */
 #ifdef PPMD_SUPPORT
     if (mthd == PPMD) {
-
+      /* ppmd */
       s = ppmd_filecompress(z, &mthd);
     }
     else
 #endif /* PPMD_SUPPORT */
     {
+      /* deflate */
       s = filecompress(z, &mthd);
     }
     /* not sure why this is here */
@@ -1833,11 +2003,11 @@ Restart_As_Binary:
 #ifndef PGP
     if (z->att == (ush)FT_BINARY && TRANSLATE_EOL)
     {
-#ifdef UNICODE_SUPPORT
+# ifdef UNICODE_SUPPORT
       if (unicode_show && z->uname)
         sprintf(errbuf, " (%s)", z->uname);
       else
-#endif
+# endif
         sprintf(errbuf, " (%s)", z->oname);
 
       if (file_binary)
@@ -1865,8 +2035,8 @@ Restart_As_Binary:
            that case we stick with the above warning and leave the file
            corrupted. */
 
-        if (ifile != fbad && split_method == 0 && !use_descriptors
-            && strcmp(z->name, "-") && !IS_ZFLAG_FIFO(z->zflags)) {
+        if (ifile != fbad && split_method == 0 && !use_data_descriptor
+            && !z->is_stdin && !IS_ZFLAG_FIFO(z->zflags)) {
           /* Seek back to start of entry */
           if (zfseeko(y, z->off, SEEK_SET) != 0) {
             zipwarn("  attempt to seek back to restart file failed", "");
@@ -1893,7 +2063,7 @@ Restart_As_Binary:
       }
     }
 #endif
-  }
+  } /* mthd != STORE */
   else
   {
     /* store */
@@ -2035,8 +2205,8 @@ Restart_As_Binary:
            that case we stick with the above warning and leave the file
            corrupted. */
 
-        if (ifile != fbad && split_method == 0 && !use_descriptors
-            && strcmp(z->name, "-") && !IS_ZFLAG_FIFO(z->zflags)) {
+        if (ifile != fbad && split_method == 0 && !use_data_descriptor
+            && !z->is_stdin && !IS_ZFLAG_FIFO(z->zflags)) {
           /* Seek back to start of entry */
           if (zfseeko(y, z->off, SEEK_SET) != 0) {
             zipwarn("  attempt to seek back to restart file failed", "");
@@ -2087,7 +2257,9 @@ Restart_As_Binary:
 #endif /*MMAP */
 
   tempzn += s;
+#if 0
   p = tempzn; /* save for future fseek() */
+#endif
 
 #if (!defined(MSDOS) || defined(OS2))
 #if !defined(VMS) && !defined(CMS_MVS) && !defined(__mpexl)
@@ -2112,7 +2284,7 @@ zfprintf( stderr, " Done.          crc = %08x .\n", crc);
 #ifdef ETWODD_SUPPORT
   if (etwodd)                   /* Encrypt Trad without extended header. */
   {
-    if (!isdir && (z->crc != crc))
+    if (!(isdir || l || mp) && (z->crc != crc))
     {
       /* CRC mismatch on a non-directory file.  Complain. */
       zfprintf( mesg, " pre-read: %08lx, read: %08lx ", z->crc, crc);
@@ -2124,7 +2296,14 @@ zfprintf( stderr, " Done.          crc = %08x .\n", crc);
   }
 #endif /* def ETWODD_SUPPORT */
 
-  if (isdir && !(l || mp))
+  if (l || mp)
+  {
+    /* symlink/mount point */
+
+    /* header and data already written */
+  }
+
+  else if (isdir)
   {
     /* A directory (that is not a link or mount point) */
     z->siz = 0;
@@ -2139,9 +2318,10 @@ zfprintf( stderr, " Done.          crc = %08x .\n", crc);
     z->lflg &= ~8;
 #endif /* 0 */
   }
+
   else
   {
-    /* file or symlink/mount point */
+    /* file */
 
     /* Try to rewrite the local header with correct information */
     z->crc = crc;
@@ -2361,27 +2541,9 @@ zfprintf( stderr, " Done.          crc = %08x .\n", crc);
 
   /* Display statistics */
 
-  strcpy(method_string, "(unknown method)");
   perc = percent(isize, s);
-#ifdef BZIP2_SUPPORT
-  if (mthd == BZIP2)
-    strcpy(method_string, "bzipped");
-  else
-#endif
-#ifdef LZMA_SUPPORT
-  if (mthd == LZMA)
-    strcpy(method_string, "LZMAed");
-  else
-#endif
-#ifdef PPMD_SUPPORT
-  if (mthd == PPMD)
-    strcpy(method_string, "PPMded");
-  else
-#endif
-  if (mthd == DEFLATE)
-    strcpy(method_string, "deflated");
-  else if (mthd == STORE)
-    strcpy(method_string, "stored");
+
+  set_method_string(mthd);
 
   if (noisy || logall)
   {
@@ -2568,17 +2730,17 @@ local unsigned iz_file_read(buf, size)
  * For -l (translate_eol == 1), now read at least 1 byte.
  */
 {
-  unsigned len;
+  unsigned len = 0;
   char *b;
   uzoff_t isize_prev;           /* Previous isize.  Used for overflow check. */
   static int char_was_saved = 0;/* 1= a character was saved from last buf. */
   static char saved_char = 0;   /* Character that was saved. */
   static int eof_reached = 0;
 
-#ifdef WINDLL
+#ifdef ZIP_DLL_LIB
   uzoff_t current_progress_chunk;
-  long percent_all_entries_processed;
-  long percent_this_entry_processed;
+  long percent_all_entries_processed_x_100;
+  long percent_this_entry_processed_x_100;
   uzoff_t bytetotal;
 #endif
 
@@ -2751,7 +2913,7 @@ local unsigned iz_file_read(buf, size)
 #endif /* EBCDIC */
       {
          do {
-            if ((*buf++ = *b++) == '\n') *(buf-1) = CR, *buf++ = LF, len++;
+            if ((*buf++ = *b++) == '\n') *(buf-1) = CR_IZ, *buf++ = LF, len++;
          } while (--size != 0);
       }
       buf -= len;
@@ -2924,7 +3086,7 @@ local unsigned iz_file_read(buf, size)
 #endif /* EBCDIC */
       {
          do {
-            if (( *buf++ = *b++) == CR && *b == LF) buf--, len--;
+            if (( *buf++ = *b++) == CR_IZ && *b == LF) buf--, len--;
          } while (--size != 0);
       }
 #if 0
@@ -2977,36 +3139,36 @@ local unsigned iz_file_read(buf, size)
       */
       if (bytes_total > 0) {
         if (bytes_total < ((uzoff_t)1 << (sizeof(uzoff_t) * 8 - 15))) {
-          percent_all_entries_processed
+          percent_all_entries_processed_x_100
             = (long)((10000 * (bytes_so_far + bytes_read_this_entry)) / bytes_total);
         } else {
           /* avoid overflow, but this is inaccurate for small numbers */
           bytetotal = bytes_total / 10000;
           if (bytetotal == 0) bytetotal = 1;
-          percent_all_entries_processed
+          percent_all_entries_processed_x_100
             = (long)((bytes_so_far + bytes_read_this_entry) / bytetotal);
         }
       } else{
-        percent_all_entries_processed = 0;
+        percent_all_entries_processed_x_100 = 0;
       }
       if (bytes_expected_this_entry > 0) {
         if (bytes_expected_this_entry < ((uzoff_t)1 << (sizeof(uzoff_t) * 8 - 15))) {
-          percent_this_entry_processed
+          percent_this_entry_processed_x_100
             = (long)((10000 * bytes_read_this_entry) / bytes_expected_this_entry);
         } else {
           /* avoid overflow, but this is inaccurate for small numbers */
           bytetotal = bytes_expected_this_entry / 10000;
           if (bytetotal == 0) bytetotal = 1;
-          percent_this_entry_processed = (long)(bytes_read_this_entry / bytetotal);
+          percent_this_entry_processed_x_100 = (long)(bytes_read_this_entry / bytetotal);
         }
       }
       else {
-        percent_this_entry_processed = 0;
+        percent_this_entry_processed_x_100 = 0;
       }
 
       /* This is a kluge.  The numbers should add up. */
-      if (percent_all_entries_processed > 10000) {
-        percent_all_entries_processed = 10000;
+      if (percent_all_entries_processed_x_100 > 10000) {
+        percent_all_entries_processed_x_100 = 10000;
       }
 
 /*
@@ -3018,8 +3180,8 @@ local unsigned iz_file_read(buf, size)
 
       if ((*lpZipUserFunctions->progress)(entry_name,
                                           unicode_entry_name,
-                                          percent_this_entry_processed,
-                                          percent_all_entries_processed,
+                                          percent_this_entry_processed_x_100,
+                                          percent_all_entries_processed_x_100,
                                           bytes_expected,
                                           usize_string,
                                           action_string,
@@ -3056,13 +3218,13 @@ local unsigned iz_file_read_bt(buf, size)
   unsigned cnt;
 
   cnt = iz_file_read(buf, size);
-#if 0
+# if 0
   if ((cnt > 0) && (file_binary_final == 0))
   {
     if (!is_text_buf( (char *)buf, cnt))
       file_binary_final = 1;
   }
-#endif
+# endif
   if ((cnt > 0) && (file_binary == 0))
   {
     if (!is_text_buf(buf, cnt))
@@ -3354,7 +3516,6 @@ local zoff_t filecompress(z_entry, cmpr_method)
     return cmpr_size;
     /* --------------------------------- */
 #else /* !USE_ZLIB */
-
     /* Set the defaults for file compression. */
     read_buf = iz_file_read;
 
@@ -3456,11 +3617,14 @@ int pack_level;
 {
     int err = BZ_OK;
     int zp_err = ZE_OK;
+    
+# if 0
     const char *bzlibVer;
 
     bzlibVer = BZ2_bzlibVersion();
 
     /* $TODO - Check BZIP2 LIB version? */
+# endif
 
     bstrm.bzalloc = NULL;
     bstrm.bzfree = NULL;
@@ -3512,28 +3676,28 @@ int *cmpr_method;
     unsigned mrk_cnt = 1;
     int maybe_stored = FALSE;
     zoff_t cmpr_size;
-#if defined(MMAP) || defined(BIG_MEM)
+# if defined(MMAP) || defined(BIG_MEM)
     unsigned ibuf_sz = (unsigned)SBSZ;
-#else
+# else
 #   define ibuf_sz ((unsigned)SBSZ)
-#endif
-#ifndef OBUF_SZ
+# endif
+# ifndef OBUF_SZ
 #  define OBUF_SZ ZBSZ
-#endif
+# endif
 
-#if defined(MMAP) || defined(BIG_MEM)
+# if defined(MMAP) || defined(BIG_MEM)
     if (remain == (ulg)-1L && f_ibuf == NULL)
-#else /* !(MMAP || BIG_MEM */
+# else /* !(MMAP || BIG_MEM */
     if (f_ibuf == NULL)
-#endif /* MMAP || BIG_MEM */
+ #endif /* MMAP || BIG_MEM */
         f_ibuf = (unsigned char *)malloc(SBSZ);
     if (f_obuf == NULL)
         f_obuf = (unsigned char *)malloc(OBUF_SZ);
-#if defined(MMAP) || defined(BIG_MEM)
+# if defined(MMAP) || defined(BIG_MEM)
     if ((remain == (ulg)-1L && f_ibuf == NULL) || f_obuf == NULL)
-#else /* !(MMAP || BIG_MEM */
+# else /* !(MMAP || BIG_MEM */
     if (f_ibuf == NULL || f_obuf == NULL)
-#endif /* MMAP || BIG_MEM */
+# endif /* MMAP || BIG_MEM */
         ziperr(ZE_MEM, "allocating bzlib file-I/O buffers");
 
     if (!bzipInit) {
@@ -3542,12 +3706,12 @@ int *cmpr_method;
             ziperr(err, errbuf);
     }
 
-#if defined(MMAP) || defined(BIG_MEM)
+# if defined(MMAP) || defined(BIG_MEM)
     if (remain != (ulg)-1L) {
         bstrm.next_in = (Bytef *)window;
         ibuf_sz = (unsigned)WSIZE;
     } else
-#endif /* MMAP || BIG_MEM */
+# endif /* MMAP || BIG_MEM */
     {
         bstrm.next_in = (char *)f_ibuf;
     }
@@ -3565,7 +3729,7 @@ int *cmpr_method;
            binary if any binary is found in the additional read. */
         unsigned more = iz_file_read_bt(bstrm.next_in + bstrm.avail_in,
                                   (ibuf_sz - bstrm.avail_in));
-        if ((more == (unsigned) EOF || more == 0) && !use_descriptors) {
+        if ((more == (unsigned) EOF || more == 0) && !use_data_descriptor) {
             maybe_stored = TRUE;
         } else {
             bstrm.avail_in += more;
@@ -3593,13 +3757,13 @@ int *cmpr_method;
         /* $TODO what about high 32-bits of total-in??? */
         if (bstrm.avail_in == 0) {
             if (verbose || noisy)
-#ifdef LARGE_FILE_SUPPORT
+# ifdef LARGE_FILE_SUPPORT
                 while((unsigned)((bstrm.total_in_lo32
                                   + (((zoff_t)bstrm.total_in_hi32) << 32))
                                  / (zoff_t)(ulg)WSIZE) > mrk_cnt) {
-#else
+# else
                 while((unsigned)(bstrm.total_in_lo32 / (ulg)WSIZE) > mrk_cnt) {
-#endif
+# endif
                     mrk_cnt++;
 
 
@@ -3611,12 +3775,12 @@ int *cmpr_method;
                       display_dot(1, WSIZE);
                     }
                 }
-#if defined(MMAP) || defined(BIG_MEM)
+# if defined(MMAP) || defined(BIG_MEM)
             if (remain == (ulg)-1L)
                 bstrm.next_in = (char *)f_ibuf;
-#else
+# else
             bstrm.next_in = (char *)f_ibuf;
-#endif
+# endif
 
             /* At this point we're running through buffers and doing the
                compressing.  file_binary should have already been set
@@ -3680,12 +3844,12 @@ int *cmpr_method;
 
     if (z_entry->att == (ush)FT_UNKNOWN)
         z_entry->att = (ush)FT_BINARY;
-#ifdef LARGE_FILE_SUPPORT
+# ifdef LARGE_FILE_SUPPORT
     cmpr_size = (zoff_t)bstrm.total_out_lo32
                + (((zoff_t)bstrm.total_out_hi32) << 32);
-#else
+# else
     cmpr_size = (zoff_t)bstrm.total_out_lo32;
-#endif
+# endif
 
     if ((err = BZ2_bzCompressEnd(&bstrm)) != BZ_OK)
         ziperr(ZE_COMPRESS, "bzip2 CompressEnd failed");
@@ -4059,7 +4223,7 @@ local zoff_t ppmd_filecompress(z_entry, cmpr_method)
    *   the uncompressed size is less than the "compressed" size.
    */
   if ((cbots.compressed_size == 0) && (isize < cbots.byte_count)
-      && !use_descriptors)
+      && !use_data_descriptor)
   {
     /* Revert to STORE.  Write out the input buffer, and use its size. */
     *cmpr_method = STORE;

@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2014 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -29,11 +29,9 @@
 #  endif
 #endif
 
-#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
-#include <string.h>
 #include <direct.h>
 
 #include "c_dll_ex.h"
@@ -738,26 +736,41 @@ int GetVersionInfo()
   if ((zip_ver.Version = (char *)malloc(20)) == NULL)
   {
     fprintf(stderr, "Could not allocate Version\n");
+    free(zip_ver.BetaLevel);
     return 3;
   }
   if ((zip_ver.RevDate = (char *)malloc(20)) == NULL)
   {
     fprintf(stderr, "Could not allocate RevDate\n");
+    free(zip_ver.BetaLevel);
+    free(zip_ver.Version);
     return 4;
   }
   if ((zip_ver.RevYMD = (char *)malloc(20)) == NULL)
   {
     fprintf(stderr, "Could not allocate RevYMD\n");
+    free(zip_ver.BetaLevel);
+    free(zip_ver.Version);
+    free(zip_ver.RevDate);
     return 5;
   }
   if ((zip_ver.zlib_Version = (char *)malloc(10)) == NULL)
   {
     fprintf(stderr, "Could not allocate zlib_Version\n");
+    free(zip_ver.BetaLevel);
+    free(zip_ver.Version);
+    free(zip_ver.RevDate);
+    free(zip_ver.RevYMD);
     return 6;
   }
   if ((zip_ver.szFeatures = (char *)malloc(4000)) == NULL)
   {
     fprintf(stderr, "Could not allocate szFeatures\n");
+    free(zip_ver.BetaLevel);
+    free(zip_ver.Version);
+    free(zip_ver.RevDate);
+    free(zip_ver.RevYMD);
+    free(zip_ver.zlib_Version);
     return 7;
   }
   ZpVersion(&zip_ver);
@@ -821,6 +834,7 @@ char *argv_to_commandline(int argc, char *argv[])
   int j;
   int has_space;
   char c;
+  unsigned char uc;
 
   /* add up total length needed */
   for (i = 1; (!argc || i < argc) && argv[i]; i++)
@@ -853,7 +867,7 @@ char *argv_to_commandline(int argc, char *argv[])
     has_space = 0;
     for (j = 0; c = argv[i][j]; j++)
     {
-      if (isspace(c))
+      if (isspace((uc = c)))
         has_space = 1;
     }
     if (has_space)

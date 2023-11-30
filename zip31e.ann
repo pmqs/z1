@@ -1,0 +1,58 @@
+Zip 3.1e Announcement DRAFT
+
+We have posted Zip Beta 3.1e, 30 June 2018.
+
+-----------------------------------------------------------------------
+This is a beta release, but also a Zip 3.1 release candidate.  Zip 3.1e
+implements the full feature set planned for release Zip 3.1.  Please
+review the feature set for completeness and ease of use as well as look
+for any bugs we may have missed.  Another release candidate will be
+posted only if needed to address found issues.
+-----------------------------------------------------------------------
+
+Please read the documentation and then try it out.  We suggest starting
+with README, essentially the release notes for Zip 3.1e.  Then take a
+look at WHATSNEW, a detailed list of what's new in Zip 3.1e, including
+feature changes and additions as well as key bug fixes.  Then look over
+INSTALL if you will be installing Zip 3.1e.  Finally, scan through the
+extended help (zip -hh).  Then try it out, referring to the manual
+(zip.1, and the plain text version docs/zip.txt) as needed.
+
+Comments, bugs, and suggestions can be sent to us using our web email
+form (http://www.info-zip.org/zip-bug.html).
+
+-----------------------------------------------------------------------
+
+Quick list of major changes/enhancements in Zip 3.1e (the detailed list
+is in WHATSNEW):
+
+- Standard build now includes all compression and encryption methods.
+- New option -p0 (--print0) allows accepting path lists with NUL ('\0')
+    separators, such as the output from "find -print0".
+- Better handling of Zip environment variables.
+- Updated API (LIB/DLL) examples include Progress, Error, and Finish.
+- Free BSD Unicode fixes.
+- glibc pre 2.23 LARGE_FILE_SUPPORT fix.
+- VMS AES updates, Adjust fix, CLI updates, filesize fix.
+- New --stdinout-tty option for CYGWIN.
+- Unicode options refactored to -UD, -UE, -UL, -US, and -UN.
+- Streaming symlinks.
+- -SI (--rename-stdin).
+- Support for ISO 8601 "T" date time separator (e.g. 2018-05-27T14:44:20).
+- For entry comments, now support -c (interactive entry), -c="entry comment",
+    and -cc="entry-comment-file".
+- For archive comment, now support -z (interactive entry), -z="archive comment",
+    and -zz="archive-comment-file".
+- Support reading Windows wide characters when prompting for comments on Windows.
+- Fix bug by disabling OEM when comment is flagged as UTF-8 (now default).
+- Ben Rubson performance updates.
+- Unix FTS fast directory sorting.  Ben Rubson.
+- Various bug fixes.
+- Compiler fixes.
+- NO_BUILD_DATE compile option.  This removes changing build date from the -v
+    page that was messing with automated regression tests.
+
+As always, see the Zip manual page and the extended help in Zip
+for details on what Zip has and how to use all features.
+
+Enjoy!

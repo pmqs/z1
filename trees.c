@@ -1,7 +1,7 @@
 /*
   trees.h - Zip 3
 
-  Copyright (c) 1990-2014 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2016 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -1067,7 +1067,7 @@ uzoff_t flush_block(buf, stored_len, eof)
 #else
     if (stored_len <= opt_lenb && eof && file_method != NULL &&
         cmpr_bytelen == (uzoff_t)0 && cmpr_len_bits == 0L &&
-        seekable(y) && !use_descriptors) {
+        seekable(y) && !use_data_descriptor) {
 #endif
         /* Since LIT_BUFSIZE <= 2*WSIZE, the input data must be there: */
         if (buf == NULL) error ("block vanished");

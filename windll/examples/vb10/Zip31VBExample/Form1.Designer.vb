@@ -50,6 +50,13 @@ Partial Class ZipVBForm
     Me.Label9 = New System.Windows.Forms.Label()
     Me.SeeServiceOutput_Checkbox = New System.Windows.Forms.CheckBox()
     Me.UnicodeZipOutput_CheckBox = New System.Windows.Forms.CheckBox()
+    Me.Label10 = New System.Windows.Forms.Label()
+    Me.Label11 = New System.Windows.Forms.Label()
+    Me.Label12 = New System.Windows.Forms.Label()
+    Me.Label13 = New System.Windows.Forms.Label()
+    Me.Label14 = New System.Windows.Forms.Label()
+    Me.Label15 = New System.Windows.Forms.Label()
+    Me.CRC32_Button = New System.Windows.Forms.Button()
     Me.SuspendLayout()
     '
     'StatusWindow
@@ -210,10 +217,53 @@ Partial Class ZipVBForm
     Me.UnicodeZipOutput_CheckBox.Name = "UnicodeZipOutput_CheckBox"
     Me.UnicodeZipOutput_CheckBox.UseVisualStyleBackColor = True
     '
+    'Label10
+    '
+    resources.ApplyResources(Me.Label10, "Label10")
+    Me.Label10.Name = "Label10"
+    '
+    'Label11
+    '
+    resources.ApplyResources(Me.Label11, "Label11")
+    Me.Label11.Name = "Label11"
+    '
+    'Label12
+    '
+    resources.ApplyResources(Me.Label12, "Label12")
+    Me.Label12.Name = "Label12"
+    '
+    'Label13
+    '
+    resources.ApplyResources(Me.Label13, "Label13")
+    Me.Label13.Name = "Label13"
+    '
+    'Label14
+    '
+    resources.ApplyResources(Me.Label14, "Label14")
+    Me.Label14.Name = "Label14"
+    '
+    'Label15
+    '
+    resources.ApplyResources(Me.Label15, "Label15")
+    Me.Label15.Name = "Label15"
+    '
+    'CRC32_Button
+    '
+    resources.ApplyResources(Me.CRC32_Button, "CRC32_Button")
+    Me.CRC32_Button.Name = "CRC32_Button"
+    Me.CRC32_Button.UseVisualStyleBackColor = True
+    '
     'ZipVBForm
     '
     resources.ApplyResources(Me, "$this")
     Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+    Me.Controls.Add(Me.CRC32_Button)
+    Me.Controls.Add(Me.Label15)
+    Me.Controls.Add(Me.Label14)
+    Me.Controls.Add(Me.Label13)
+    Me.Controls.Add(Me.Label12)
+    Me.Controls.Add(Me.Label11)
+    Me.Controls.Add(Me.Label10)
     Me.Controls.Add(Me.UnicodeZipOutput_CheckBox)
     Me.Controls.Add(Me.SeeServiceOutput_Checkbox)
     Me.Controls.Add(Me.Label9)
@@ -273,5 +323,12 @@ Partial Class ZipVBForm
   Friend WithEvents Label9 As System.Windows.Forms.Label
   Friend WithEvents SeeServiceOutput_Checkbox As System.Windows.Forms.CheckBox
   Friend WithEvents UnicodeZipOutput_CheckBox As System.Windows.Forms.CheckBox
+  Friend WithEvents Label10 As System.Windows.Forms.Label
+  Friend WithEvents Label11 As System.Windows.Forms.Label
+  Friend WithEvents Label12 As System.Windows.Forms.Label
+  Friend WithEvents Label13 As System.Windows.Forms.Label
+  Friend WithEvents Label14 As System.Windows.Forms.Label
+  Friend WithEvents Label15 As System.Windows.Forms.Label
+  Friend WithEvents CRC32_Button As System.Windows.Forms.Button
 
 End Class

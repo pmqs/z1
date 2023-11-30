@@ -1,7 +1,7 @@
 /*
   zipsplit.c - Zip 3.1
 
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -20,7 +20,6 @@
 #include "zip.h"
 #define DEFCPYRT        /* main module: enable copyright string defines! */
 #include "revision.h"
-#include <signal.h>
 
 #ifdef VMS
 extern void globals_dummy( void);
@@ -317,7 +316,7 @@ int s;                  /* signal number (ignored) */
 void zipwarn(a, b)
 ZCONST char *a, *b;     /* message strings juxtaposed in output */
 {
-  zipwarn_i("zipsplit warning:", 0, a, b);
+  zipwarn_i("zipsplit warning:", 0, a, b, ADD_NL);
 }
 
 
@@ -326,7 +325,7 @@ ZCONST char *a, *b;     /* message strings juxtaposed in output */
 void zipwarn_indent(a, b)
 ZCONST char *a, *b;
 {
-    zipwarn_i("zipsplit warning:", 1, a, b);
+    zipwarn_i("zipsplit warning:", 1, a, b, ADD_NL);
 }
 
 
@@ -726,7 +725,9 @@ local int retry()
 {
   char m[10];
   fputs("Error writing to disk--redo entire disk? ", mesg);
-  fgets(m, 10, stdin);
+  if (fgets(m, 10, stdin) == NULL) {
+    return 0;
+  }
   return *m == 'y' || *m == 'Y';
 }
 
@@ -941,14 +942,14 @@ char **argv;            /* command line tokens */
   zipfile = NULL;
 
   /* make copy of args that can use with insert_arg() */
-  args = copy_args(argv, 0);
+  args = copy_argsz(argv, 0);
 
   /*
   -------------------------------------------
   Process command line using get_option
   -------------------------------------------
 
-  Each call to get_option() returns either a command
+  Each call to get_optionz() returns either a command
   line option and possible value or a non-option argument.
   Arguments are permuted so that all options (-r, -b temp)
   are returned before non-option arguments (zipfile).
@@ -965,9 +966,9 @@ char **argv;            /* command line tokens */
           negated - option was negated with trailing -
   */
 
-  while ((option = get_option(&args, &argcnt, &argnum,
-                              &optchar, &value, &negated,
-                              &fna, &optnum, 0)))
+  while ((option = get_optionz(&args, &argcnt, &argnum,
+                               &optchar, &value, &negated,
+                               &fna, &optnum, 0)))
   {
     switch (option)
     {
@@ -1048,7 +1049,7 @@ char **argv;            /* command line tokens */
     }
   }
 
-  free_args(args);
+  free_argsz(args);
 
 #endif
 
@@ -1263,7 +1264,10 @@ char **argv;            /* command line tokens */
       char m[10];
       fprintf(mesg, "Insert disk #%ld of %ld and hit return: ",
               (ulg)j + 1, (ulg)s);
-      fgets(m, 10, stdin);
+      if (fgets(m, 10, stdin) == NULL) {
+        /* avoid unused error */
+        strcpy(m, "");
+      }
     }
 
     /* write index file on first disk if requested */

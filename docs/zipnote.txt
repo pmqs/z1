@@ -8,7 +8,7 @@ SYNOPSIS
        zipnote [-w] [-b path] [-h] [-v] [-L] zipfile
 
 ARGUMENTS
-       zipfile  Zipfile to read comments from or edit.
+       zipfile Zipfile to read comments from or edit.
 
 OPTIONS
        -w

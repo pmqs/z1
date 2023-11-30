@@ -1,4 +1,4 @@
-#                                               29 November 2010.  SMS.
+#                                               15 August 2019.  SMS.
 #
 #    BZIP2 1.0 for VMS - MMS (or MMK) Source Description File.
 #
@@ -209,7 +209,7 @@ BZIP2_EXE = [.$(DEST)]BZIP2.EXE
 
 BZIP2RECOVER_EXE = [.$(DEST)]BZIP2RECOVER.EXE
 
-BZIPUTILS = $(BZIP2RECOVER_EXE)
+BZIPUTILS_EXE = $(BZIP2RECOVER_EXE)
 
 # MY_MODULE_NAME source file.
 

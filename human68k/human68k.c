@@ -1,10 +1,10 @@
 /*
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2016 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 1999-Oct-05 or later
+  See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
-  If, for some reason, both of these files are missing, the Info-ZIP license
-  also may be found at:  ftp://ftp.cdrom.com/pub/infozip/license.html
+  If, for some reason, all these files are missing, the Info-ZIP license
+  also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
 */
 #include "zip.h"
 
@@ -43,7 +43,7 @@ int wild(char* w)
   char *name;
   char *p;
 
-  if (strcmp(w, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(w, "-") == 0))   /* if compressing stdin */
     return newname(w, 0, 0);
   if ((name = malloc(strlen(w) + 1)) == NULL) {
     ZIPERR(ZE_MEM, "wild");
@@ -88,7 +88,7 @@ int caseflag;           /* true to force case-sensitive match */
   struct stat s;        /* result of stat() */
   struct zlist far *z;  /* steps through zfiles list */
 
-  if (strcmp(n, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(n, "-") == 0))   /* if compressing stdin */
     return newname(n, 0, caseflag);
   else if (LSSTAT(n, &s))
   {
@@ -245,7 +245,7 @@ iztimes *t;             /* return value: access, modific. and creation times */
   /* convert FNMAX to malloc - 11/8/04 EG */
   char *name;
   int len = strlen(f);
-  isstdin = !strcmp(f, "-");
+  isstdin = is_stdin || (!no_stdin && !strcmp(f, "-"));
 
   if ((name = malloc(len + 1)) == NULL) {
     ZIPERR(ZE_MEM, "filetime");

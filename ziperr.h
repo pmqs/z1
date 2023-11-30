@@ -1,7 +1,7 @@
 /*
   ziperr.h - Zip 3
 
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2017 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -36,6 +36,8 @@
  /* Error return values.  The values 0..4 and 12..18 follow the conventions
    of PKZIP.   The values 4..10 are all assigned to "insufficient memory"
    by PKZIP, so the codes 5..10 are used here for other purposes. */
+#define ZE_SAME         -3      /* used by zipup() when file/dir with same name */
+#define ZE_SKIP         -2      /* used by zipup() to skip special files */
 #define ZE_MISS         -1      /* used by procname(), zipbare() */
 #define ZE_OK           0       /* success */
 #define ZE_EOF          2       /* unexpected end of zip file */
@@ -62,8 +64,9 @@
 #define ZE_DEPTH        24      /* recursion depth limit exceeded */
 #define ZE_SPLIT        25      /* split archive not supported, split error */
 #define ZE_UNZIP        26      /* could not run unzip or incompatible unzip */
+#define ZE_PATH         27      /* bad name or path */
 
-#define ZE_MAXERR       26      /* the highest error number */
+#define ZE_MAXERR       27      /* the highest error number */
 
 
 /* Error messages for the ziperr() function in the zip programs. */
@@ -83,7 +86,7 @@ struct
 /*  5 */ { "LOGIC",   "Internal logic error",         ZE_S_SEVERE },
 /*  6 */ { "BIG",     "Entry too big to split, read, or write",
                                                       ZE_S_ERROR },
-/*  7 */ { "NOTE",    "Invalid comment format",       ZE_S_ERROR },
+/*  7 */ { "NOTE",    "Invalid comment file format",  ZE_S_ERROR },
 /*  8 */ { "TEST",    "Zip file invalid or test error",
                                                       ZE_S_SEVERE },
 /*  9 */ { "ABORT",   "Interrupted",                  ZE_S_ERROR },
@@ -108,7 +111,8 @@ struct
 /* 25 */ { "SPLIT",   "Attempt to read unsupported split archive",
                                                       ZE_S_ERROR },
 /* 26 */ { "UNZIP",   "Could not run unzip or incompatible unzip",
-                                                      ZE_S_ERROR }
+                                                      ZE_S_ERROR },
+/* 27 */ { "PATH",    "Bad name or path",             ZE_S_ERROR }
 #  ifdef AZTEC_C
           ,     /* extremely lame compiler bug workaround */
 #  endif

@@ -10,11 +10,26 @@
 CC = lcc
 # -O caused a segmentation violation with previous versions of lcc, but
 # now the optimizer seems to be fixed.
+# aSc added -DNO_UNICODE_SUPPORT problems wih WINDOWS_LONG_PATHS in zip.h #if defined(UNICODE_SUPPORT) && defined(WIN32)
+# aSc added -DNO_CHANGE_DIRECTORY because of wcslen error
+# aSc -DNO_CHECK_UNZIP because of errors looking at it later
+# aSc -DNO_USER_PROGRESS because of errors looking at it later
+# aSc you may need to path the lcc\include\mbstring.h file and replace _ismbblead with _MBLEADTRAIL_DEFINED and add #define _MBLEADTRAIL_DEFINED
+# aSc add -overflowcheck -shadows -unused for more warnings
 CCFLAGS = -Zp8 -O -DWIN32
+# -overflowcheck -shadows -unused
+# -DNO_UNICODE_SUPPORT
+# -DNO_CHANGE_DIRECTORY
+# -DNO_CHECK_UNZIP
+# -DNO_USER_PROGRESS
 AS = lcc
 ASFLAGS =
 LD = lcclnk
-LDFLAGS = -s
+# aSc added -subsystem console
+LDFLAGS = -s -subsystem console
+# aSc added LIBS needed for _getmbcp in fileio.c
+# aSc added LIBS needed for _CommandLineToArgvW in win32.c
+LIBS = msvcrt.lib shell32.lib
 
 # Optional macros should be declared below.
 # LCC's Make will not read the LOCAL_ZIP environment variable.
@@ -27,10 +42,11 @@ CRCAUO = crc_lcc.obj
 MATCH_O = lm32_lcc.obj
 ASMFLG = -DASM_CRC -DASMV
 #else
-#CRCA_O =
-#CRCAUO =
-#MATCH_O =
-#ASMFLG = -DNO_ASM
+# aSc enabled ASMFLG and set variables to empty
+CRCA_O =
+CRCAUO =
+MATCH_O =
+ASMFLG = -DNO_ASM
 #endif
 
 CFLAGS = $(CCFLAGS) $(LOC)
@@ -117,14 +133,26 @@ crypt_.obj:   crypt.c $(ZIP_H) crypt.h ttyio.h
 win32_.obj:    win32/win32.c $(ZIP_H) win32/win32zip.h
 	$(CC) $(CFLAGS) -DUTIL -Iwin32 -Fo$@ win32/win32.c
 
+# aSc added $(LIBS)
 zip.exe: $(OBJZ)
-	$(LD) $(LDFLAGS) -o $@ $(OBJZ)
+	$(LD) $(LDFLAGS) -o $@ $(OBJZ) $(LIBS)
 
+# aSc added $(LIBS)
 zipcloak.exe: $(OBJC)
-	$(LD) $(LDFLAGS) -o $@ $(OBJC)
+	$(LD) $(LDFLAGS) -o $@ $(OBJC) $(LIBS)
 
+# aSc added $(LIBS)
 zipnote.exe: $(OBJN)
-	$(LD) $(LDFLAGS) -o $@ $(OBJN)
+	$(LD) $(LDFLAGS) -o $@ $(OBJN) $(LIBS)
 
+# aSc added $(LIBS)
 zipsplit.exe: $(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $(OBJS)
+	$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+# aSc added clean
+clean:
+	-del *.obj
+	-del zip.exe
+	-del zipcloak.exe
+	-del zipnote.exe
+	-del zipsplit.exe

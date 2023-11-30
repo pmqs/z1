@@ -1,7 +1,7 @@
 /*
   ttyio.c - Zip 3
 
-  Copyright (c) 1990-2013 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -165,11 +165,7 @@
 #        endif /* !CMS_MVS */
 #      endif /* ?USE_SYSV_TERMIO */
 #    endif /* ?HAVE_TERMIOS_H */
-#    ifndef NO_FCNTL_H
-#      ifndef UNZIP
-#        include <fcntl.h>
-#      endif
-#    else
+#    ifdef NO_FCNTL_H
        char *ttyname OF((int));
 #    endif
 #  endif /* ?VMS */
@@ -628,7 +624,8 @@ char *getp(__G__ m, p, n)
         i = 0;
         echoff(f);
         do {                    /* read line, keeping n */
-            read(f, &c, 1);
+            if (read(f, &c, 1) == -1)
+                break;
             if (i <= n)
                 p[i++] = c;
         } while (c != '\n');

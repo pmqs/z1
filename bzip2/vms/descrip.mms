@@ -1,4 +1,4 @@
-#                                               30 November 2010.  SMS.
+#                                               13 August 2019.  SMS.
 #
 #    BZIP2 1.0 for VMS - MMS (or MMK) Description File.
 #
@@ -46,6 +46,8 @@
 #                libraries.
 #
 #    CLEAN_TEST  deletes (architecture-specific) test result files.
+#
+#    DASHV       generates a "bzip2 -V" report.
 #
 #    TEST        runs some simple tests.
 #
@@ -248,6 +250,16 @@ $(DECC_VER_EXE) : $(DECC_VER_OBJ)
 	$(LINK) $(LINKFLAGS) $(MMS$SOURCE)
 
 $(DECC_VER_OBJ) : [.vms]DECC_VER.C
+
+
+# DASHV target.
+
+DASHV : $(BZIP2_EXE)
+	execute = "$ SYS$DISK:[.$(DEST)]'"
+	define /user_mode SYS$INPUT NL:
+	define /user_mode SYS$OUTPUT NL:
+	execute bzip2 -"V"
+
 
 # TEST target.
 

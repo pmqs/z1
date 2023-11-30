@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2009 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -8,11 +8,8 @@
 */
 /* riscos.c */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "zip.h"
 #include "riscos.h"
+#include "zip.h"
 
 /* External globals */
 extern int scanimage;

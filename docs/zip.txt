@@ -35,92 +35,93 @@ DESCRIPTION
        ports the Zip64 extensions of PKZIP 4.5 which allow archives as well as
        files  to exceed the previous 2 GB limit (4 GB in some cases).  zip 3.1
        now supports additional compression methods, including bzip2, LZMA  and
-       PPMd.  (See below for more on Zip64 and compression methods.)
+       PPMd.  (See below for more on Zip64 and compression methods.)  zip also
+       now supports AES encryption.
 
-       (Note  that PKUNZIP 1.10 cannot extract files produced by PKZIP 2.04 or
-       zip 2.0 (or later).  You must use  PKUNZIP  2.04g  or  unzip 5.0p1  (or
+       (Note that PKUNZIP 1.10 cannot extract files produced by PKZIP 2.04  or
+       zip 2.0  (or  later).   You  must  use PKUNZIP 2.04g or unzip 5.0p1 (or
        later versions) to extract them.)
 
-       See  the  EXAMPLES  section  at  the bottom of this page for some basic
+       See the EXAMPLES section at the bottom of  this  page  for  some  basic
        examples and typical uses of zip.
 
        For a brief help page on zip and unzip, run each without specifying any
-       parameters  on  the  command line.  Both zip and unzip now also support
+       parameters on the command line.  Both zip and unzip  now  also  support
        the -hh option to show more detailed help.
 
    Large archives and Zip64
        zip automatically uses the Zip64 extensions when files larger than 4 GB
        are added to an archive, an archive containing Zip64 entries is updated
-       (if the resulting archive still needs Zip64), the size of  the  archive
-       will  exceed  4  GB,  or when the number of entries in the archive will
-       exceed about 64K.  Zip64 is also used for archives streamed from  stan-
-       dard  input  as the size of such archives are not known in advance, but
-       the option -fz- can be used to force zip to create PKZIP  2  compatible
-       archives  (as long as Zip64 extensions are not needed).  You must use a
-       PKZIP 4.5 compatible unzip, such as unzip 6 or later, to extract  files
+       (if  the  resulting archive still needs Zip64), the size of the archive
+       will exceed 4 GB, or when the number of entries  in  the  archive  will
+       exceed  about 64K.  Zip64 is also used for archives streamed from stan-
+       dard input as the size of such archives are not known in  advance,  but
+       the  option  -fz- can be used to force zip to create PKZIP 2 compatible
+       archives (as long as Zip64 extensions are not needed).  You must use  a
+       PKZIP  4.5 compatible unzip, such as unzip 6 or later, to extract files
        using the Zip64 extensions.
 
    Compression methods
-       In  addition  to  the standard Deflate compression (method 8) and Store
-       methods, zip 3.1 now  supports  bzip2  (compression  method  12),  LZMA
-       (method  14)  and  PPMd  (method  98)  compression  if  the appropriate
-       libraries are included when zip is compiled.  .zipx archives  are  sup-
-       ported,  except  for  some  compression methods such as WavPack (method
+       In addition to the standard Deflate compression (method  8)  and  Store
+       methods,  zip  3.1  now  supports  bzip2  (compression method 12), LZMA
+       (method 14)  and  PPMd  (method  98)  compression  if  the  appropriate
+       libraries  are  included when zip is compiled.  .zipx archives are sup-
+       ported, except for some compression methods  such  as  WavPack  (method
        97), Jpeg (method 96) and XZ (method 95).  Some of these (in particular
        XZ) may be supported by zip in the future.
 
-       Each  compression method has advantages over the others.  For instance,
-       Deflate tends to be faster than the other methods (except  Store),  but
-       PPMd  tends to compress best in many situations (but can be slow).  See
-       the -Z option for more on available compression methods.
+       Each compression method has advantages over the others.  For  instance,
+       Deflate  tends  to be faster than the other methods (except Store), but
+       PPMd tends to compress best in many situations (but can be slow).   See
+       the -Z option below for more on available compression methods.
 
-       A modern unzip (such as unzip 6.1) is needed to  extract  entries  com-
-       pressed with the new methods.  Make sure the destination unzip supports
-       the selected compression method before using it.
+       A  modern  unzip  (such  as  unzip  6.1  or later) is needed to extract
+       entries compressed with the new methods.   Make  sure  the  destination
+       unzip supports the selected compression method before using it.
 
    Encryption
-       In addition to standard Traditional (ZipCrypto) zip  encryption,  which
+       In  addition  to standard Traditional (ZipCrypto) zip encryption, which
        is now considered weak by current standards, zip 3.1 now supports rela-
-       tively strong AES encryption.  See -Y for more on encryption.
+       tively strong AES encryption.  See -Y below for more on encryption.
 
-       If AES encryption is included in zip, the following  Encryption  Notice
+       If  AES  encryption is included in zip, the following Encryption Notice
        applies:
 
-              This  distribution includes cryptographic software.  The country
-              in which you currently  reside  may  have  restrictions  on  the
+              This distribution includes cryptographic software.  The  country
+              in  which  you  currently  reside  may  have restrictions on the
               import, possession, use, and/or re-export to another country, of
-              encryption software.   BEFORE  using  any  encryption  software,
-              please  check your country's laws, regulations and policies con-
+              encryption  software.   BEFORE  using  any  encryption software,
+              please check your country's laws, regulations and policies  con-
               cerning the import, possession, or use, and re-export of encryp-
-              tion    software,   to   see   if   this   is   permitted.   See
+              tion   software,   to   see   if   this   is   permitted.    See
               <http://www.wassenaar.org/> for more information.
 
-              The U.S. Government Department of Commerce, Bureau  of  Industry
-              and  Security (BIS), has classified this software as Export Com-
-              modity Control Number (ECCN) 5D002.C.1, which includes  informa-
-              tion  security  software using or performing cryptographic func-
-              tions and makes it eligible for export under the License  Excep-
+              The  U.S.  Government Department of Commerce, Bureau of Industry
+              and Security (BIS), has classified this software as Export  Com-
+              modity  Control Number (ECCN) 5D002.C.1, which includes informa-
+              tion security software using or performing  cryptographic  func-
+              tions  and makes it eligible for export under the License Excep-
               tion ENC Technology Software Unrestricted (TSU) exception.
 
    Streamed archives
        Streaming is when zip receives its input from a stream such as stdin or
-       a pipe where the size of the input is not known or when zip writes  its
-       output  to  a  stream  such as stdout or a pipe where the output is not
-       seekable (and so data structures in the archive cannot be updated  once
+       a  pipe where the size of the input is not known or when zip writes its
+       output to a stream such as stdout or a pipe where  the  output  is  not
+       seekable  (and so data structures in the archive cannot be updated once
        the sizes are later known).  A streamed archive is an archive that uses
        data descriptors (a small record after the file data) to store size and
-       other  information not known when the processing of a file was started.
-       Not all streaming  operations  need  to  create  streamed  archives--it
+       other information not known when the processing of a file was  started.
+       Not  all  streaming  operations  need  to  create streamed archives--it
        depends on zip's ability to determine size and other information before
-       the file header is written.  Traditional encryption also  requires  use
-       of  data  descriptors  (and  so  the  resulting  archives  are streamed
+       the  file  header is written.  Traditional encryption also requires use
+       of data  descriptors  (and  so  the  resulting  archives  are  streamed
        archives) due to how zip Traditional encryption is defined (AES encryp-
-       tion  does  not have this issue).  (The --etwodd Traditional encryption
-       option removes the need for data descriptors at the cost  of  a  second
-       pass  through  the  file  data.)  Split archives created with the pause
-       option also use data descriptors to allow  the  archive  splits  to  be
-       written to write once media (such as optical media) without later seek-
-       ing.  Streaming is generally automatic and transparent to the user.
+       tion does not have this issue).  (The --etwodd  Traditional  encryption
+       option  removes  the  need for data descriptors at the cost of a second
+       pass through the file data.)  Split archives  created  with  the  pause
+       option  (-sp)  also use data descriptors to allow the archive splits to
+       be written to write once media (such as optical  media)  without  later
+       seeking.  Streaming is generally automatic and transparent to the user.
 
        Streamed archives may not be compatible with some  utilities  as  those
        utilities do not yet know how to read data descriptors.  (Note that the
@@ -130,7 +131,9 @@ DESCRIPTION
        strip  data  descriptors  from  an  existing  archive  using the --copy
        option.  (Zip Traditional encryption relies on  data  descriptors.   If
        Zip Traditional encryption was used, zipcloak can be used to remove the
-       encryption first.  AES encryption does not need data descriptors.)
+       encryption first.  AES encryption does not need data  descriptors,  and
+       given  the  weakness of Zip Traditional encryption, only AES encryption
+       should be used if something is worth encrypting.)
 
        zip 3.1 now can generate archives that a compatible  stream  unzip  can
        use to fully extract files on the fly, including file attributes.  This
@@ -153,7 +156,7 @@ DESCRIPTION
        Mac OS X as part of the Unix port and most Unix features apply.  Refer-
        ences to "MacOS" below generally refer to Mac OS versions older than OS
        X.  Mac OS X features supported by the  Unix  port,  such  as  resource
-       forks via AppleDouble, are identified as UNIX APPLE features.
+       forks via AppleDouble, are identified as Unix Mac OS X features.
 
    Option Summary
        Below is a quick summary of zip options.  See the OPTIONS section below
@@ -172,7 +175,7 @@ DESCRIPTION
        -----------------------------------------------------------------------
        AS | archive-set        | [WIN32] Only files with archive bit set.
        ad | ad-sort            | Sort AppleDouble files.
-       as | sequester          | [Unix Apple] Sequester AppleDouble files.
+       as | sequester          | [Unix Mac OS X] Sequester AppleDouble files.
        B  | binary             | [VM/CMS, MVS] Force file to be read binary.
        B  |                    | [TANDEM] Set Edit/Enscribe formatting.
        -----------------------------------------------------------------------
@@ -185,7 +188,7 @@ DESCRIPTION
        BN | backup-name        | Set name of backup.
        BT | backup-type        | Set type of backup (FULL, DIFF, or INCR).
        c  | entry-comments     | Add/edit comments for each file/entry.
-       cd | current-directory  | Set current (zip root) directory.
+       cd | chdir              | Set current (zip root) directory.
        C  | preserve-case      | [VMS] Preserve all case on VMS.
        -----------------------------------------------------------------------
        C2 | preserve-case-2    | [VMS] Preserve ODS2 case on VMS.
@@ -198,7 +201,7 @@ DESCRIPTION
        dc | display-counts     | Display count of entries zipped and to go.
        dd | display-dots       | Display progress dots.  Set by -ds.
        de | display-est-to-go  | Display estimate of time to go.
-       df | datafork           | [MacOS, UNIX APPLE] Only data forks.
+       df | datafork           | [MacOS, Unix Mac OS X] Only data forks.
        -----------------------------------------------------------------------
        dg | display-globaldots | Display global progress dots.
        dr | display-rate       | Display est of rate entries being zipped.
@@ -232,7 +235,7 @@ DESCRIPTION
        -----------------------------------------------------------------------
        jj | absolute-path      | [MacOS] Record full absolute path.
        J  | junk-sfx           | Strip any prepended data (e.g. SFX stub).
-       k  | DOS-names          | Attempt convert paths to conform to MSDOS.
+       k  | dos-names          | Attempt convert paths to conform to MSDOS.
        kf | keyfile            | Get part or all of encryption key from file.
        l  | to-crlf            | Convert line ends from Unix to MSDOS/Windows.
        -----------------------------------------------------------------------
@@ -246,7 +249,7 @@ DESCRIPTION
        L  | license            | Display the license.
        m  | move               | Move files into archive (delete on OS).
        MM | must-match         | All input patterns must match, be readable.
-       MV | MVS-mode           | [MVS] Set MVS path translation mode.
+       MV | mvs-mode           | [MVS] Set MVS path translation mode.
        -----------------------------------------------------------------------
        n  | suffixes           | Suffix do not compress/special compress list.
        nw | no-wild            | No (internal) wildcard processing.
@@ -264,7 +267,7 @@ DESCRIPTION
        pu | pswd-to-unzip      | When test, pass password to unzip.
        P  | password           | Provide password on command line.
        q  | quiet              | Quiet mode (less messages, prompts).
-       Q  | Q-flag             | [QDOS] Set storage mode.
+       Q  | q-flag             | [QDOS] Set storage mode.
        -----------------------------------------------------------------------
        r  | recurse-paths      | Recurse each directory path.
        R  | recurse-patterns   | Recurse current directory, match path ends.
@@ -299,33 +302,37 @@ DESCRIPTION
        TV | unzip-verbose      | When testing with -T and unzip, be verbose.
        u  | update             | Update entries if OS file newer, and add new.
        U  | copy-entries       | Copy entries from one archive to another.
-       UN | unicode            | Set various Unicode settings.
-       UT | utest              | Perform Unicode tests.  (Currently disabled.)
+       UD | unicode-dont-use   | Don't use Unicode fields (only -UL entries).
+       UE | unicode-escapes    | Replace Unicode characters with escapes.
        -----------------------------------------------------------------------
+       UL | unicode-local      | Store local path (and UTF-8 in extra field).
+       UN | unicode            | On Unicode error (quit/warn/ignore/no).
+       US | unicode-show       | Force show Unicode (should be automatic).
+       UT | utest              | Perform Unicode tests.  (Currently disabled.)
        v  | verbose            | Display additional diagnostic information.
+       -----------------------------------------------------------------------
        v  | version            | Display compile and version information.
        vq | quick-version      | Display short version information.
-       V  | VMS-portable       | [VMS] Save VMS file attributes.
-       VV | VMS-specific       | [VMS] As -V, but also save all file blocks.
+       V  | vms-portable       | [VMS] Save VMS file attributes.
+       VV | vms-specific       | [VMS] As -V, but also save all file blocks.
+       w  | vms-versions       | [VMS] Include file version numbers in names.
        -----------------------------------------------------------------------
-       w  | VMS-versions       | [VMS] Include file version numbers in names.
        wl | windows-long-paths | [WIN32] Include paths > 260 chars in archive.
-       ww | VMS-dot-versions   | [VMS] Like -w, but use "." for numbers.
+       ww | vms-dot-versions   | [VMS] Like -w, but use "." for numbers.
        ws | wild-stop-dirs     | Wildcards don't cross directory boundaries.
        x  | exclude            | Exclude paths that match files/patterns.
-       -----------------------------------------------------------------------
        X  | no-extra           | Exclude all but essential extra fields.
+       -----------------------------------------------------------------------
        y  | symlinks           | [UNIX, WIN32] Store symlinks, don't follow.
        yy | mount-points       | [WIN32] Don't follow mount points.
        Y  | encryption-method  | Enable encryption and set encryption method.
        z  | archive-comment    | Set zip file comment.
-       -----------------------------------------------------------------------
        Z  | compression-method | Set default compression method.
+       -----------------------------------------------------------------------
        0-9|                    | Set compression level.
        !  | use-privileges     | [WIN32] Use privileges (if granted).
        @  | names-stdin        | Get list of input files from stdin.
        @@ | names-files        | Get list of input files from file.
-       -----------------------------------------------------------------------
        $  | volume-label       | Include volume label of first file.
        -----------------------------------------------------------------------
 
@@ -341,12 +348,12 @@ USE
        The zip program puts one or more compressed files  into  a  single  zip
        archive, along with information about the files (name, path, date, time
        of last modification, protection, and check information to verify  file
-       integrity).   An  entire  directory  structure can be packed into a zip
-       archive with a single command.  Compression ratios of 2:1  to  3:1  are
-       common  for  text  files.   zip  has  one  standard  compression method
-       (Deflate) and can also store files without compression.  (In  addition,
-       zip 3.1  supports  compression methods bzip2, LZMA, and PPMd.)  See the
-       -Z option below for more on compression methods.
+       integrity,  for instance).  An entire directory structure can be packed
+       into a zip archive with a single command.  Compression ratios of 2:1 to
+       3:1 are common for text files.  zip has one standard compression method
+       (Deflate) and can also store files without compression.   In  addition,
+       zip 3.1 supports compression methods bzip2, LZMA, and PPMd.  See the -Z
+       option below for more on compression methods.
 
        In some cases (typically for very  small  files  or  random  data),  an
        attempt  to  compress  a file may actually increase its size (by a lit-
@@ -392,25 +399,22 @@ USE
        where foo/file1 is replaced and foo/file3 is new.
 
    -@ and -@@ File Lists
-       If a file list is specified as -@ [Not on MacOS], zip takes the list of
-       input  files from standard input instead of from the command line.  For
-       example,
+       If -@ is used [Not on MacOS], zip takes a  list  of  input  files  from
+       standard input instead of from the command line.  For example,
 
               zip -@ foo
 
-       will store the files listed one per line on stdin in foo.zip.  (zip 3.1
-       now  strips  leading and trailing white space from paths read by -@ and
-       -@@.  White space (such as spaces)  in  the  middle  of  names  is  not
-       affected.   To  prevent  this  stripping,  put double quotes around the
-       name.)
+       will  store  the  files  listed one per line on stdin in foo.zip.  Note
+       that surrounding white space is not trimmed.  Make sure the entire line
+       matches the name.
 
-       Under Unix, this option can be used to powerful effect  in  conjunction
-       with  the  find  (1) command.  For example, to archive all the C source
+       Under  Unix,  this option can be used to powerful effect in conjunction
+       with the find (1) command.  For example, to archive all  the  C  source
        files in the current directory and its subdirectories:
 
               find . -name "*.[ch]" -print | zip source -@
 
-       (note that the pattern must be quoted to keep the shell from  expanding
+       (note  that the pattern must be quoted to keep the shell from expanding
        it).
 
        (zip can perform this same operation without find:
@@ -419,19 +423,27 @@ USE
 
        where -RE enables regular expression matching.)
 
-       zip  now  also supports -@@ filename, which acts like -@, but reads the
-       list of input files from file filename instead of stdin, one  name  per
+       If unusual characters will be returned in names from find (such as new-
+       line  characters),  consider  using --print0 with the similar option of
+       find.
+
+       zip now also supports -@@ filename, which acts like -@, but  reads  the
+       list  of  input files from file filename instead of stdin, one name per
        line.
 
    Argument Files (@argfile)
-       Argument  files  (argfiles)  are  text  files that contain command line
-       arguments for zip.  zip 3.1 supports argument files.   To  include  the
-       contents  of  an  argfile in the zip command line, include the argument
+       Argument files (argfiles) are text  files  that  contain  command  line
+       arguments  for  zip.   zip 3.1 supports argument files.  To include the
+       contents of an argfile in the zip command line,  include  the  argument
        @filename (no space between @ and filename) at the position in the com-
-       mand  line  the  args  are to go.  zip opens file filename, reads white
-       space separated arguments and inserts them into the command line.   The
-       default  file  extension  of  zip argfiles is .zag.  So the contents of
+       mand line the args are to go.  zip opens  file  filename,  reads  white
+       space  separated arguments and inserts them into the command line.  The
+       default file extension of zip argfiles is .zag.   So  the  contents  of
        argfile myargs.zag can be included using @myargs.
+
+       Argument  file  support  must  be  enabled using the -AF option.  (This
+       could be done in an environment variable to enable by  default  on  the
+       command line.)
 
        For example, if myargs.txt contains:
 
@@ -439,13 +451,13 @@ USE
 
        the command line:
 
-              zip  archive  @myargs.txt
+              zip  -AF  archive  @myargs.txt
 
        would create the zip command line:
 
               zip  archive  file1.txt  file2.txt
 
-       In an argfile, empty lines or lines with just white space  are  consid-
+       In  an  argfile, empty lines or lines with just white space are consid-
        ered comment lines.  In addition, an argument that is just "#" starts a
        comment that goes to the end of the line.  (No non-space characters can
        be next to the "#".)  For instance, if myopts.zag contains:
@@ -456,34 +468,35 @@ USE
 
        then the command line:
 
-              zip  @myopts  archive  @myargs.txt
+              zip  -AF  @myopts  archive  @myargs.txt
 
        would result in the command line:
 
               zip  -3  -lF  archive  file1.txt  file2.txt
 
-       Argfiles  can  include argfiles to a depth of 4, so we can package this
+       Argfiles can include argfiles to a depth of 4, so we can  package  this
        command as commandline.zag:
 
               @myopts  archive  @myargs.txt
 
        and the command line:
 
-              zip  @commandline
+              zip  -AF  @commandline
 
        creates the same command line as above:
 
               zip  -3  -lF  archive  file1.txt  file2.txt
 
-       Use the -sc option to see the resulting command line without  executing
+       Use  the -sc option to see the resulting command line without executing
        it:
 
-              zip  @commandline -sc
+              zip  -AF  @commandline -sc
 
        displays
 
               command line:
-               'zip'  '-3'  '-lF'  '-sc'  'archive'  'file1.txt'  'file2.txt'
+               'zip'   '-AF'   '-3'   '-lF'   '-sc'   'archive'    'file1.txt'
+              'file2.txt'
 
        Argfiles  can  also contain directives.  A directive starts at the left
        edge (excluding white space) and is an argument in the form #directive.
@@ -498,7 +511,11 @@ USE
 
        Option -AF- can be used to turn off processing argfiles,  so  @args.txt
        becomes  just  another file.  -AF- must appear before any argfile argu-
-       ments on the command line.
+       ments on the command line.  Alternating -AF and -AF-  can  be  used  to
+       selectively  turn on and off argfile processing on a per argument basis
+       as the command line is processed left to right.  For example:
+
+              zip  archive  @somefile  -AF  @argfile  -AF-  @justanotherfile
 
    Streaming input and output
        zip will also accept a single dash ("-") as the zip file name, in which
@@ -525,8 +542,8 @@ USE
               unzip -p backup | tar xf -
 
        When  no  zip file name is given and stdout is not a terminal, zip acts
-       as a filter, compressing standard input to standard output.  For  exam-
-       ple,
+       as a filter,  compressing  standard  input  to  standard  output.   For
+       example,
 
               tar cf - . | zip | dd of=/dev/nrst0 obs=16k
 
@@ -564,8 +581,8 @@ USE
        and output are streamed, Zip64 can't  be  avoided  (but  still  can  be
        turned off using -fz-).
 
-       When directing the output to another file, note that all options should
-       be before the redirection including -x.  For example:
+       When  directing  the  output  to  another file, note that all arguments
+       should be before the redirection including -x.  For example:
 
               zip archive "*.h" "*.c" -x donotinclude.h orthis.h > tofile
 
@@ -579,210 +596,244 @@ USE
        extension  .zip  is  added.  If  the name already contains an extension
        other than .zip, the existing extension is  kept  unchanged.   However,
        split  archives  (archives  split over multiple files) require the .zip
-       extension on the last split.
+       extension on the last split and the correct extension  numbers  on  the
+       other splits.
 
    Scanning and reading files
-       When zip starts, it scans for files to process (if  needed).   If  this
-       scan  takes  longer  than about 5 seconds, zip will display a "Scanning
-       files" message and start displaying progress dots every  2  seconds  or
-       every  so  many entries processed, whichever takes longer.  If there is
-       more than 2 seconds between dots it could indicate  that  finding  each
-       file  is taking time and could mean a slow network connection for exam-
-       ple.  (Actually the initial file scan is a two-step process  where  the
-       directory  scan is followed by a sort and these two steps are separated
-       with a space in the dots.  If updating an  existing  archive,  a  space
-       also  appears  between  the  existing file scan and the new file scan.)
-       The scanning files dots are not controlled by the -ds dot size  option,
+       When  zip  starts,  it scans for files to process (if needed).  If this
+       scan takes longer than about 5 seconds, zip will  display  a  "Scanning
+       files"  message  and  start displaying progress dots every 2 seconds or
+       every so many entries processed, whichever takes longer.  If  there  is
+       more  than  2  seconds between dots it could indicate that finding each
+       file is taking time and could mean a slow network connection for  exam-
+       ple.   (Actually  the initial file scan is a two-step process where the
+       directory scan is followed by a sort and these two steps are  separated
+       with  a  space  in  the dots.  If updating an existing archive, a space
+       also appears between the existing file scan and  the  new  file  scan.)
+       The  scanning files dots are not controlled by the -ds dot size option,
        but the dots are turned off by the -q quiet option.  The -sf show files
-       option can be used to scan for files and get the list of files  scanned
+       option  can be used to scan for files and get the list of files scanned
        without actually processing them.
 
-       If  zip  is not able to read a file, it issues a warning but continues.
-       See the -MM option below for more on how zip handles patterns that  are
-       not  matched  and  files  that  are  not  readable.  If some files were
+       If zip is not able to read a file, it issues a warning  but  continues.
+       See  the -MM option below for more on how zip handles patterns that are
+       not matched and files that  are  not  readable.   If  some  files  were
        skipped, a warning is issued at the end of the zip operation noting how
        many files were read and how many skipped.
 
    Command modes
-       zip  now  supports  two  distinct  types of command modes, external and
-       internal.  The external modes (add, freshen,  and  update)  read  files
-       from  the  file  system (as well as from an existing archive) while the
-       internal modes (copy and delete) operate exclusively on entries  in  an
+       zip now supports two distinct types  of  command  modes,  external  and
+       internal.   The  external  modes  (add, freshen, and update) read files
+       from the file system (as well as from an existing  archive)  while  the
+       internal  modes  (copy and delete) operate exclusively on entries in an
        existing archive.
 
        External modes:
 
        add
-              Update  existing entries and add new files.  If the archive does
+              Update existing entries and add new files.  If the archive  does
               not exist create it.  This is the default mode.
 
        freshen (-f)
-              Update existing entries of an archive if newer on the file  sys-
+              Update  existing entries of an archive if newer on the file sys-
               tem.  Does not add new files to the archive.
 
        update (-u)
-              Update  existing entries if newer on the file system and add new
-              files.  If the archive does not exist, issue a warning and  then
+              Update existing entries if newer on the file system and add  new
+              files.   If the archive does not exist, issue a warning and then
               create a new archive.
 
        Internal modes:
 
        copy (-U)
-              Select  entries  in  an  existing archive and copy them to a new
-              archive.  This new mode is similar to update  but  command  line
-              patterns  select  entries  in  the  existing archive rather than
+              Select entries in an existing archive and copy  them  to  a  new
+              archive.   This  new  mode is similar to update but command line
+              patterns select entries in  the  existing  archive  rather  than
               files from the file system and it uses the --out option to write
-              the  resulting  archive  to  a  new  file rather than update the
+              the resulting archive to a  new  file  rather  than  update  the
               existing archive, leaving the original archive unchanged.
 
        delete (-d)
-              Select entries in an existing  archive  and  delete  them.   For
-              backward   compatibility  this  deletes  entries  in  the  input
-              archive, but delete can be used with --out to create a  copy  of
-              the  input  archive  with  the  files deleted, leaving the input
-              archive unchanged.  When used with --out, delete  and  copy  are
-              opposites,  where delete copies the files that copy doesn't, and
+              Select  entries  in  an  existing  archive and delete them.  For
+              backward  compatibility  this  deletes  entries  in  the   input
+              archive,  but  delete can be used with --out to create a copy of
+              the input archive with the  files  deleted,  leaving  the  input
+              archive  unchanged.   When  used with --out, delete and copy are
+              opposites, where delete copies the files that copy doesn't,  and
               vice versa.
 
        The new File Sync option (-FS) is also considered a new mode, though it
-       is  similar  to  update.   This  mode synchronizes the archive with the
-       files on the OS, only replacing files in the archive if the  file  time
-       or  size  of  the  OS file is different, adding new files, and deleting
+       is similar to update.  This mode  synchronizes  the  archive  with  the
+       files  on  the OS, only replacing files in the archive if the file time
+       or size of the OS file is different, adding  new  files,  and  deleting
        entries from the archive where there is no matching file.  As this mode
-       can  delete  entries from the archive, consider making a backup copy of
+       can delete entries from the archive, consider making a backup  copy  of
        the archive first.
 
-       Also see -DF for creating difference  archives  and  -BT  for  creating
+       Also  see  -DF  for  creating  difference archives and -BT for creating
        backup sets.
 
-       See  each option description below for details and the EXAMPLES section
+       See each option description below for details and the EXAMPLES  section
        below for examples.
 
    Split archives
-       zip version 3.0 and later can create split archives.  A  split  archive
-       is  a standard zip archive split over multiple files.  (Note that split
-       archives are not just archives split into pieces,  as  the  offsets  of
-       entries  are  now  based on the start of each split.  Concatenating the
-       pieces together will invalidate these offsets, but  unzip  can  usually
-       deal  with  it.   zip  will  usually  refuse  to process such a spliced
+       zip  version  3.0 and later can create split archives.  A split archive
+       is a standard zip archive split over multiple files.  (Note that  split
+       archives  are  not  just  archives split into pieces, as the offsets of
+       entries are now based on the start of each  split.   Concatenating  the
+       pieces  together  will  invalidate these offsets, but unzip can usually
+       deal with it.  zip will  usually  refuse  to  process  such  a  spliced
        archive unless the -FF fix option is used to fix the offsets.)
 
        One use of split archives is storing a large archive on multiple remov-
        able media.  For a split archive with 20 split files the files are typ-
-       ically  named  (replace  ARCHIVE  with  the  name  of   your   archive)
+       ically   named   (replace  ARCHIVE  with  the  name  of  your  archive)
        ARCHIVE.z01, ARCHIVE.z02, ..., ARCHIVE.z19, ARCHIVE.zip.  Note that the
-       last file is the .zip file.  In  contrast,  spanned  archives  are  the
+       last  file  is  the  .zip  file.  In contrast, spanned archives are the
        original multi-disk archive format generally requiring floppy disks and
        using volume labels to store disk numbers.  zip supports split archives
-       but  not  spanned  archives,  though  a procedure exists for converting
-       split archives of the right size to spanned archives.  The  reverse  is
-       also  true, where each file of a spanned archive can be copied in order
+       but not spanned archives, though  a  procedure  exists  for  converting
+       split  archives  of the right size to spanned archives.  The reverse is
+       also true, where each file of a spanned archive can be copied in  order
        to files with the above names to create a split archive.
 
-       Use -s to set the split size and create a split archive.  The  size  is
-       given  as  a  number  followed optionally by one of k (kiB), m (MiB), g
-       (GiB), t (TiB), or p (PiB) (the default is m).  The -sp option  can  be
+       Use  -s  to set the split size and create a split archive.  The size is
+       given as a number followed optionally by one of k  (kiB),  m  (MiB),  g
+       (GiB),  t  (TiB), or p (PiB) (the default is m).  The -sp option can be
        used to pause zip between splits to allow changing removable media, for
-       example, but read the descriptions and warnings for  both  -s  and  -sp
+       example,  but  read  the  descriptions and warnings for both -s and -sp
        below.
 
-       Though  zip does not update split archives, zip provides the new option
-       -O (--output-file or --out) to allow split archives to be  updated  and
+       Though zip does not update split archives, zip provides the new  option
+       -O  (--output-file  or --out) to allow split archives to be updated and
        saved in a new archive.  For example,
 
               zip inarchive.zip foo.c bar.c --out outarchive.zip
 
-       reads  archive  inarchive.zip,  even if split, adds the files foo.c and
-       bar.c, and writes the resulting archive to  outarchive.zip.   If  inar-
+       reads archive inarchive.zip, even if split, adds the  files  foo.c  and
+       bar.c,  and  writes  the resulting archive to outarchive.zip.  If inar-
        chive.zip is split then outarchive.zip defaults to the same split size.
-       Be aware that if outarchive.zip and any split files  that  are  created
-       with  it  already exist, these are always overwritten as needed without
+       Be  aware  that  if outarchive.zip and any split files that are created
+       with it already exist, these are always overwritten as  needed  without
        warning.  This may be changed in the future.
 
-       unzip 6.00 and earlier do not read split archives.  One  workaround  is
-       to  use  -s-  to  convert a split archive to a single file archive that
-       unzip 6.00 can read.  Another is to use zipsplit to convert  the  split
+       unzip  6.00  and earlier do not read split archives.  One workaround is
+       to use -s- to convert a split archive to a  single  file  archive  that
+       unzip  6.00  can read.  Another is to use zipsplit to convert the split
        archive to a set of separate archives unzip can read as a group.  unzip
        6.1 can read split archives.
 
    Unicode
        Though the zip standard requires storing file names/paths in an archive
-       using  a  specific character set, in practice zips have stored paths in
-       archives in whatever the local  character  set  is.   This  facilitates
-       local  use  of  these archives, but creates problems when an archive is
-       created or updated  on  a  system  using  one  character  set  is  then
+       using a specific character set, in practice zips have stored  paths  in
+       archives  in  whatever  the  local  character set is.  This facilitates
+       local use of these archives, but creates problems when  an  archive  is
+       created  or  updated  on  a  system  using  one  character set and then
        extracted on another system using a different character set.  When com-
-       piled with Unicode support enabled, zip 3.0 stores, in addition to  the
-       standard  local  path for backward compatibility, the UTF-8 translation
-       of the path.  This provides a common universal character set for  stor-
-       ing  paths  that allows these paths to be fully extracted on other sys-
-       tems that support Unicode and to match as closely as possible the orig-
-       inal path on systems that don't.
+       piled  with Unicode support enabled, zip 3.0 stores, in addition to the
+       standard local path for backward compatibility, the  UTF-8  translation
+       of  the  path.  This provides a (mostly) common universal character set
+       for storing paths that allows these paths  to  be  fully  extracted  on
+       other  systems that support Unicode and to match as closely as possible
+       the original path on systems that don't.  (More on "mostly" below.)
 
-       However,  since  zip  3.0  was released, the zip community has moved to
-       UTF-8 as the primary character set for storing paths in  archives.   As
-       such,  the  default  for  zip 3.1 is to store UTF-8 only.  The previous
-       mode of storing local  and  UTF-8  is  available  using  the  -UN=local
-       option.   (Entries  made  with either should be accepted by most modern
-       unzips.)  Let us know if this change causes any issues.
+       However, since zip 3.0 was released, the zip  community  has  moved  to
+       UTF-8  as  the primary character set for storing paths in archives.  As
+       such, the default for zip 3.1 is to store  UTF-8  only.   The  previous
+       mode  of  storing  local  and  UTF-8 is available using the -UL option.
+       (Entries made with either should be accepted by  most  modern  unzips.)
+       Let us know if this change causes any issues.
 
-       For full Unicode support on Linux and similar Unix systems,  make  sure
+       For  full  Unicode support on Linux and similar Unix systems, make sure
        you are using a UTF-8 locale.  The locale command should show something
-       like "your_language.UTF-8", for example "en_US.UTF-8".  A UTF-8  native
+       like  "your_language.UTF-8", for example "en_US.UTF-8".  A UTF-8 native
        locale is needed for zip to naturally work with multiple languages.  If
-       you  are  using  a  local  locale,  such   as   "en_US"   (instead   of
-       "en_US.UTF-8"), zip will detect this and issue Unicode escape sequences
-       (such as #U1234 or #L123456, where the number is the hex  code  of  the
-       Unicode  character)  instead  of  characters  not in your current local
-       character set.  Using a native UTF-8 locale makes working with multiple
-       languages much easier and natural.
+       you are using a local locale (a local not ending in ".UTF-8"), zip will
+       detect this and issue Unicode  escape  sequences  (such  as  #U1234  or
+       #L123456,  where  the  number is the hex code of the Unicode character)
+       instead of characters not in your current local character set.  Using a
+       native  UTF-8  locale makes working with multiple languages much easier
+       and more natural.  "zip -v" should show the current character set.
 
        On systems (such as Win32) where paths are internally stored as Unicode
        but displayed in the local character set (Windows code page), it's pos-
-       sible  that  some  paths  will  be skipped during a local character set
-       directory scan.  zip with Unicode file scan support now  can  read  and
+       sible that some paths will be skipped  during  a  local  character  set
+       directory  scan.   zip  with Unicode file scan support now can read and
        store these paths.  Note that Win 9x systems and FAT file systems don't
        fully support Unicode.
 
        Be aware that console windows on Win32 and Unix, for example, sometimes
-       don't  accurately  show all characters due to how each operating system
-       switches in character sets for display.  However, directory  navigation
-       tools should show the correct paths if the needed fonts are loaded.
+       don't accurately show all characters due to how each  operating  system
+       switches  in character sets for display.  However, directory navigation
+       tools should show the correct paths if the needed fonts are loaded.  In
+       particular,  Windows  7  console  windows  can't display characters not
+       loaded in the console, such as Japanese.  Windows 10 looks to have full
+       Unicode support in command windows.
+
+       Note that Unicode paths can be quite long.  On Windows the default max-
+       imum path length is 260 bytes.  The new option -wl allows storing  long
+       Windows paths, though restoring them requires support by the unzip.
+
+       Some  systems, such as systems using the EBCDIC character set, have had
+       problems using  the  somewhat  ANSI  oriented  Unicode  character  set.
+       Though  zip  and unzip should handle these cases, be aware of this when
+       moving archives between EBCDIC systems  and  other  non-EBCDIC  systems
+       such as Unix and Windows.
+
+   Unicode escapes
+       zip generally works in some local environment, but stores Unicode paths
+       in the archive to facilitate the archive being used in  other  environ-
+       ments  with  possibly  different local character sets.  So zip needs to
+       convert between local and Unicode character sets and back.
+
+       Characters that are not valid in the current character  set  when  dis-
+       played  are escaped as #Uxxxx and #Lxxxxxx, where x is an ASCII charac-
+       ter for a hex digit.  The first is used if a 16-bit character number is
+       sufficient  to  represent  the  Unicode character and the second if the
+       character needs more than 16 bits to represent  its  Unicode  character
+       code.   zip  3.1 does not do transliteration, any characters not in the
+       destination character set now being replaced by Unicode escapes.   This
+       allows  one-for-one  deterministic  conversion between paths with UTF-8
+       characters and paths with Unicode escapes.
+
+       zip can read and use Unicode escapes.  This  allows  for  working  with
+       entries  in  an archive within an environment where some of the charac-
+       ters in the paths are not supported by the local character set.
 
    Windows long paths
        The maximum path length fully supported on Windows systems is generally
-       260 bytes.  Longer paths can be created programmatically, however.   In
-       the  past  zip  could  not  read  these  longer paths and skipped them.
-       zip 3.1 can now read and store these  paths  and  files.   However,  an
+       260  bytes.  Longer paths can be created programmatically, however.  In
+       the past zip could not  read  these  longer  paths  and  skipped  them.
+       zip 3.1  can  now  read  and  store these paths and files.  However, an
        unzip that can handle long paths is needed to restore such entries.  In
        particular, Windows Explorer (as of Windows 7) will generally refuse to
-       read  archives that contain long paths.  (7-Zip, for instance, can han-
+       read archives that contain long paths.  (7-Zip, for instance, can  han-
        dle these long paths.)
 
-       That said, we have made including Windows long paths the default.   The
-       user  needs  to ensure long paths are not included in any archive to be
-       opened by Windows Explorer or other utilities that  can't  handle  long
-       paths.   zip  will warn if a Windows long path is being included.  -wl-
+       That  said, we have made including Windows long paths the default.  The
+       user needs to ensure long paths are not included in any archive  to  be
+       opened  by  Windows  Explorer or other utilities that can't handle long
+       paths.  zip will warn if a Windows long path is being  included.   -wl-
        can be used to leave out long paths.
 
    Command line format
-       zip 3.0 and later use updated command  line  processing  that  includes
+       zip  3.0  and  later  use updated command line processing that includes
        support for long options.
 
        Short options in an argument take the form
 
               -s[-][s[-]...][s[-|value|=value| value]]
 
-       where  s  is  a one or two character short option.  A short option that
-       takes a value must be last in an argument  and  anything  after  it  is
-       taken  as  the value.  If the option can be negated and "-" immediately
-       follows the option, the option is negated.  Short options can  also  be
+       where s is a one or two character short option.  A  short  option  that
+       takes  a  value  must  be  last in an argument and anything after it is
+       taken as the value.  If the option can be negated and  "-"  immediately
+       follows  the  option, the option is negated.  Short options can also be
        given as separate arguments
 
               -s[-|value|=value| value] -s[-|value|=value| value] ...
 
-       Short  options  in general take values either as part of the same argu-
-       ment or as the following argument.  An optional =  is  also  supported.
+       Short options in general take values either as part of the  same  argu-
+       ment  or  as  the following argument.  An optional = is also supported.
        So
 
               -tt12071991
@@ -795,9 +846,16 @@ USE
 
               -tt 12071991
 
-       all  work  to set the before date to 1991-12-07.  The -x and -i options
-       accept lists of values and use a slightly  different  format  described
+       all work to set the before date to 1991-12-07.  The -x and  -i  options
+       accept  lists  of  values and use a slightly different format described
        below.  See the -x and -i options.
+
+       Some options in zip 3.1 now take option value lists.  These  are  lists
+       of flag values separated by commas.  For instance:
+
+              zip  -sf  -sF usize,comment  archive
+
+       See -sF for more on option value lists.
 
        Long options take the form
 
@@ -806,8 +864,8 @@ USE
        where  the  option  starts  with  "--",  has a multicharacter name, can
        include a trailing dash to negate the option (if  the  option  supports
        it),  and  can have a value (option argument) specified by preceding it
-       with = (no spaces).  Values can also be given as  the  following  argu-
-       ment.  So
+       with = (no spaces) if the option can take a value.  Values can also  be
+       given as the following argument.  So
 
               --before-date=12071991
 
@@ -834,8 +892,11 @@ USE
 
               --longoption = value
 
-       are also excepted.  Any white space between the "=" and the  option  or
-       value is ignored.
+       are also accepted.  Any white space between the "=" and the  option  or
+       value is ignored.  For clarity, space around the "=" should be avoided.
+       Better to use one of the other forms instead.  This form may be  depre-
+       cated in the future due to some cases where this can be misinterpreted,
+       such as when a file is named "=".
 
        Some options support optional values.  An optional value must include a
        preceding "="; this is done to avoid ambiguities.  For example:
@@ -850,51 +911,71 @@ USE
        plogdir.
 
    Unix shell processing
-       On  Unix,  zip 3.0 and earlier relied on shell globbing to expand wild-
+       On Unix, zip 3.0 and earlier relied on shell globbing to  expand  wild-
        cards on the command line.  So given
 
               zip  foo  *.[ch]  -i "test*"
 
-       zip would receive all file names ending with .c and .h from  the  shell
-       instead  of the wildcard expression *.[ch], and then would filter those
+       zip  would  receive all file names ending with .c and .h from the shell
+       instead of the wildcard expression *.[ch], and then would filter  those
        names to find any starting with test internally.  (Filters, such as -i,
-       -x  and  -R  have  always  required  escaping or quoting to avoid shell
+       -x and -R have always required  escaping  or  quoting  to  avoid  shell
        expansion.)  However, escaping input files, as in:
 
               zip  foo  "*.[ch]"  -i "test*"
 
-       would not work on Unix as *.[ch] would be handled  as  a  literal  file
-       name  and  the  wildcards would not be processed.  (This works on other
-       ports, such as Windows, that perform internal wildcard handling.   Just
+       would  not  work  on  Unix as *.[ch] would be handled as a literal file
+       name and the wildcards would not be processed.  (This  works  on  other
+       ports,  such as Windows, that perform internal wildcard handling.  Just
        not on Unix.)
 
-       zip  3.1  now internally processes wildcards in input file names so the
-       results with and without quotes should be the same.   This  now  allows
+       zip 3.1 now internally processes wildcards in input file names  so  the
+       results  with  and  without quotes should be the same.  This now allows
        file names with spaces and wildcards to be properly processed:
 
-              zip  foo  --RE  "file name with spaces*.[ch]"
+              zip  foo  -RE  "file name with spaces*.[ch]"
 
-       (--RE is needed to enable [] list matching.)
+       (-RE is needed to enable [] list matching.)
 
        To include *.[ch] in foo as a literal file name, -- can be used:
 
               zip  foo  --  "*.[ch]"
 
-       All  wildcard  processing  is  disabled after -- is seen on the command
+       All wildcard processing is disabled after -- is  seen  on  the  command
        line, these arguments taken as verbatim.  For example:
 
               zip  foo  --  -file  @justafile  "file*with?wildcards"
 
-       will include these files in foo.  Any shell wildcards or special  char-
+       will  include these files in foo.  Any shell wildcards or special char-
        acters still need to be escaped or quoted to avoid shell processing.
 
    Time zones
-       As  many operations, such as -f and -u, compare file times to determine
-       if a file has changed, it's important for these commands that the  time
-       be  consistent between zip operations.  Part of this is making sure the
+       As many operations, such as -f and -u, compare file times to  determine
+       if  a file has changed, it's important for these commands that the time
+       be consistent between zip operations.  Part of this is making sure  the
        proper time zone is set.
 
+       Daylight  Saving  Time  changes can cause problems with using these and
+       other options that depend on file times.  Creating an  archive  in  one
+       time  zone  and  using  it  in another can also cause issues.  In these
+       cases a likely outcome is all files will look changed and  be  included
+       in  an update operation.  So when an archive is being used in a differ-
+       ent time zone, it may be best to avoid operations that depend  on  com-
+       paring file times.
+
        See the -f option for more on time zones.
+
+   Listing files
+       The  option  -sf, when used with an existing archive and where no input
+       files are specified, lists the files in that archive.  When input files
+       are specified, -sf lists the files that would be operated on if -sf was
+       not in the command line.
+
+       When -sf is used with -FS, zip  lists  the  operations  that  would  be
+       needed  to  make  the archive like the file system, essentially showing
+       the differences between the two.
+
+       See the descriptions of -sf and -FS below for more.
 
 OPTIONS
        See the zip extended help (-hh) for a quick  breakdown  of  options  by
@@ -951,10 +1032,14 @@ OPTIONS
               results in @myargs.txt being replaced on the command line by the
               arguments in the file.
 
-              Argfiles  are  enabled  by default.  Negating this option, -AF-,
-              turns off argfile processing, making  @myargs.txt  just  another
-              file  name  on the command line.  -AF or -AF- must appear on the
-              command line before any argfiles.
+              Argfiles  are  disabled by default.  -AF turns on recognition of
+              arguments starting with '@' as argfiles.  Negating this  option,
+              -AF-,  turns  off  argfile  processing,  making @myargs.txt just
+              another file name on the command line.
+
+              Don't confuse argfiles with options -@ and -@@, which read  file
+              lists from stdin and from a file, respectively, those names sep-
+              arated by either newlines or NULL bytes (if --print0 used).
 
               For more information,  see  the  subsection  on  Argument  Files
               above.
@@ -979,47 +1064,48 @@ OPTIONS
        -ad
        --ad-sort
               Sort file system AppleDouble "._" files  after  the  files  they
-              apparently  go  with.  The default on Unix Apple (Mac OS X) sys-
-              tems is to sort AppleDouble "._" files created by zip (to  store
-              meta  data)  after  the files they go with.  The -ad option also
-              includes any "._" files already on the file system  and  in  the
-              target  scope in this sort as if they were generated by zip.  On
-              Unix Apple systems this generally has limited  utility,  as  the
-              AppleDouble  files  zip generates should contain the latest meta
-              data (e.g. resource fork information).
+              apparently  go  with.   The  default on Unix Mac OS X (Mac OS X)
+              systems is to sort AppleDouble "._" files  created  by  zip  (to
+              store  meta  data) after the files they go with.  The -ad option
+              also includes any "._" files already on the file system  and  in
+              the  target scope in this sort as if they were generated by zip.
+              On Unix Mac OS X systems this generally has limited utility,  as
+              the  AppleDouble  files  zip generates should contain the latest
+              meta data (e.g. resource fork information).
 
-              On systems other than Unix Apple, -ad  allows  storing  apparent
+              On systems other than Unix Mac OS X, -ad allows storing apparent
               AppleDouble  files  found  on  the file system within the target
               scope after the files  they  apparently  go  with,  creating  an
-              archive  that  allows  unzip  to restore the meta data on a Unix
-              Apple system.
+              archive that allows unzip to restore the meta data on a Unix Mac
+              OS X system.
 
               This option supports the scenario where a zip archive is created
-              on  a  Unix  Apple system, transferred to another system that is
-              not Unix Apple, the files extracted and the data files  updated,
-              then  zip  used  to  rearchive  the files for transfer to a Unix
-              Apple system.  Using -ad when rearchiving the  files  will  sort
-              the  AppleDouble  files  properly  so the resulting archive will
-              have readable AppleDouble data on the target Unix Apple  system.
+              on a Unix Mac OS X system, transferred to another system that is
+              not Unix Mac OS X,  the  files  extracted  and  the  data  files
+              updated,  then zip used to rearchive the files for transfer to a
+              Unix Mac OS X system.  Using -ad when rearchiving the files will
+              sort  the  AppleDouble  files  properly so the resulting archive
+              will have readable AppleDouble data on the target Unix Mac OS  X
+              system.
 
               See -as and -df for more information about AppleDouble.
 
        -as
        --sequester
-              [UNIX  APPLE]   Save AppleDouble resource files in a sequestered
-              directory, instead of in the directory where the data fork  file
-              is.   By default, on Mac OS X systems zip places the AppleDouble
-              "._" files in the same directory as  the  files  they  go  with.
-              When  sequestering  is used, the finder and resource information
-              get stored in a single __MACOSX/ directory at the  root  of  the
-              zip  archive.   (See  -df  for more on how zip saves Mac OS meta
-              data.)
+              [Unix   Mac   OS  X]   Save  AppleDouble  resource  files  in  a
+              sequestered directory, instead of in  the  directory  where  the
+              data  fork  file  is.   By default, on Unix Mac OS X systems zip
+              places the AppleDouble "._" files in the same directory  as  the
+              files  they  go with.  When sequestering is used, the finder and
+              resource information get stored in a single __MACOSX/  directory
+              at  the  root  of the zip archive.  (See -df for more on how zip
+              saves Mac OS metadata.)
 
        -B
        --binary
-              [VM/CMS and MVS] force file to be read binary (default is text).
+              [VM/CMS and MVS] Force file to be read binary (default is text).
 
-       -Bn    [TANDEM] set Edit/Enscribe formatting options with n defined as
+       -Bn    [TANDEM] Set Edit/Enscribe formatting options with n defined as
               bit  0: Don't add delimiter (Edit/Enscribe)
               bit  1: Use LF rather than CR/LF as delimiter (Edit/Enscribe)
               bit  2: Space fill record to maximum record length (Enscribe)
@@ -1059,25 +1145,26 @@ OPTIONS
 
        -BD backupdir
        --backup-dir backupdir
-              Set the directory for the backup archive.  Also default location
-              of control file and log file unless -BC or -BL are used to set a
-              different control file directory or backup log directory.
+              Set the directory for the backup archive.  Also sets the default
+              location of the control and log files unless -BC or -BL are used
+              to  set  a different control file directory or backup log direc-
+              tory.
 
               Used with -BT to create a repeatable backup cycle.  -BD sets the
-              path/directory where the backup archive goes.  The archive  name
-              is  given  by  -BN.   See -BT for more information on setting up
+              path/directory  where the backup archive goes.  The archive name
+              is given by -BN.  See -BT for more  information  on  setting  up
               repeatable backup cycles.
 
        -BF
        --binary-full-check
-              Check entire file for binary.   Normally  zip  only  checks  the
-              first  couple  buffers for binary and, if not found, the file is
-              labeled a text file.  This check is usually very  reliable,  but
+              Check  entire  file  for  binary.   Normally zip only checks the
+              first couple buffers for binary and, if not found, the  file  is
+              labeled  a  text file.  This check is usually very reliable, but
               can be wrong if there's binary late in a large file.  -BF forces
               zip to check the entire file.
 
-              -BF is automatically set if -l, -ll, or -a are used so that  the
-              text/binary  decision  can be validated and action taken if con-
+              -BF  is automatically set if -l, -ll, or -a are used so that the
+              text/binary decision can be validated and action taken  if  con-
               versions were done to a binary file.
 
               See -ll for more on text/binary checks.
@@ -1088,99 +1175,99 @@ OPTIONS
        --backup-log=backuplogdir
               Set the path/directory the backup log file is written to.
 
-              -BL is for use with -BT only.  For normal logging,  use  -lf  or
+              -BL  is  for  use with -BT only.  For normal logging, use -lf or
               -lF instead.
 
-              backuplogdir  is optional.  If -BL is given without specifying a
-              log directory, the backup directory given by -BD is  used.   The
-              name  of the log is the same as the archive, except that .zip is
+              backuplogdir is optional.  If -BL is given without specifying  a
+              log  directory,  the backup directory given by -BD is used.  The
+              name of the log is the same as the archive, except that .zip  is
               replaced by .log.
 
-              Used with -BT to create a repeatable backup cycle.  -BL  enables
-              logging  of  repeatable backup cycles and sets the location that
-              the log is written to if backuplogdir is provided.  See -BT  for
+              Used  with -BT to create a repeatable backup cycle.  -BL enables
+              logging of repeatable backup cycles and sets the  location  that
+              the  log is written to if backuplogdir is provided.  See -BT for
               more information on setting up repeatable backup cycles.
 
-              Note  that -BT creates date/timestamped archive names and so the
+              Note that -BT creates date/timestamped archive names and so  the
               logfiles will also have date/timestamped names.
 
        -BN backupname
        --backup-name backupname
-              Set the name of the backup.  This name is used for  the  control
+              Set  the  name of the backup.  This name is used for the control
               file, archive, and log.
 
               Used with -BT to create a repeatable backup cycle.  -BD sets the
               directory where the backup archive goes while -BN sets the name.
               To this name is appended timestamp and other information to form
-              the actual archive name used for a particular  repeating  backup
-              cycle.   See  -BT  for more information on setting up repeatable
+              the  actual  archive name used for a particular repeating backup
+              cycle.  See -BT for more information on  setting  up  repeatable
               backup cycles.
 
        -BT backuptype
        --backup-type backuptype
               Set the type of backup being done this cycle.
 
-              Used with -BC, -BD, -BL, and -BN to create a  repeatable  backup
-              cycle.   -BT  sets  the  type  of  backup being done this cycle.
+              Used  with  -BC, -BD, -BL, and -BN to create a repeatable backup
+              cycle.  -BT sets the type  of  backup  being  done  this  cycle.
               Types include FULL (backup all files within scope), DIFFERENTIAL
-              (backup  files  that  are  new  or  changed  since the last FULL
-              backup), or INCREMENTAL (backup files that are  new  or  changed
-              since  the  last  FULL backup or any DIFFERENTIAL or INCREMENTAL
+              (backup files that are  new  or  changed  since  the  last  FULL
+              backup),  or  INCREMENTAL  (backup files that are new or changed
+              since the last FULL backup or any  DIFFERENTIAL  or  INCREMENTAL
               backups since then).
 
-              Note that -BT is currently available only on systems  that  sup-
+              Note  that  -BT is currently available only on systems that sup-
               port long file names.
 
               zip -BT can be used in a time repeating script, for instance, to
-              perform repeatable backup cycles.  One approach is to use  three
-              separate  repeating scripts, one to run FULL backups, one to run
-              DIFFERENTIAL backups, and one to run INCREMENTAL  backups.   For
+              perform  repeatable backup cycles.  One approach is to use three
+              separate repeating scripts, one to run FULL backups, one to  run
+              DIFFERENTIAL  backups,  and one to run INCREMENTAL backups.  For
               instance, the FULL script might include:
 
-                     zip  -BT  full  -BD  mybackups  -BN foo_backup -BL -li -r
+                     zip -BT full -BD mybackups  -BN  foo_backup  -BL  -li  -r
                      foodir
 
               and run monthly.  The DIFF script might include:
 
-                     zip -BT diff -BD mybackups  -BN  foo_backup  -BL  -li  -r
+                     zip  -BT  diff  -BD  mybackups  -BN foo_backup -BL -li -r
                      foodir
 
               and run weekly.  The INCR script might include:
 
-                     zip  -BT  incr  -BD  mybackups  -BN foo_backup -BL -li -r
+                     zip -BT incr -BD mybackups  -BN  foo_backup  -BL  -li  -r
                      foodir
 
-              and run daily.  -BD puts the backup archives, the logs, and  the
+              and  run daily.  -BD puts the backup archives, the logs, and the
               control file in the mybackups directory.  -BN specifies that the
-              archives, logs, and control file will have names  starting  with
-              foo_backup.   -BL  -li (options -BL and -li) enables backup log-
-              ging and tells zip to include informational  messages  (such  as
-              the  files  processed) in the log.  The -r directs zip to backup
-              the directory foodir and any subdirectories.  It is  recommended
-              that  the  times  these  scripts run be offset so that DIFF runs
-              after any INCR is expected to be finished and  FULL  runs  after
-              any  DIFF  or INCR is expected to be finished.  Avoid overlap if
-              possible to minimize possible  content  inconsistencies  between
+              archives,  logs,  and control file will have names starting with
+              foo_backup.  -BL -li (options -BL and -li) enables  backup  log-
+              ging  and  tells  zip to include informational messages (such as
+              the files processed) in the log.  The -r directs zip  to  backup
+              the  directory foodir and any subdirectories.  It is recommended
+              that the times these scripts run be offset  so  that  DIFF  runs
+              after  any  INCR  is expected to be finished and FULL runs after
+              any DIFF or INCR is expected to be finished.  Avoid  overlap  if
+              possible  to  minimize  possible content inconsistencies between
               backups.
 
-              Preferrably,  one  script  could be used to run all three backup
-              types, this script run on a timed cycle and choosing the  backup
+              Preferrably, one script could be used to run  all  three  backup
+              types,  this script run on a timed cycle and choosing the backup
               type based on a schedule.  Since only one script is ever running
-              at any particular time, this avoids conflicts between the  types
-              of  backups.  If necessary, this script could include a check to
+              at  any particular time, this avoids conflicts between the types
+              of backups.  If necessary, this script could include a check  to
               see if it was still running from a previous backup cycle and, if
               so, postpone the next backup until the current one finished.
 
-              This  mode  of zip creates a control file that is written to the
-              backup path specified by -BD (or to the control path if  -BC  is
-              used).   The name of the control file is given by -BN with _con-
-              trol.zbc appended.  This control file tracks the  archives  cur-
-              rently  in  the backup set.  The backup path is also used as the
-              destination of the created archives, so  no  output  archive  is
+              This mode of zip creates a control file that is written  to  the
+              backup  path  specified by -BD (or to the control path if -BC is
+              used).  The name of the control file is given by -BN with  _con-
+              trol.zbc  appended.   This control file tracks the archives cur-
+              rently in the backup set.  The backup path is also used  as  the
+              destination  of  the  created  archives, so no output archive is
               specified.  Rather this mode creates the output name by adding a
-              mode (full, diff, or incr) and a date  and  time  stamp  to  the
-              backup  path.   This  allows  recurring  backups to be generated
-              without altering the command line to specify new  archive  names
+              mode  (full,  diff,  or  incr)  and a date and time stamp to the
+              backup path.  This allows  recurring  backups  to  be  generated
+              without  altering  the command line to specify new archive names
               each cycle to avoid overwriting previous archives and logs.  zip
               does not delete old archives and logs -- the user needs to track
               these and move or delete them as appropriate.
@@ -1188,57 +1275,61 @@ OPTIONS
               The backup types are:
 
                      FULL - Create a normal zip archive that forms the core of
-                     the backup set.  Also creates a control  file  that  only
+                     the  backup  set.   Also creates a control file that only
                      lists this one archive.  Any listings of other (differen-
                      tial and incremental) archives from previous backup oper-
-                     ations  are removed.  Backup type FULL essentially starts
+                     ations are removed.  Backup type FULL essentially  starts
                      a new backup set.
 
-                     DIFFERENTIAL - Create a --diff archive against  the  FULL
-                     archive  listed  in the control file, and update the con-
-                     trol file to list both the FULL  and  DIFF  archives.   A
-                     DIFF  backup  set  consists of just the FULL and new DIFF
+                     DIFFERENTIAL  -  Create a --diff archive against the FULL
+                     archive listed in the control file, and update  the  con-
+                     trol  file  to  list  both the FULL and DIFF archives.  A
+                     DIFF backup set consists of just the FULL  and  new  DIFF
                      archives, as these two archives capture all files (except
-                     deletions,  as  noted  below).   Any  other  DIFF or INCR
+                     deletions, as noted  below).   Any  other  DIFF  or  INCR
                      archives are removed from the backup set (the list in the
-                     control  file), but are not removed from the file system.
+                     control file), but are not removed from the file  system.
 
-                     INCREMENTAL - Create a --diff archive  against  the  FULL
-                     and  any  DIFF  or INCR archives in the control file, and
-                     update the control file.  An INCR backup set consists  of
-                     the  FULL  archive and any DIFF and INCR archives created
-                     to that point.  An INCR  backup  captures  just  new  and
-                     changed  files  not  yet included in the backup set.  Any
-                     number of INCR archives can be  included  in  the  backup
+                     INCREMENTAL  -  Create  a --diff archive against the FULL
+                     and any DIFF or INCR archives in the  control  file,  and
+                     update  the control file.  An INCR backup set consists of
+                     the FULL archive and any DIFF and INCR  archives  created
+                     to  that  point.   An  INCR  backup captures just new and
+                     changed files not yet included in the  backup  set.   Any
+                     number  of  INCR  archives  can be included in the backup
                      set, each capturing an incremental change in the state of
                      the target.
 
-              A FULL backup clears any DIFF and INCR entries from the  control
-              file,  hence  starts a new backup set.  A DIFF backup clears out
-              any INCR archives listed in the control file, as  the  FULL  and
-              DIFF  are  sufficient  to describe the state of the target scope
-              (except as noted below).  An  INCR  backup  just  adds  the  new
+              A  FULL backup clears any DIFF and INCR entries from the control
+              file, hence starts a new backup set.  A DIFF backup  clears  out
+              any  INCR  archives  listed in the control file, as the FULL and
+              DIFF are sufficient to describe the state of  the  target  scope
+              (except  as  noted  below).   An  INCR  backup just adds the new
               incremental archive to the list of archives in the control file.
 
-              Note that DIFF and INCR backups do not account for  deletion  of
-              files  in the target scope.  Only FULL backups account for dele-
+              Note  that  DIFF and INCR backups do not account for deletion of
+              files in the target scope.  Only FULL backups account for  dele-
               tions.  For this reason, occasional FULL backups should be done.
-              We  may  add  a  way to incrementally track deleted files in the
+              We may add a way to incrementally track  deleted  files  in  the
               future.
 
-              All archives listed in the control file must be present  in  the
-              backup file location specified or an error will occur.
+              All  archives  listed in the control file must be present in the
+              backup file location specified or an error will occur.  To  save
+              space,  an archive to create a difference archive against can be
+              replaced by a CD_ONLY archive.  See -DF and -Z for more on this.
+              All  archives  listed  in  the  control  file can, in theory, be
+              replaced with CD_ONLY equivalents.
 
-              For  repeating  backups  to  properly work, the same zip command
-              line should be used for all  backups  (FULL,  DIFF,  and  INCR),
-              except  for  changing  -BT  to set backup type.  The zip command
-              should also be run from the same directory each time to use  the
-              same  file  scope.   The  same  control file must be used by all
-              backup operations maintaining the same  backup  set  for  proper
-              differential  and  incremental operation.  Different backup sets
-              use different control files.  To avoid issues,  make  sure  each
-              backup  configuration has a unique name as set by -BN.  Multiple
-              backup configurations can go in the same directory  as  long  as
+              For repeating backups to properly work,  the  same  zip  command
+              line  should  be  used  for  all backups (FULL, DIFF, and INCR),
+              except for changing -BT to set backup  type.   The  zip  command
+              should  also be run from the same directory each time to use the
+              same file scope.  The same control file  must  be  used  by  all
+              backup  operations  maintaining  the  same backup set for proper
+              differential and incremental operation.  Different  backup  sets
+              use  different  control  files.  To avoid issues, make sure each
+              backup configuration has a unique name as set by -BN.   Multiple
+              backup  configurations  can  go in the same directory as long as
               they are uniquely named.
 
               Full backups will have names such as:
@@ -1249,29 +1340,30 @@ OPTIONS
 
                      mypath/mybackupset_full_FULLDT_incr_INCRDT.zip
 
-              where  the  name of the full backup the differential/incremental
-              goes to is part of the file name.  Above, FULLDT and INCRDT  are
-              date-time  stamps  of  the full and incremental backups, respec-
+              where the name of the full backup  the  differential/incremental
+              goes  to is part of the file name.  Above, FULLDT and INCRDT are
+              date-time stamps of the full and  incremental  backups,  respec-
               tively.
 
-              It is recommended that the backup path be  outside  of  what  is
-              being  backed up, either a separate drive, path, or other desti-
-              nation, or -x is used to exclude the backup path  directory  and
-              everything  in  it.   Otherwise  each backup may get included in
+              It  is  recommended  that  the backup path be outside of what is
+              being backed up, either a separate drive, path, or other  desti-
+              nation,  or  -x  used  to  exclude the backup path directory and
+              everything in it.  Otherwise each backup  may  get  included  in
               later backups, creating exponential growth.
 
-              If you don't need to track changes over time but simply want  to
-              save  the  latest  changes, consider just creating normal (FULL)
-              zip archives or using --diff to create FULL and  DIFF  archives.
-              The  -u  Update and -FS File Sync options are other alternatives
+              If  you don't need to track changes over time but simply want to
+              save the latest changes, consider just  creating  normal  (FULL)
+              zip  archives  or using --diff to create FULL and DIFF archives.
+              The -u Update and -FS File Sync options are  other  alternatives
               to consider.
 
        -c
        --entry-comments
-              Add one-line comments for each entry  (file).   File  operations
+              Add  one-line  comments  for each entry (file).  File operations
               (adding, updating) are done first, and the user is then prompted
-              for a one-line comment for each file.  Enter  the  comment  fol-
-              lowed by return, or just return for no comment.
+              for  a  one-line  comment for each file.  Enter the comment fol-
+              lowed by return, or just return for no comment (or  to  keep  an
+              existing comment).
 
               zip  3.1  now  presents  any  existing comment and allows either
               keeping it or replacing it.  zip 3.1 also allows multi-line com-
@@ -1282,8 +1374,8 @@ OPTIONS
               When  editing comments of an existing archive, zip will accept a
               list of names and/or filters to choose the entries  to  add/edit
               comments for.  For instance, if the archive foo.zip contains the
-              entries a.txt, b.txt, e/c.txt and e/d.txt, to edit just the com-
-              ment for c.txt, either
+              entries a.txt, b.txt, e/c.txt and  e/d.txt,  to  edit  just  the
+              comment for c.txt, either
 
                      zip foo -c e/c.txt
 
@@ -1313,33 +1405,41 @@ OPTIONS
               See zipnote as a way to do batch editing of file comments.
 
        -cd dir
-       --current-directory dir
+       --chdir dir
               Set the current directory to dir before beginning the zip opera-
               tion.  This sets the root of the resulting archive,  i.e.  rela-
               tive  paths  stored in the archive are relative to this location
-              in the file system.
+              in the file system.  Essentially, zip does a cd to the specified
+              directory before the archiving operation starts.
 
-              If -q is not used, the directory path changed to  is  displayed.
-              As  zip typically runs in a separate process, the change to cur-
-              rent directory only impacts zip and not the process or shell  it
+              If  -q  is not used, the directory path changed to is displayed.
+              As zip typically runs in a separate process, the change to  cur-
+              rent  directory only impacts zip and not the process or shell it
               is run from.
 
               Without -cd, zip generally inherits the current directory of the
-              calling process, typically a shell.   -cd  allows  the  relative
-              paths  zip  sees  to  be interpreted relative to the new current
+              calling  process,  typically  a  shell.  -cd allows the relative
+              paths zip sees to be interpreted relative  to  the  new  current
               directory dir, while leaving the current directory of the caller
               unchanged.
 
-              On  Windows,  if dir includes a different drive letter, zip will
+              On Windows, if dir includes a different drive letter,  zip  will
               change the current drive to that drive.  For instance,
 
                      C:\foo> zip myarchive test.txt -cd E:\bar
 
-              will look in E:\bar for test.txt and  will  write  myarchive  to
+              will  look  in  E:\bar  for test.txt and will write myarchive to
               E:\bar.
 
-              An  alternative to -cd is to change the current directory in the
+              An alternative to -cd is to change the current directory in  the
               calling process before calling zip.
+
+              Note  for LIB/DLL users:  The ZpZip or ZpZipArgs call requires a
+              root directory to be specified in the call.  This root directory
+              becomes  the  current  directory of the archiving operation.  If
+              -cd is also provided, that directory change is made by zip after
+              the  root  directory  is set by ZpZip or ZpZipArgs, and so over-
+              rides the root directory setting.
 
        -C
        --preserve-case
@@ -1407,35 +1507,34 @@ OPTIONS
                      zip foo -d  -@@filestodelete.txt
 
               will delete the files in filestodelete.txt, listed one per line,
-              from archive foo.zip.  (As of zip 3.1, any leading and  trailing
-              white  space  on  each  line is trimmed.  (Embedded white space,
-              such as in the name "name with spaces.txt", remains after  trim-
-              ming.)   If  a  path  includes  leading or trailing white space,
-              enclose  it  in  double   quotes,   as   in   "  name_with_lead-
-              ing_white_space.txt".)
+              from archive foo.zip.  Trimming leading and trailing spaces from
+              the  names  read  in was considered, but was dropped for various
+              reasons.  So note that each line read in  should  match  exactly
+              the  path  (possibly including wildcards) that is to be deleted,
+              including any leading or trailing spaces in the path.
 
               Argfiles can also be used.  For instance:
 
                      zip foo -d @filestodelete.zag
 
-              will  delete files listed in filestodelete.zag, those file names
-              separated by white space.  Unlike -@@, however, file names  that
-              include  white  space must be enclosed in double quotes (as they
+              will delete files listed in filestodelete.zag, those file  names
+              separated  by white space.  Unlike -@@, however, file names that
+              include white space must be enclosed in double quotes  (as  they
               would need to be if included on the command line).
 
-              Under MSDOS and Windows, -d is case sensitive  when  it  matches
-              names  in  the  zip  archive.   This requires that file names be
-              entered in upper case if they were zipped by PKZIP on  an  MSDOS
-              system.   (We considered making this case insensitive on systems
-              where paths were  case  insensitive,  but  it  is  possible  the
-              archive  came  from  a  system  where  case  does matter and the
-              archive could include both Bar and bar as separate files in  the
-              archive.)   But  see  the  new  option -ic to ignore case in the
+              Under  MSDOS  and  Windows, -d is case sensitive when it matches
+              names in the zip archive.  This  requires  that  file  names  be
+              entered  in  upper case if they were zipped by PKZIP on an MSDOS
+              system.  (We considered making this case insensitive on  systems
+              where  paths  were  case  insensitive,  but  it  is possible the
+              archive came from a  system  where  case  does  matter  and  the
+              archive  could include both Bar and bar as separate files in the
+              archive.)  But see the new option -ic  to  ignore  case  in  the
               archive.
 
        -db
        --display-bytes
-              Display running byte counts showing the  bytes  zipped  and  the
+              Display  running  byte  counts  showing the bytes zipped and the
               bytes to go.
 
        -dc
@@ -1444,32 +1543,31 @@ OPTIONS
 
        -dd
        --display-dots
-              Display  dots  while  each entry is zipped (except on ports that
-              have their own progress indicator).  See -ds below  for  setting
-              dot  size.   The default is a dot every 10 MB of input file pro-
-              cessed.  The -v option also displays dots (previously at a  much
-              higher  rate  than  this  but now -v also defaults to 10 MB) and
+              Display dots while each entry is zipped (except  on  ports  that
+              have  their  own progress indicator).  See -ds below for setting
+              dot size.  The default is a dot every 10 MB of input  file  pro-
+              cessed.   The -v option also displays dots (previously at a much
+              higher rate than this but now -v also defaults  to  10  MB)  and
               this rate is also controlled by -ds.
 
        -de
        --display-est-to-go
-              Display an estimate of the time to finish the  archiving  opera-
-              tion.   The  estimate is based on the calculated rate of bytes /
-              second, so the estimated times can vary as  system  loading  and
-              execution  speed  change.  (See -dr for more on this.)  zip does
-              not display an estimate until enough entries  are  processed  to
+              Display  an  estimate of the time to finish the archiving opera-
+              tion.  The estimate is based on the calculated rate of  bytes  /
+              second,  so  the  estimated times can vary as system loading and
+              execution speed change.  (See -dr for more on this.)   zip  does
+              not  display  an  estimate until enough entries are processed to
               get a reasonable bytes / second rate.
 
        -df
        --datafork
-              [MacOS,  UNIX APPLE] Include only the data-forks of files zipped
-              into the archive.   Resource  forks  and  Finder  info  will  be
+              [MacOS, Unix Mac OS X] Include  only  the  data-forks  of  files
+              zipped into the archive.  Resource forks and Finder info will be
               ignored.  This is useful when exporting files to foreign operat-
-              ing systems where the resource information may  not  be  needed.
-              The  MacOS  port (Mac OS before Mac OS X) saves this information
-              in extra fields while the Unix Apple (Mac OS X)  port  uses  the
-              AppleDouble  format.   (See -as for more on the AppleDouble for-
-              mat.)
+              ing  systems  where  the resource information may not be needed.
+              The MacOS port (Mac OS before Mac OS X) saves  this  information
+              in extra fields while the Unix Mac OS X (Mac OS X) port uses the
+              AppleDouble format.  (See -as for more on AppleDouble.)
 
        -dg
        --display-globaldots
@@ -1626,9 +1724,9 @@ OPTIONS
        -et
        --etwodd
               When using Traditional zip encryption, zip uses data descriptors
-              to   avoid   making  multiple  passes.   The  --etwodd  (encrypt
-              traditional without data descriptors) option forces zip to  make
-              the multiple passes to avoid the need for data descriptors.  The
+              to  avoid  making multiple passes.  The --etwodd (encrypt tradi-
+              tional without data descriptors) option forces zip to  make  the
+              multiple  passes  to  avoid  the need for data descriptors.  The
               result should be an archive that is  more  generally  compatible
               with other zip utilities.
 
@@ -1949,7 +2047,7 @@ OPTIONS
               -i  has  a list with one item, somefile.txt.  A one item list is
               self terminated.  (In practice, "=" must be  used  to  define  a
               single  file list, as characters immediately following "i" might
-              be taken as part of the "i" option.  For example, "-icat"  would
+              be taken as part of the option name.  For example, "-icat" would
               be  taken  as -ic, followed by -a and -t.  An exception is "-i@"
               described below.)  In contrast, in:
 
@@ -2026,11 +2124,9 @@ OPTIONS
               its   subdirectories   that  match  the  patterns  in  the  file
               include.lst, one file pattern per line.  (This is a variation of
               the  -i  option  and  should  not  be  confused with invoking an
-              argfile.)  Note that zip 3.1 now removes  leading  and  trailing
-              white  space  from  paths and patterns in the list read from the
-              file.  (White space in the middle of a path or  pattern  is  not
-              impacted.)   Put  double  quotes around any path or pattern that
-              has leading or trailing white space.
+              argfile.)  Note that paths and patterns must appear on each line
+              in  the file exactly.  For instance, leading and trailing spaces
+              are significant.  No trimming is done.
 
               The above is the single item list format.  It's also possible to
               specify multiple include files and patterns:
@@ -2042,129 +2138,140 @@ OPTIONS
               include2.lst, or that end in ".txt".  The list terminates at the
               end of the line.  Note that @include.lst and  @include2.lst  are
               part  of the -i value list and so are read as include files, one
-              path or pattern a line, not as argfiles.
+              path or pattern a line, not as argfiles.  Use -sc to see how the
+              line  is  parsed  by  zip if you are not sure if an argument was
+              read as an argfile or as a list file.   Argfile  names  will  be
+              replaced  by  the  content  of  the argfile, where as list files
+              won't.  All will be considered list files if -AF is not used  to
+              enable argfiles.
 
-              See -R for more on patterns and  -x  for  more  on  include  and
+              See  -R  for  more  on  patterns  and -x for more on include and
               exclude.  Also see the section on PATTERN MATCHING below.
 
-              -i,  -x and -R are filters.  In the case of -i and -x, if recur-
+              -i, -x and -R are filters.  In the case of -i and -x, if  recur-
               sion is enabled by -r, each directory tree listed on the command
-              line  will  be traversed.  In the case of -R, the current direc-
-              tory tree will be traversed.  Then the -i, -x  and  -R  patterns
-              are  matched against the resulting list.  To save time, keep the
-              directory trees searched as small as possible.  Instead  of  -R,
+              line will be traversed.  In the case of -R, the  current  direc-
+              tory  tree  will  be traversed.  Then the -i, -x and -R patterns
+              are matched against the resulting list.  To save time, keep  the
+              directory  trees  searched as small as possible.  Instead of -R,
               consider a more targeted use of -r.
 
        -I
        --no-image
-              [Acorn  RISC OS] Don't scan through Image files.  When used, zip
-              will not consider Image  files  (eg.  DOS  partitions  or  Spark
-              archives  when  SparkFS is loaded) as directories but will store
+              [Acorn RISC OS] Don't scan through Image files.  When used,  zip
+              will  not  consider  Image  files  (eg.  DOS partitions or Spark
+              archives when SparkFS is loaded) as directories but  will  store
               them as single files.
 
               For example, if you have SparkFS loaded, zipping a Spark archive
-              will  result  in  a zipfile containing a directory (and its con-
-              tent) while using the 'I' option will result in a  zipfile  con-
-              taining a Spark archive. Obviously this second case will also be
-              obtained (without the 'I' option) if SparkFS isn't loaded.
+              will result  in  a  zipfile  containing  a  directory  (and  its
+              content)  while  using  the  'I' option will result in a zipfile
+              containing a Spark archive. Obviously this second case will also
+              be obtained (without the 'I' option) if SparkFS isn't loaded.
 
        -ic
        --ignore-case
-              [VMS, WIN32] Ignore case when matching  archive  entries.   This
-              option  is  only available on systems where the case of files is
+              [VMS,  WIN32]  Ignore  case when matching archive entries.  This
+              option is only available on systems where the case of  files  is
               ignored.  On systems with case-insensitive file systems, case is
-              normally  ignored  when matching files on the file system but is
-              not ignored for -f (freshen), -d (delete), -U (copy), and  simi-
-              lar  modes  when  matching against archive entries (currently -f
+              normally ignored when matching files on the file system  but  is
+              not  ignored for -f (freshen), -d (delete), -U (copy), and simi-
+              lar modes when matching against archive  entries  (currently  -f
               ignores case on VMS) because archive entries can be from systems
-              where  case  does  matter and names that are the same except for
+              where case does matter and names that are the  same  except  for
               case can exist in an archive.  The -ic option makes all matching
-              case  insensitive.   This can result in multiple archive entries
+              case insensitive.  This can result in multiple  archive  entries
               matching a command line pattern.
 
        -j
        --junk-paths
-              Store just the name of a saved file (junk the path), and do  not
+              Store  just the name of a saved file (junk the path), and do not
               store directory names.  By default, zip will store the full path
               (relative to the current directory).
 
-              If negated, as in -j-, full relative paths are  stored  (cancels
+              If  negated,  as in -j-, full relative paths are stored (cancels
               any previous -j on the command line).
 
        -jj
        --absolute-path
-              [MacOS]  Record Fullpath (+ Volname).  The complete path includ-
+              [MacOS] Record Fullpath (+ Volname).  The complete path  includ-
               ing volume will be stored.  By default the relative path will be
               stored.
 
        -J
        --junk-sfx
-              Strip  any prepended data (e.g. a self extracting SFX stub) from
+              Strip any prepended data (e.g. a self extracting SFX stub)  from
               the archive.
 
        -k
-       --DOS-names
-              Attempt to convert the names and  paths  to  conform  to  MSDOS,
-              store  only  the  MSDOS attribute (just the user write attribute
-              from Unix), and mark the entry as made under MSDOS (even  if  it
-              was  not); for compatibility with PKUNZIP under MSDOS which can-
+       --dos-names
+              Attempt  to  convert  the  names  and paths to conform to MSDOS,
+              store only the MSDOS attribute (just the  user  write  attribute
+              from  Unix),  and mark the entry as made under MSDOS (even if it
+              was not); for compatibility with PKUNZIP under MSDOS which  can-
               not handle certain names such as those with two dots.
 
        -kf keyfilepath
        --keyfile keyfilepath
               When encrypting, a key is needed.  The key is normally the pass-
-              word,  either prompted for (by using -e or -Y) or provided using
+              word, either prompted for (by using -e or -Y) or provided  using
               -P.  zip 3.1 now supports providing part or all of the key using
-              the  contents  of  a  file.   The file providing the contents is
-              called a keyfile.
+              the contents of a file.  The  file  providing  the  contents  is
+              called a keyfile.  (This should not be confused with certificate
+              keyfiles, which zip does not support.  Currently  there  are  no
+              immediate  plans  for  zip  to support certificate encryption or
+              authentication.  If we do add  that  support,  that  file  would
+              probably be referred to as a keystore.)
 
-              When -kf is used, the file at keyfilepath is used  as  the  key-
+              When  -kf  is  used, the file at keyfilepath is used as the key-
               file.
 
               When using AES encryption, the password to zip is limited to 128
-              bytes.  This is a limitation of the AES  encryption  implementa-
-              tion.   (Traditional encryption has a longer maximum length, but
-              due to the weak nature of Traditional encryption the same  algo-
-              rithm  described  below  is  used  for  both Traditional and AES
+              bytes.   This  is a limitation of the AES encryption implementa-
+              tion.  (Traditional encryption has a longer maximum length,  but
+              due  to the weak nature of Traditional encryption the same algo-
+              rithm described below is  used  for  both  Traditional  and  AES
               encryption.)
 
               When -kf is used to specify a keyfile, the file is opened and up
-              to  the  first  128  non-NULL  bytes  are read from it.  This is
+              to the first 128 non-NULL bytes  are  read  from  it.   This  is
               buffered as possible key content in a keyfile buffer.  Note that
-              this content can include any byte values except for NULLs, which
-              are skipped.
+              this content can include any byte values except for  zero  value
+              bytes ('\0'), which are skipped.
 
-              When -kf is used and -e or -P are not used, the entire  contents
+              When  -kf is used and -e or -P are not used, the entire contents
               of the keyfile buffer is used as the password.
 
-              When  -kf is used and a password is also specified, the password
-              is used as the first part of the key.  Then any remaining  space
-              up  to the 128 byte limit is filled in using the contents of the
-              keyfile buffer.  So essentially the keyfile buffer contents  are
+              When -kf is used and a password is also specified, the  password
+              is  used as the first part of the key.  Then any remaining space
+              up to the 128 byte limit is filled in using the contents of  the
+              keyfile  buffer.  So essentially the keyfile buffer contents are
               appended to the password to form the key, and then the key trun-
               cated to 128 bytes.
 
               If the keyfile buffer contains normal text, the result is equiv-
-              alent  to  specifying the entire key as the password.  This fact
-              can be used to pass the keyfile content to a utility  that  does
-              not  recognize keyfiles by just appending the keyfile content to
-              the  specified  password.   However,  if  the  keyfile   content
-              includes  binary,  this  may  not work and a utility that under-
+              alent to specifying the entire key as the password.   This  fact
+              can  be  used to pass the keyfile content to a utility that does
+              not recognize keyfiles by just appending the keyfile content  to
+              the   specified  password.   However,  if  the  keyfile  content
+              includes binary, this may not work and  a  utility  that  under-
               stands the implementation of keyfiles used by zip may need to be
-              used.
+              used.  zipcloak understands keyfiles and can be used to  decrypt
+              the archive at the receiving end.
 
        -l
        --to-crlf
-              Translate  the Unix end-of-line character LF (linefeed, \n) into
-              the MSDOS convention CR LF (carriage return and linefeed, \r\n).
-              This  option  should not be used on binary files, and zip checks
-              files for binary before performing the conversions.
+              Translate  the  Unix  end-of-line character LF (linefeed, \n) of
+              file content into the MSDOS convention CR  LF  (carriage  return
+              and  linefeed,  \r\n).  This option should not be used on binary
+              files, and zip checks files for  binary  before  performing  the
+              conversions.
 
-              This option can be used on Unix if the zip file is intended  for
-              MSDOS  or Windows, converting Unix format text to Windows format
+              This  option can be used on Unix if the zip file is intended for
+              MSDOS or Windows, converting Unix format text to Windows  format
               text. If the input files already contain CR LF, this option adds
-              an  extra  CR.  This is to ensure that unzip -a on Unix will get
-              back an exact copy of the original file, to undo the  effect  of
+              an extra CR. This is to ensure that unzip -a on  Unix  will  get
+              back  an  exact copy of the original file, to undo the effect of
               zip -l.
 
               See -ll for more on how binary files are handled.
@@ -2175,12 +2282,17 @@ OPTIONS
 
        -lf logfilepath
        --logfile-path logfilepath
-              Open  a logfile at the given path.  By default any existing file
-              at that location is overwritten, but the -la option will  result
-              in  an  existing  file  being opened and the new log information
-              appended to any existing information.  Only warnings and  errors
+              Open a logfile at the given path.  By default any existing  file
+              at  that location is overwritten, but the -la option will result
+              in an existing file being opened and  the  new  log  information
+              appended  to any existing information.  Only warnings and errors
               are written to the log unless the -li option is also given, then
               all information messages are also written to the log.
+
+              Log files are generally flushed after all writes to keep the log
+              current.
+
+              Also see the -lF option.
 
        -lF
        --log-output
@@ -2198,9 +2310,9 @@ OPTIONS
        -ll
        --from-crlf
               Translate  MSDOS/Windows  CR  LF  (carriage return and linefeed,
-              \r\n) line ends into Unix LF (linefeed,  \n)  line  ends.   This
-              option  should  not  be used on binary files, and zip will check
-              for binary before converting the line ends.
+              \r\n) line ends of file content into Unix LF (linefeed, \n) line
+              ends.   This  option should not be used on binary files, and zip
+              will check for binary before converting the line ends.
 
               This option can be used on MSDOS or Windows if the zip  file  is
               intended  for  unzip under Unix, converting Windows line ends to
@@ -2250,19 +2362,21 @@ OPTIONS
               zip  should  now  be sending UTF-8 to the console if the console
               can handle it.  If it isn't already getting UTF-8,  sending  log
               output to stdout to see UTF-8 probably won't work.  If your con-
-              sole can understand UTF-8 and UTF-8 is not already being sent to
-              the  console,  the -UN=ShowUTF8 option can be used to pass UTF-8
-              to the console.
+              sole can understand UTF-8, but zip hasn't detected that it  can,
+              the  -US  option can be used to pass UTF-8 to the console.  How-
+              ever, detection should now be automatic and using -US  to  force
+              UTF-8 output may have mixed results at best.
 
-              Note that on Windows, zip 3.1 now sets -UN=ShowUTF8  by  default
-              and writes Unicode directly to the console.  However, because of
-              deficiencies with the Windows command window, full  UTF-8  can't
-              be  displayed.   For  instance,  if  English is the OS language,
-              Asian fonts (such as  Japanese)  may  not  display  (just  boxes
-              instead).   This is a deficiency in the console window, not zip.
-              However, copying and pasting those boxes to a Unicode aware edi-
-              tor  (such as Notepad) will show that these are the correct Uni-
-              code characters.
+              Note that on Windows, zip 3.1 now writes Unicode directly to the
+              console.  However, because of deficiencies with the Windows com-
+              mand window in Windows 7 and earlier, full Unicode can't be dis-
+              played.  For instance, if English  is  the  OS  language,  Asian
+              fonts  (such  as Japanese) may not display (just boxes instead).
+              This is a deficiency in the console window, not  zip.   However,
+              copying  and pasting those boxes to a Unicode aware editor (such
+              as Notepad) should show that these are the correct Unicode char-
+              acters.   Windows  10  command windows look to have full Unicode
+              support.
 
        -L
        --license
@@ -2311,7 +2425,7 @@ OPTIONS
               checking the log afterwards.
 
        -MV mode
-       --MVS-mode mode
+       --mvs-mode mode
               [MVS] Set the MVS path translation mode to mode.  Paths  on  MVS
               are  generally  in the form aa.bb.cc.dd, where the dots separate
               the parts of the path.  To make these paths more compatible with
@@ -2355,7 +2469,7 @@ OPTIONS
               (This list subject to change.)  Such files are  stored  directly
               in  the  output archive.  The environment variable ZIPOPT can be
               used to change the default options on a  more  permanant  basis.
-              For example under Unix with csh:
+              For example, under Unix with csh:
 
                      setenv ZIPOPT "-n .gif:.zip"
 
@@ -2496,9 +2610,9 @@ OPTIONS
        -O output-file
        --output-file output-file
               Process  the  archive  changes as usual, but instead of updating
-              the existing archive, output a new archive to output-file.  Use-
-              ful  for  updating  an  archive  without  changing  the existing
-              archive and the input archive must be a different file than  the
+              the existing archive, output a new  archive  named  output-file.
+              Useful  for  updating  an  archive without changing the existing
+              archive.  The input archive must be a different  file  than  the
               output archive.
 
               This  option  can  be used to create updated split archives.  It
@@ -2538,10 +2652,16 @@ OPTIONS
 
        -pa prefx
        --prefix-add-path prefx
-              Prefix paths of added/updated files with the string prefx.   The
-              string  must  include  only alphanumeric and limited punctuation
-              characters.  No spaces are allowed.  Slashes are allowed so that
-              the prefix can put the new/updated files into a directory.
+              Prefix paths of added/updated files with the string prefx.
+
+              The string must not contain '\' (escapes not supported) or '../'
+              (changing to a higher directory level not supported).  All char-
+              acters must be printable characters.   Other  restrictions  have
+              been  relaxed  and  it's  up to the user to ensure the resulting
+              paths are valid.
+
+              Slashes are allowed so that the prefix can put  the  new/updated
+              files into a directory.
 
               Note  that prefixing is done to archive paths in the Unix format
               (with slash directory separators), not to the OS  format  paths.
@@ -2552,113 +2672,108 @@ OPTIONS
               should  put all the files in the foo directory into a foo direc-
               tory in the archive on most all systems.
 
-              Currently  only  alphanumeric  characters  and  the   characters
-              "!@#$%^&()-_=+/[]{}|" are allowed in prefixes.  This list may be
-              restricted further on some OS.
-
               See  also  -pp  (--prefix-path),  -Cl  (--case-lower)  and   -SI
               (--name-stdin).
 
        -pn
        --non-ansi-password
-              Normally  a password is forced to only use ANSI 7-bit characters
-              to avoid character set  issues  when  an  archive  is  moved  to
-              another  system  or  locale.  This option allows the password to
-              include any characters, such as UTF-8.
+              Normally  a  password is forced to only use ANSI printable 7-bit
+              characters to avoid character set  issues  when  an  archive  is
+              moved to another system or locale.  This option allows the pass-
+              word to include any characters, such as UTF-8.
 
        -pp prefx
        --prefix-path prefx
-              Prefix all paths in the archive  with  the  string  prefx.   The
-              string  must  include  only alphanumeric and limited punctuation
-              characters.  No spaces are allowed.  Slashes are allowed so that
-              the prefix can put the archive contents into a directory.
+              Prefix all paths in the archive with the string prefx.
 
-              See also -pa and -Cl.
+              See -pa for limitations.
+
+              See also -Cl.
 
        -ps
        --allow-short-pass
-              AES  encryption  (not Traditional encryption) requires a minimum
-              password length dependent on the level of  encryption  selected.
-              This  is to avoid encrypting a file using a strong algorithm but
-              using such an easy to crack  password  that  the  encryption  is
-              essentially  useless.  The minimums are still weak (see -Y), but
-              are hopefully short enough to be  used.   Ideally  the  password
+              AES encryption (not Traditional encryption) requires  a  minimum
+              password  length  dependent on the level of encryption selected.
+              This is to avoid encrypting a file using a strong algorithm  but
+              using  such  an  easy  to  crack password that the encryption is
+              essentially useless.  The minimums are still weak (see -Y),  but
+              are  hopefully  short  enough  to be used.  Ideally the password
               length should approach the key length for the encryption used.
 
-              This  option disables the password length checks.  A zero length
-              password is still not allowed, however.  -ps is mainly  provided
+              This option disables the password length checks.  A zero  length
+              password  is still not allowed, however.  -ps is mainly provided
               for testing and should not be used if security is a concern.
 
        -pt
        --performance-time
               The -pt option enables timing of the execution of zip.  When -pt
-              is included in the command line,  zip  will  note  the  time  it
-              starts  up.  When the operation finishes, a message is displayed
-              noting how long the operation took.  The time is  provided  with
+              is  included  in  the  command  line,  zip will note the time it
+              starts up.  When the operation finishes, a message is  displayed
+              noting  how  long the operation took.  The time is provided with
               millisecond accuracy.
 
-              This  option  is  only  available  on  systems where an accurate
+              This option is only  available  on  systems  where  an  accurate
               enough clock is available to provide millisecond timing.
 
-              This option is intended as a way to get  execution  timing  data
+              This  option  is  intended as a way to get execution timing data
               regardless of the system and how zip is invoked.
 
        -pu
        --pswd-to-unzip
-              As  of  zip  3.1, when -T is used to test the archive after cre-
-              ation, any password given to zip (via -e or  -Y  (prompted),  or
-              directly  by  -P)  is no longer passed on to unzip unless -pu is
-              used.  This change generally results in unzip prompting for  the
-              password.   As  the  password is no longer passed on the command
-              line (using -P) by default, this is inherently safer.  Including
-              -pu  on the command line will restore passing the password given
-              to zip to unzip.
+              As of zip 3.1, when -T is used to test the  archive  after  cre-
+              ation,  any  password  given to zip (via -e or -Y (prompted), or
+              directly by -P) is no longer passed on to unzip  unless  -pu  is
+              used.   This change generally results in unzip prompting for the
+              password.  As the password is no longer passed  on  the  command
+              line  (using  -P) to unzip by default, this is inherently safer.
+              (See -P for more on this.)  Including -pu on  the  command  line
+              will restore passing the password given to zip to unzip.
 
               See -T for more on testing archives.
 
        -P password
        --password password
               Use password to encrypt zipfile entries (if any).  THIS IS INSE-
-              CURE!   Many  multi-user  operating systems provide ways for any
-              user to see the current command line of any other user; even  on
-              stand-alone  systems  there  is  always  the threat of over-the-
-              shoulder peeking.  Storing the plaintext password as part  of  a
-              command  line  in  an  automated script is even worse.  Whenever
-              possible, use the non-echoing, interactive prompt (-e or -Y)  to
+              CURE!  Many multi-user operating systems provide  ways  for  any
+              user  to see the current command line of any other user; even on
+              stand-alone systems there is  always  the  threat  of  over-the-
+              shoulder  peeking.   Storing the plaintext password as part of a
+              command line in an automated script  is  even  worse.   Whenever
+              possible,  use the non-echoing, interactive prompt (-e or -Y) to
               enter passwords.
 
-              (And  where  security  is  truly  important,  be sure to use AES
-              encryption with a strong password,  or  an  external  encryption
-              program  such  as  GNU Privacy Guard (GnuPG, gpg) instead of the
+              (And where security is truly  important,  be  sure  to  use  AES
+              encryption  with  a  strong  password, or an external encryption
+              program such as GNU Privacy Guard (GnuPG, gpg)  instead  of  the
               relatively weak Traditional zip encryption.)
 
-              (As of zip 3.1 it's now possible to use -P in an  argument  file
+              (As  of  zip 3.1 it's now possible to use -P in an argument file
               and then use the argument file on the command line.  This effec-
               tively hides the password, but then security of the argfile must
-              be  maintained to prevent another user from opening the file and
+              be maintained to prevent another user from opening the file  and
               seeing the password.  However, this approach is still limited to
-              text  passwords.   See  -kf for a way to get around this limita-
+              text passwords.  See -kf for a way to get  around  this  limita-
               tion.)
 
               See -Y for more on encryption.
 
-              See -pu and -T for more on how passwords  are  passed  to  unzip
+              See  -pu  and  -T  for more on how passwords are passed to unzip
               when using -T to test the resulting archive.
 
        -q
        --quiet
-              Quiet   mode;   eliminate  informational  messages  and  comment
-              prompts.  (Useful, for example, in shell scripts and  background
+              Quiet  mode;  eliminate  informational  messages   and   comment
+              prompts.   (Useful, for example, in shell scripts and background
               tasks).
 
        -Qn
        --Q-flag n
-              [QDOS]  Store information about the file in the file header with
+              [QDOS] Store information about the file in the file header  with
               n defined as
               bit  0: Don't add headers for any file
               bit  1: Add headers for all files
               bit  2: Don't wait for interactive key press on exit
-       For backward compatibility this is a number value following  the  short
+       For  backward  compatibility this is a number value following the short
        option without a space.
 
        -r
@@ -2673,10 +2788,10 @@ OPTIONS
 
               In this case, all the files and directories in directory foo are
               saved in a zip archive named foo.zip, including files with names
-              starting  with  "."  (on Unix), since the recursion does not use
-              the shell's file-name substitution mechanism.  If  you  wish  to
+              starting with "." (on Unix), since the recursion  does  not  use
+              the  shell's  file-name  substitution mechanism.  If you wish to
               include only a specific subset of the files in directory foo and
-              its subdirectories, use the -i option to specify the pattern  of
+              its  subdirectories, use the -i option to specify the pattern of
               files to be included.  You should not use -r with the name ".*",
               since that matches ".."  which will attempt to zip up the parent
               directory (probably not what was intended).
@@ -2685,13 +2800,14 @@ OPTIONS
 
                      zip -r foo foo1 foo2
 
-              which  first  zips up foo1 and then foo2, going down each direc-
+              which first zips up foo1 and then foo2, going down  each  direc-
               tory.
 
-              Note that while wildcards to -r  are  typically  resolved  while
-              recursing  down  directories in the file system, any -R, -x, and
-              -i wildcards are applied to internal archive pathnames once  the
-              directories are scanned.
+              Note  that  while  wildcards  to -r are typically resolved while
+              recursing down directories in the file  system  (including  only
+              matching  files  in the resulting file list), any -R, -x, and -i
+              wildcards are applied to internal archive  pathnames  (the  file
+              list) as filters once the directories are scanned.
 
               To  have wildcards apply to files in subdirectories when recurs-
               ing on Unix and similar systems where the  shell  does  wildcard
@@ -2752,8 +2868,8 @@ OPTIONS
               the  directory  separator for paths in an archive, which is what
               -R patterns are matching against.)
 
-              Then -R compares the last n components  of  each  path  to  that
-              pattern and, if they match, the path is included.  So above, the
+              Then -R compares the last n components of each path to that pat-
+              tern  and,  if  they match, the path is included.  So above, the
               pattern bar.c has no slashes and so n = 1 and  only  paths  that
               end  in the name "bar.c" are included in the archive.  Note that
               directories always end in "/" and so will not be matched  unless
@@ -2799,10 +2915,10 @@ OPTIONS
               want the shell to process the [] lists).
 
               -RE enables the use of "[" and "]"  for  delimiting  a  list  of
-              characters where if any character in that list matches the char-
-              acter at the position the square bracketed list is that  charac-
-              ter  is  matched.  Essentially a bracketed list acts as a selec-
-              tive wildcard.  For instance,
+              characters  where,  if  any  character  in that list matches the
+              character at the position the square  bracketed  list  is,  that
+              character  is  matched.   Essentially a bracketed list acts as a
+              selective wildcard.  For instance,
 
                      zip zipfile "foo[abc]"
 
@@ -2903,7 +3019,7 @@ OPTIONS
               archive into a set of normal archives, which unzip can  read  by
               using a wildcard in the zip file name given to unzip.
 
-              The current unzip 6.1 beta now does support split archives.
+              unzip 6.1 does support split archives.
 
               See  -U  (--copy)  and -O (--output-file) for more on using copy
               mode.
@@ -2917,16 +3033,16 @@ OPTIONS
        -sc=mode
        --show-command
        --show-command=mode
-              Show  the  command line to zip (as zip parsed it) and exit.  The
-              new command parser permutes the arguments, putting  all  options
-              and  any values associated with them before any non-option argu-
-              ments.  This allows an option to appear anywhere in the  command
-              line  as  long as any values that go with the option immediately
-              follow it.  This option displays the command line  as  zip  sees
-              it,  including  any arguments from the environment, such as from
-              the ZIPOPT variable, as well as the results  of  processing  any
-              argfiles.  Once the command line is displayed, zip exits without
-              performing the file scan or any processing.
+              Show  the  command line read by zip (as zip parsed it) and exit.
+              The new command  parser  permutes  the  arguments,  putting  all
+              options  and  any  values  associated  with them before any non-
+              option arguments.  This allows an option to appear  anywhere  in
+              the  command  line as long as any values that go with the option
+              immediately follow it.  This option displays the command line as
+              zip  sees it, including any arguments from the environment, such
+              as from the ZIPOPT variable, as well as the results of  process-
+              ing any argfiles.  Once the command line is displayed, zip exits
+              without performing the file scan or any processing.
 
               The -sc option is useful when a zip command line is not  execut-
               ing  as  expected.   It allows seeing just what the command line
@@ -2991,13 +3107,35 @@ OPTIONS
 
               Example:
 
-                     zip -sf -sF usize archive
+                     zip  -sf  -sF usize  archive
 
               This would list all files in  archive  and  include  the  uncom-
               pressed size of each file in the listing.
 
-              Currently  to  include  both  usize and comment, they need to be
-              specified in separate -sF options.
+              To include both usize and comments in the listing:
+
+                     zip  -sf  -sF usize,comment  archive
+
+              This  is  an  option  value list, which uses a comma to separate
+              values.  No spaces should be in the list.
+
+              Multiple -sF can be used, each adding to the listing:
+
+                     zip  -sf  -sF usize  -sF comment  archive
+
+              This would include both usize and comment in  the  list.   Items
+              can be removed from the listing using '-'.  Also, '+' alone adds
+              all available fields to the list, while '-'  alone  removes  all
+              optional fields.  So:
+
+                     zip  -sf  -sF +  -sF -comment  archive
+
+              adds  all  optional  fields,  then  removes  the  comment field,
+              resulting in only usize being added to the -sf listing.
+
+                     zip  -sf  -sF +,-comment  archive
+
+              is another way to specify this.
 
        -si
        --show-pid
@@ -3012,11 +3150,25 @@ OPTIONS
               include all available options.  Each  line  includes  the  short
               option (if defined), the long option (if defined), the format of
               any value that goes with  the  option,  if  the  option  can  be
-              negated,  and  a small description.  The value format can be "no
-              value", "required value", "optional  value",  "single  character
-              value",  "number  value",  or a "list of values".  The output of
-              this option is not intended to show how to use  any  option  but
-              only show what options are available.
+              negated, and a small description.  The value format can be:
+
+                     (blank)     no value
+
+                     req         required value
+
+                     opt         optional value
+
+                     list        list of values
+
+                     char        single character value
+
+                     num         number value
+
+                     =val         optional  value requiring '=' to signal pre-
+                     sense of value
+
+              The output of this option is not intended to show how to use any
+              option but only show what options are available.
 
               Note  that  "single  character  value" and "number value" option
               values require the option value to be next to the option,  with-
@@ -3062,13 +3214,15 @@ OPTIONS
        -su
        --show-unicode
               Similar to -sf, but also shows Unicode versions of the paths  if
-              they exist.
+              they exist.  As storing UTF-8 is now the default and -sf handles
+              that, this option is of marginal use.  It still may be useful if
+              -UL is used.
 
        -sU
        --show-just-unicode
               Similar  to  -sf,  but shows only Unicode versions of the paths.
               If a Unicode version doesn't exist, show the standard version of
-              the path.
+              the path.  As with -su, this is now of marginal use.
 
        -sv
        --split-verbose
@@ -3160,7 +3314,7 @@ OPTIONS
        -T
        --test
               Test the integrity of the new zip file. If the check fails,  the
-              old  zip  file  is  unchanged  and (with the -m option) no input
+              old  zip  file  is  unchanged and, if -m was specified, no input
               files are removed.
 
               The -T option actually spawns a command like "unzip  -tqq  temp-
@@ -3169,110 +3323,116 @@ OPTIONS
               Usually  this  uses  the  default  unzip on the system.  If this
               isn't compatible with the archive being created (such as when  a
               5  GB  archive  is being created and the system has an old unzip
-              that can't test it), either unzip should be updated  or  -TU  or
-              -TT used to specify what unzip to use for testing.
+              that can't test archives bigger than 2 GB), either unzip  should
+              be  updated  or -TU or -TT used to specify what unzip to use for
+              testing.
 
-              If  multiple  unzip programs are installed on the system, it may
-              be useful to change the (Unix) PATH or (VMS) symbol DCL$PATH  so
+              If multiple unzip programs are installed on the system,  it  may
+              be  useful to change the (Unix) PATH or (VMS) symbol DCL$PATH so
               that "unzip" runs the right program.
 
-              As  of zip 3.1, any password given to zip is no longer passed to
-              unzip unless -pu is  used.   This  generally  results  in  unzip
-              prompting  for the password, which is usually safer than includ-
-              ing the password on the command line used to  execute  unzip  to
-              perform the testing (as that command line may be visible to oth-
-              ers).  Adding -pu to the command line restores passing the pass-
-              word to unzip.
+              As of zip 3.1, any password given to zip is no longer passed  to
+              unzip  unless  -pu  is  used.   This  generally results in unzip
+              prompting  for  the  password,  which  is  usually  safer   than
+              including the password on the command line used to execute unzip
+              to perform the testing (as that command line may be  visible  to
+              others).   Adding  -pu  to the command line restores passing the
+              password to unzip.
 
               As -T passes the password on the command line, passwords includ-
-              ing more than basic 7-bit printable ASCII characters  may  fail.
-              Also,  zip  uses various escapes to attempt to pass shell-recog-
-              nized characters on the command line for instance, but this  can
+              ing  more  than basic 7-bit printable ASCII characters may fail.
+              Also, zip uses various escapes to attempt to  pass  shell-recog-
+              nized  characters on the command line for instance, but this can
               fail in some situations.  It's generally safer (and more secure)
-              to not use  -pu  and  just  enter  the  password  manually  when
+              to  not  use  -pu  and  just  enter  the  password manually when
               prompted by unzip.
 
-              If  other  than  the  system  default unzip needs to be used for
-              testing, use -TU instead of -TT  when  possible.   -TU  provides
-              full  unzip  functionality,  such  as  detailed error reporting,
+              If other than the system default unzip  needs  to  be  used  for
+              testing,  use  -TU  instead  of -TT when possible.  -TU provides
+              full unzip functionality,  such  as  detailed  error  reporting,
               while any utility can be specified in the -TT command string and
               so zip provides only minimal support.
 
-              When  -TT  is  not being used, including -TV on the command line
-              will tell unzip to be more verbose,  providing  the  results  of
-              each  file test.  As of zip 3.1, the -v option is no longer used
+              When -TT is not being used, including -TV on  the  command  line
+              will  tell  unzip  to  be more verbose, providing the results of
+              each file test.  As of zip 3.1, the -v option is no longer  used
               for this purpose.
 
-              In previous versions of zip, the archive was  created  and  then
+              In  previous  versions  of zip, the archive was created and then
               unzip called to test the archive.  If unzip did not have a capa-
-              bility needed to test the archive, the  test  would  fail.   The
-              archive  may  be  fine, but the test failing may negate the cre-
-              ation of a large archive that may have no issues.  As  the  test
-              was  done after the archive was created, possibly hours might go
+              bility  needed  to  test  the archive, the test would fail.  The
+              archive may be fine, but the test failing may  negate  the  cre-
+              ation  of  a large archive that may have no issues.  As the test
+              was done after the archive was created, possibly hours might  go
               by before the unzip incompatibility was found.
 
-              zip 3.1 now gathers the features unzip would need  to  test  the
-              archive  after  the  file scan but before the zip operation pro-
+              zip  3.1  now  gathers the features unzip would need to test the
+              archive after the file scan but before the  zip  operation  pro-
               ceeds, and compares that list of features to the features of the
-              unzip  being  used  for  the testing.  If the unzip is missing a
-              needed feature, zip 3.1 will  exit  with  an  error  before  the
-              archive  is created, noting the needed but missing features.  If
-              unzip passes this check, the odds are good that  if  an  archive
-              test  fails it is because of a bad archive rather than an incom-
-              patible unzip.  (At this point  zip  is  rather  stable  and  we
-              believe  it  unlikely it would create a bad archive, unless some
+              unzip being used for the testing.  If the  unzip  is  missing  a
+              needed  feature,  zip  3.1  will  exit  with an error before the
+              archive is created, noting the needed but missing features.   If
+              unzip  passes  this  check, the odds are good that if an archive
+              test fails it is because of a bad archive rather than an  incom-
+              patible  unzip.   (At  this  point  zip  is rather stable and we
+              believe it unlikely it would create a bad archive,  unless  some
               outside factor prevents it from doing so, and in these cases zip
               generally reports the problem and exits with an error.)  If this
-              check fails, consider creating the archive without -T  and  then
+              check  fails,  consider creating the archive without -T and then
               testing the resulting archive using unzip.
 
-              zip  3.1  now  splits  the  ZE_TEST error code into two distinct
-              error codes.  Now the new error ZE_UNZIP is returned  if  either
-              unzip  (or whatever program is used with -TT) can't be found, is
-              not executable, or is incompatible  with  the  planned  archive.
-              ZE_TEST  now  is reserved for when an archive fails testing or a
+              zip 3.1 now splits the ZE_TEST  error  code  into  two  distinct
+              error  codes.   Now the new error ZE_UNZIP is returned if either
+              unzip (or whatever program is used with -TT) can't be found,  is
+              not  executable,  or  is  incompatible with the planned archive.
+              ZE_TEST now is reserved for when an archive fails testing  or  a
               related testing issue occurs.
 
-              As of zip 3.1 the temp file is tested if the created archive  is
-              a  single  disk  archive  and --out is not used.  If the created
+              As  of zip 3.1 the temp file is tested if the created archive is
+              a single disk archive and --out is not  used.   If  the  created
               archive is multi-disk (split), the output needs to be renamed to
-              the  final  name  for  unzip to find all the parts, so the final
-              archive is generated and that is tested.  If --out is used,  the
-              results  of  the archive test will not impact the input archive,
+              the final name for unzip to find all the  parts,  so  the  final
+              archive  is generated and that is tested.  If --out is used, the
+              results of the archive test will not impact the  input  archive,
               so the output archive is renamed to the final output name before
-              the  archive  is  tested.  So if the output is split or --out is
-              used, there's only limited benefit using -T to test the  archive
-              rather  than  finishing the archiving operation and then testing
-              the archive using unzip -t.  However, operations  like  -m  that
+              the archive is tested.  So if the output is split  or  --out  is
+              used,  there's only limited benefit using -T to test the archive
+              rather than finishing the archiving operation and  then  testing
+              the  archive  using  unzip -t.  However, operations like -m that
               remove files are still aborted if the test fails.
 
        -TT cmd
        --unzip-command cmd
        --test-command cmd
-              Use  command cmd instead of 'unzip -tqq' to test an archive when
+              Use command cmd instead of 'unzip -tqq' to test an archive  when
               -T is used.
 
-              Where as this option can use any utility to do the testing,  -TU
-              always  uses  unzip.  As -TU provides better unzip support, that
+              Where  as this option can use any utility to do the testing, -TU
+              always uses unzip.  As -TU provides better unzip  support,  that
               is preferred for testing over -TT.
 
               On Unix, to use a copy of unzip in the current directory instead
               of the standard system unzip one could use:
 
-               zip archive file1 file2 -T -TT "./unzip -tqq"
+                     zip archive file1 file2 -T -TT "./unzip -tqq"
 
-              In  cmd,  {}  is  replaced by the name of the temporary archive,
-              otherwise the name of the archive is appended to the end of  the
-              command.   If  a  password was provided to zip, the first {p} in
-              the cmd string is replaced by the password.  (See  the  password
-              warning  for  -T.)  The return code is checked for success (0 on
+              In cmd, {} is replaced by the name  of  the  temporary  archive,
+              otherwise  the name of the archive is appended to the end of the
+              command.  If a password was provided to zip, the  first  {p}  in
+              the  cmd  string is replaced by the password.  (See the password
+              warning for -T.)  The return code is checked for success  (0  on
               Unix).
 
-              unzip 3.1 introduces additional string formats that can be  used
-              in  a -TT string.  "{p: -P {p}}" only inserts "-P password" into
-              the string if a password is being passed from zip.   This  fixes
-              the  issue  where  adding  {p}  to the command string required a
-              password to always be passed or the {p} would remain.
+              unzip  3.1 introduces additional string formats that can be used
+              in a -TT string.  One is  a  conditional  format  that  is  only
+              filled in if the item exists.  The basic format of this is:
+
+                     {conditional: what to replace the {} expression with}
+
+              For  example,  "{p: -P {p}}" only inserts "-P password" into the
+              string if a password is being passed from zip.  This  fixes  the
+              issue where adding {p} to the command string required a password
+              to always be passed or the {p} would remain.
 
               Keyfiles are supported using  {k},  which  inserts  the  keyfile
               path,  and "{k: -kf {k}}", which acts similar to the conditional
@@ -3301,7 +3461,7 @@ OPTIONS
               line to use the other program.  Also, the return code  needs  to
               be compatible with what zip expects.
 
-              In  general,  use -TU unless a program other than unzip is being
+              In  general,  use  -TU unless a program other than unzip must be
               used.
 
        -TU unzippath
@@ -3349,8 +3509,8 @@ OPTIONS
               was last created/modified (note that zip will not  try  to  pack
               stuff.zip into itself when you do this).
 
-              Note  that  the -u option with no input file arguments acts like
-              the -f (freshen) option.
+              The  -u  option  with  no  input file arguments acts like the -f
+              (freshen) option.
 
               -u will not catch if a file is replaced with an older  one.   If
               all  changes  to  a directory need to be accounted for, consider
@@ -3364,11 +3524,11 @@ OPTIONS
               Copy  entries  from  one archive to another.  Requires the --out
               option to  specify  a  different  output  file  than  the  input
               archive.  Copy mode is the reverse of -d delete.  When delete is
-              being used with --out, the selected entries are deleted from the
-              archive  and  all  other  entries are copied to the new archive,
-              while copy mode selects the files to include in the new archive.
-              Unlike -u update, input patterns on the command line are matched
-              against archive entries only and not the file system files.  For
+              being used with --out, the selected entries are skipped and  all
+              other  entries  are  copied  to the new archive, while copy mode
+              selects the files to include in  the  new  archive.   Unlike  -u
+              update,  input  patterns on the command line are matched against
+              archive entries  only  and  not  the  file  system  files.   For
               instance,
 
                      zip inarchive "*.c" --copy --out outarchive
@@ -3391,31 +3551,85 @@ OPTIONS
               Encrypting and decrypting entries is  not  yet  supported  using
               copy mode.  Use zipcloak for that.
 
+       -UD
+       --unicode-dont-use
+              Don't  use  Unicode  extra fields found when reading an existing
+              archive.
+
+              Only applies when Unicode extra fields are used, as when -UL was
+              used to create an archive.  Archives created by zip 3.0 that use
+              Unicode may also have these extra fields.
+
+              This option essentially forces use of the  local  character  set
+              paths  in  the main path fields.  This could cause issues if the
+              archive is being used where a different local character  set  is
+              active.
+
+              If  an  archive  has  numerous  Unicode extra field issues, then
+              -UN=ignore can be used to ignore them and fall back to the local
+              paths.  This option throws away all Unicode extra field informa-
+              tion, not just bad paths.  Typically there is no reason  to  use
+              this  option,  except  for test and debugging purposes, and it's
+              use may result in unreadable file names.
+
+              Note that main paths flagged as Unicode by  the  UTF-8  bit  are
+              still  handled  as  Unicode  as that's what they are and there's
+              nothing else.  This option only applies to  extra  fields  where
+              there is still a local path in the main path field we can use.
+
+       -UE
+       --unicode-escapes
+              Replace Unicode characters with escapes.
+
+              Normally  zip  replaces  Unicode  characters  not in the current
+              local character set  with  Unicode  escapes  (described  below).
+              This  option  tells zip to replace all but printable 7-bit ASCII
+              with Unicode escapes.
+
+              Unicode escapes take the forms #Uxxxx and #Lxxxxxx, where  x  is
+              an  ASCII  character  for  a  hex digit.  The first is used if a
+              16-bit character number is sufficient to represent  the  Unicode
+              character  and  the  second  if the character needs more than 16
+              bits to represent its Unicode character code.
+
+       -UL
+       --unicode-local
+              Store the local character set path as the main path,  and  UTF-8
+              in the Unicode Path extra field.
+
+              This  was the default for zip 3.0, and allowed backward compati-
+              bility with other existing utilities at the time.  However, mod-
+              ern  zips and unzips now use the UTF-8 bit to flag UTF-8 Unicode
+              in the main path and no longer include the local  character  set
+              path.   This  allows  more  consistent  handling of paths across
+              applications and ports, but can cause older utilities that don't
+              know Unicode trouble.
+
+              This  option  restores  the default zip 3.0 behavior, which uses
+              the Unicode Path extra field to store the  UTF-8  and  puts  the
+              local  character  set  path in the main path field.  This allows
+              for backward handling of paths  within  a  local  character  set
+              environment,  while  still providing UTF-8 Unicode paths for use
+              by more modern utilities.
+
        -UN v
        --unicode v
-              Determine  what  zip should do with Unicode file names.  zip 3.0
-              and later saves the UTF-8 translation of the path if  the  entry
-              path is not entirely 7-bit ASCII.
+              Determine what zip should do when there is  a  mismatch  between
+              the  main  path  and  a  Unicode Path extra field in an existing
+              archive.
 
-              The  problem with using the standard path is this path is in the
-              local character set of the zip that created the entry, which may
-              contain characters that are not valid in the character set being
-              used by the unzip.  When zip is reading an archive, if an  entry
-              also  has a Unicode path, zip now defaults to using that Unicode
-              path to recreate the standard path using the current local char-
-              acter set.
-
-              (Archive  entries  that  are "UTF-8 native" store only the UTF-8
-              path.  The mismatch feature of this option is only applicable to
-              entries stored as "local" instead of "UTF-8 native".  As of 3.1,
-              zip defaults to storing entries as "UTF-8 native".)
+              This option is not applicable to entries that don't use the Uni-
+              code Path extra field.  Archives created or updated with zip 3.0
+              or with zip 3.1 while the -UL option is set may use the  Unicode
+              Path extra field to store Unicode paths.
 
               This option can be used to determine what zip should do if there
-              is  a  mismatch  between the stored standard path and the stored
-              UTF-8 path (which can happen if the standard path was  updated).
-              In  all  cases,  if  there  is a mismatch it is assumed that the
-              standard path is more current and zip uses that.  Values  for  v
-              are:
+              is a mismatch between the stored standard path  and  the  stored
+              UTF-8  path (which can happen if the standard path was updated).
+              In all cases, if there is a mismatch  it  is  assumed  that  the
+              standard path is more current and zip should use that.
+
+              Values for v are:
 
                      q - quit if paths do not match
 
@@ -3423,80 +3637,28 @@ OPTIONS
 
                      i - ignore, continue with standard path
 
-                     n - no Unicode, do not use Unicode paths
-
               The default is to warn and continue.
 
-              Characters  that  are not valid in the current character set are
-              escaped as #Uxxxx and #Lxxxxxx, where x is  an  ASCII  character
-              for a hex digit.  The first is used if a 16-bit character number
-              is sufficient to represent the Unicode character and the  second
-              if  the  character needs more than 16 bits to represent its Uni-
-              code character code.  zip 3.0  would  attempt  to  transliterate
-              (find  a close match for) characters that were not in the desti-
-              nation character set.  The utility of this  has  been  marginal,
-              however,  and  transliteration has been dropped in zip 3.1.  Now
-              any characters not in the destination character set are replaced
-              by  Unicode escapes.  This allows one-for-one deterministic con-
-              version between paths with UTF-8 characters and paths with  Uni-
-              code escapes.
+       -US
+       --unicode-show
+              Show  Unicode  in  the  console,  even  if support for it is not
+              detected.
 
-              Setting -UN to
+              Normally zip detects if the output window can handle display  of
+              Unicode  and  turns on Unicode output if supported.  This option
+              forces output of Unicode paths directly to  the  console/message
+              stream.   (On  Unix  systems  Unicode generally means UTF-8.  On
+              Windows systems Unicode generally means wide characters.)
 
-                     e - escape
+              Option -US allows display of Unicode on systems  where  normally
+              escapes  would  be seen.  However, if zip does not automatically
+              detect support for display of Unicode, the results of using  -US
+              to force it may be mixed at best.
 
-              as in
-
-                     zip archive -sU -UN=e
-
-              forces zip to escape all characters that are not printable 7-bit
-              ASCII.  (In zip 3.1 this is the default.)  The value for -UN can
-              be  spelled  out or abbreviated, and multiple -UN options can be
-              used:
-
-                     zip archive -r foo -UN=ign -UN=escape -UN=local
-
-              zip 3.0 defaulted to storing UTF-8 directly in the name and com-
-              ment  fields on systems where UTF-8 is the current character set
-              and storing UTF-8 in the new extra fields otherwise.  As of  zip
-              3.1, the default is for zip to store UTF-8 as native in the name
-              and comment fields, which is the default  for  most  major  zips
-              now.  Setting -UN to LOCAL as in:
-
-                     zip archive foo -r -UN=LOCAL
-
-              reverts  back to storing UTF-8 in the extra fields and the local
-              character set in the standard name  and  comment  fields.   When
-              creating  an  archive  to be used with an old unzip, you can use
-              this to ensure backward compatibility.
-
-              Setting -UN to UTF8 as in:
-
-                     zip archive foo -r -UN=UTF8
-
-              reestablishes storing UTF-8 as native in the archive, overriding
-              a  previous  -UN=LOCAL on the command line or set in an environ-
-              ment variable.
-
-              Note that Unicode paths can  be  quite  long.   On  Windows  the
-              default  maximum  path  length is 260 bytes.  The new option -wl
-              allows  storing  long  Windows  paths,  though  restoring   them
-              requires support by the unzip.
-
-              Also, some native support for UTF-8 is now included in Windows 7
-              and later, though it appears to be sufficiently buggy to prevent
-              easy use.
-
-              In zip 3.1, -UN=ShowUTF8 passes UTF-8 paths directly to the con-
-              sole/message stream.  (This is  the  default  on  systems  where
-              UTF-8  is  native.)  This option allows display of UTF-8 on sys-
-              tems where normally escapes would be seen.  This option  can  be
-              used,  for  instance, to display some UTF-8 on Windows in a con-
-              sole window with code page 65001 enabled.   Not  all  characters
-              are  viewable  using  this  code  page,  however.   For example,
-              Japanese and other Asian  characters  are  not  viewable  in  an
-              English   console   window.    On   Windows   Vista  and  later,
-              -UN=ShowUTF8 is now the default.
+              Note that Windows 7 console windows do support Unicode, but just
+              can't display it due to lack of loaded fonts.  zip already  out-
+              puts  full  Unicode to these windows.  Windows 10 command prompt
+              windows do fully support display of Unicode.
 
               Also see -lu for putting UTF-8 in a log file.
 
@@ -3506,8 +3668,8 @@ OPTIONS
               indication  of  Unicode  support on the current platform as com-
               piled into zip.
 
-              This option is disabled by default and  may  be  dropped  before
-              release.
+              This option is disabled by default, due to support of this  fea-
+              ture falling behind, and may be dropped before release.
 
        -v
        --verbose
@@ -3564,7 +3726,7 @@ OPTIONS
               and then a reference to the Info-ZIP site.
 
        -V
-       --VMS-portable
+       --vms-portable
               [VMS]  Save VMS file attributes.  (Files are  truncated at EOF.)
               When a -V archive is unpacked on a non-VMS  system,   some  file
               types  (notably  Stream_LF  text  files   and  pure binary files
@@ -3573,7 +3735,7 @@ OPTIONS
               record types) will probably be seen as corrupt elsewhere.
 
        -VV
-       --VMS-specific
+       --vms-specific
               [VMS] Save VMS file attributes, and  all allocated blocks  in  a
               file,   including  any  data beyond EOF.  Useful for moving ill-
               formed files  among   VMS  systems.    When  a  -VV  archive  is
@@ -3581,7 +3743,7 @@ OPTIONS
               rupt.
 
        -w
-       --VMS-versions
+       --vms-versions
               [VMS] Include file version numbers in  the  archive  names.   By
               default,  version  numbers  are stripped from the archive names.
               That is, "[.d]a.b;3" is normally archived as "d/a.b",  but  with
@@ -3612,20 +3774,12 @@ OPTIONS
               the unzip at the other end can read and extract them.
 
               zip issues a warning when the first Windows long path is encoun-
-              tered and at the end  of  the  zip  operation.   If  an  archive
-              without  long paths is needed, either exclude or remove the long
+              tered and at the end of the zip operation.  If an archive  with-
+              out  long  paths  is  needed,  either exclude or remove the long
               paths, or don't use -wl.
 
               -wl is now enabled by default.  Use -wl- to disable storing Win-
               dows long paths.
-
-       -ww
-       --VMS-dot-versions
-              [VMS]  Like -w, except that version numbers in archive names use
-              a "." separator instead of the default ";".  That is,  with  -w,
-              "[.d]a.b;3"  would  be  archived  as "d/a.b;3", but with -ww, it
-              would be archived as "d/a.b.3".  (This might  be  less  inconve-
-              nient on a non-VMS system.)
 
        -ws
        --wild-stop-dirs
@@ -3653,6 +3807,14 @@ OPTIONS
               When using -ws, use ** to match across directory boundaries as *
               does normally.
 
+       -ww
+       --vms-dot-versions
+              [VMS]  Like -w, except that version numbers in archive names use
+              a "." separator instead of the default ";".  That is,  with  -w,
+              "[.d]a.b;3"  would  be  archived  as "d/a.b;3", but with -ww, it
+              would be archived as "d/a.b.3".  (This might  be  less  inconve-
+              nient on a non-VMS system.)
+
        -x files
        --exclude files
               Explicitly  exclude  files  that  match the specified files/file
@@ -3663,13 +3825,20 @@ OPTIONS
               which will include the contents of foo in  foo.zip  but  exclude
               all  the  files  that end in .o.  The backslash avoids the shell
               filename substitution, so that the name matching is performed by
-              zip at all directory levels.
+              zip at all directory levels.  Quoting the patterns also works:
 
-              A  file pattern is just a file path and name (generally relative
+                     zip -r foo foo -x "*.o"
+
+              On  Windows  and other OS where the shell does not process wild-
+              cards, the escaping or quoting is not needed:
+
+                     zip -r foo foo -x *.o
+
+              A file pattern is just a file path and name (generally  relative
               to the input root directory) with optional wildcards.
 
-              If wildcards are not acting as expected,  check  that  they  are
-              escaped  in the command line.  Adding -sc to the command line to
+              If  wildcards  are  not  acting as expected, check that they are
+              escaped in the command line.  Adding -sc to the command line  to
               have zip output the command line as zip sees it allows verifying
               if any wildcards are being expanded by the shell.
 
@@ -3678,10 +3847,14 @@ OPTIONS
                      zip -r foo foo -x@exclude.lst
 
               which will include the contents of directory foo in foo.zip, but
-              exclude  all  files  that  match  patterns  in  the  text   file
+              exclude   all  files  that  match  patterns  in  the  text  file
               exclude.lst,   one   file/file   pattern   per   line.    (Here,
-              @exclude.lst is a value of the -x option.  Do not  confuse  this
-              with an argfile.)
+              @exclude.lst  is  a value of the -x option.  Do not confuse this
+              with an argfile.  Argfiles never appear as  values  to  options.
+              Also,  -AF would need to be used to enable argfile recognition.)
+              The paths and patterns in the file must exactly fill each  line.
+              For example, leading and trailing spaces are significant and may
+              prevent matching.
 
               The long option forms of the above are
 
@@ -3695,9 +3868,9 @@ OPTIONS
 
                      zip -r foo foo -x \*.o \*.c
 
-              As  of zip 3.0, -x (and -i) allow file lists that end before the
-              end of the command line.  The list is terminated with  an  argu-
-              ment  that  is  a single "@", the next option, or the end of the
+              As of zip 3.0, -x (and -i) allow file lists that end before  the
+              end  of  the command line.  The list is terminated with an argu-
+              ment that is a single "@", the next option, or the  end  of  the
               line.  So the above example could be rewritten as:
 
                      zip foo foo -x \*.o \*.c @ -r
@@ -3706,13 +3879,13 @@ OPTIONS
 
                      zip foo foo -x "*.o" "*.c" @ -r
 
-              If there is no space between -x and the pattern, just one  value
+              If  there is no space between -x and the pattern, just one value
               is assumed (no list):
 
                      zip -r foo foo -x\*.o
 
               To avoid confusion, the "=" form of this should be used, or this
-              single value form not used at all (use  just  the  list  version
+              single  value  form  not  used at all (use just the list version
               instead).
 
                      zip -r foo foo -x=\*.o
@@ -3721,54 +3894,54 @@ OPTIONS
 
        -X
        --no-extra
-              Do  not save extra file attributes (Extended Attributes on OS/2,
-              uid/gid on Unix, etc.).  The zip format  uses  extra  fields  to
-              include  additional  information  for  each  entry.   Some extra
-              fields are specific  to  particular  systems  while  others  are
+              Do not save extra file attributes (Extended Attributes on  OS/2,
+              uid/gid  on  Unix,  etc.).   The zip format uses extra fields to
+              include additional  information  for  each  entry.   Some  extra
+              fields  are  specific  to  particular  systems  while others are
               applicable to all systems.  Normally when zip reads entries from
-              an existing archive, it reads the extra fields it knows,  strips
-              the  rest,  and adds the extra fields applicable to that system.
+              an  existing archive, it reads the extra fields it knows, strips
+              the rest, and adds the extra fields applicable to  that  system.
               With -X, zip strips all old fields and only includes the Unicode
-              and  Zip64  extra fields (if needed).  Currently these two extra
+              and Zip64 extra fields (if needed).  Currently these  two  extra
               fields cannot be disabled.  (As of zip 3.1, UTF-8 native mode is
-              used  by default, so the Unicode extra fields are no longer used
+              used by default, so the Unicode extra fields are no longer  used
               (by default).  The Zip64 extra fields are still used, regardless
               of -X, if Zip64 extensions are needed.)
 
-              Negating  this  option,  -X-,  includes  all  the  default extra
-              fields, but also copies  over  any  unrecognized  extra  fields.
-              This  could  be  useful  if the archive came from a utility that
+              Negating this  option,  -X-,  includes  all  the  default  extra
+              fields,  but  also  copies  over  any unrecognized extra fields.
+              This could be useful if the archive came  from  a  utility  that
               works with extra fields not known to zip and you plan to use the
               archive with that utility again.
 
        -y
        --symlinks
-              For  UNIX and VMS (V8.3 and later), store symbolic links as such
-              in the zip archive, instead of compressing and storing the  file
-              referred  to  by  the  link.   This can avoid multiple copies of
-              files being included in the archive as zip recurses  the  direc-
-              tory  trees  and accesses files directly and by links.  However,
+              For UNIX and VMS (V8.3 and later), store symbolic links as  such
+              in  the zip archive, instead of compressing and storing the file
+              referred to by the link.  This  can  avoid  multiple  copies  of
+              files  being  included in the archive as zip recurses the direc-
+              tory trees and accesses files directly and by  links.   However,
               this will exclude new contents only available through a symlink.
 
-              [WIN32]   As  of  zip  3.1,  Windows symlinks are now supported.
-              This includes file  symlinks  as  well  as  directory  symlinks.
-              (Where  as  UNIX  systems  do  not  distinguish between file and
-              directory symlinks, Windows does.)  Windows  symlinks  are  only
-              supported  on Windows XP or later.  unzip 6.1 or later is needed
-              to recognize, list, and restore Windows symlinks in an  archive,
-              otherwise  they  will  be listed and restored as simple files or
-              directories.  Sufficient privilege is required to  restore  Win-
+              [WIN32]  As of zip 3.1,  Windows  symlinks  are  now  supported.
+              This  includes  file  symlinks  as  well  as directory symlinks.
+              (Where as UNIX systems  do  not  distinguish  between  file  and
+              directory  symlinks,  Windows  does.)  Windows symlinks are only
+              supported on Windows XP or later.  unzip 6.1 or later is  needed
+              to  recognize, list, and restore Windows symlinks in an archive,
+              otherwise they will be listed and restored as  simple  files  or
+              directories.   Sufficient  privilege is required to restore Win-
               dows symlinks (such as Administrative access).
 
        -yy
        --mount-points
-              [WIN32]   For Windows Vista and later, zip 3.1 now detects mount
+              [WIN32]  For Windows Vista and later, zip 3.1 now detects  mount
               points and will generally follow most quietly.  An exception are
-              mount  points to off-line storage, which zip will warn about and
-              skip.  -yy disables following mount points on Windows,  limiting
-              the  current  zip  operation to the current mounted drive.  -yy-
-              (negated -yy) follows mount points as without -yy, but  includes
-              mount  points that look like off-line storage as well (which may
+              mount points to off-line storage, which zip will warn about  and
+              skip.   -yy disables following mount points on Windows, limiting
+              the current zip operation to the current  mounted  drive.   -yy-
+              (negated  -yy) follows mount points as without -yy, but includes
+              mount points that look like off-line storage as well (which  may
               require operator intervention to mount the off-line storage).
 
               Unix mount points not yet supported.
@@ -3777,27 +3950,13 @@ OPTIONS
 
        -Y em
        --encryption-method em
-              Set the encryption method.  Supported  methods  are  Traditional
-              (also  called  ZipCrypto,  considered weak by current encryption
+              Set  the  encryption  method.  Supported methods are Traditional
+              (also called ZipCrypto, considered weak  by  current  encryption
               standards), and WinZip-compatible AES (relatively strong encryp-
-              tion) with various key lengths: AES128, AES192, and AES256.  AES
-              encryption must be enabled at build time, and requires a compat-
-              ible Info-ZIP AES kit.  The source kit for adding AES encryption
-              to zip is available on the Info-ZIP sites  (see  README  in  the
-              source  kit  for  more information), but is subject to US export
-              law  regarding  strong  encryption.   An  unzipper  capable   of
-              decrypting  WinZip  AES entries (such as unzip 6.1) is needed to
-              extract AES-encrypted entries.  (zip AES encryption is  compati-
-              ble with WinZip and 7-Zip, for example.)
-
-              We  ship  AES  encryption  in  a  separate kit to better meet US
-              export restrictions.  The base zip source kit does  not  include
-              strong  encryption,  possibly  allowing  its  use  where  strong
-              encryption is not allowed.
-
-              When available, Traditional encryption is the default.   (It  is
-              possible to compile in AES encryption and leave out Traditional,
-              or leave out all encryption.)
+              tion) with various key lengths: AES128, AES192, and AES256.   An
+              unzipper capable of decrypting WinZip AES entries (such as unzip
+              6.1) is needed  to  extract  AES-encrypted  entries.   (zip  AES
+              encryption is compatible with WinZip and 7-Zip, for example.)
 
               Minimum password lengths are as follows:
 
@@ -3811,13 +3970,13 @@ OPTIONS
 
               AES WG 256                24
 
-              Password lengths should be much longer than this  to  match  the
-              security  provided  by  the key lengths, preferrably approaching
-              the length of the key used.  The less predictable  the  password
+              Password  lengths  should  be much longer than this to match the
+              security provided by the key  lengths,  preferrably  approaching
+              the  length  of the key used.  The less predictable the password
               the better.
 
-              The  maximum  AES  password  length  is 128 bytes (characters if
-              7-bit ASCII).  This limit is in part a result of  how  passwords
+              The maximum AES password length  is  128  bytes  (characters  if
+              7-bit  ASCII).   This limit is in part a result of how passwords
               are hashed.
 
               See -kf for how to use keyfiles to set binary passwords.
@@ -3825,16 +3984,23 @@ OPTIONS
        -z
        --archive-comment
               Prompt for a multi-line comment for the entire zip archive.  The
-              comment is ended by a line containing just a period, or  an  end
+              comment  is  ended by a line containing just a period, or an end
               of file condition (^D on Unix, ^Z on MSDOS, OS/2, and VMS).  The
               comment can be taken from a file:
 
                      zip -z foo < foowhat
 
+              As  of zip 3.1, the comment can also be set as an optional value
+              to -z:
+
+                     zip foo -z="this is my comment"
+
               The archive comment is generally limited to about 32,765 charac-
               ters.   However,  most  unzips  don't handle multi-line zip file
-              comments well, if at all.  Probably best to  keep  to  a  single
-              line no longer than 80 characters.
+              comments well, if at all.  Probably best to  keep  to  a  sing",
+              line 0nescapesein thenvaluehstringrprovidedwtol -zokandr convert
+              and "
+              these to newlines.  unzip will display a multi-line comment.
 
               As  of  zip  3.1, when interacting with a terminal zip will show
               the current archive comment and allow keeping that or  replacing
@@ -3871,6 +4037,16 @@ OPTIONS
               also  becomes available.  PPMd can provide better compression in
               many cases, but may take much longer than Deflate.
 
+              CD_ONLY - This method removes all data, only storing entry meta-
+              data.   It can only be used by --copy mode.  CD_ONLY can be used
+              to create essentially a list of entries in an archive  that  can
+              be  used by the backup options (-BT) and -DF to create a differ-
+              ence archive against.  The resulting CD_ONLY  archive  is  quite
+              small  (as  it  doesn't contain file data), and can be used as a
+              baseline against which later difference  archives  are  created.
+              Again,  this method stores no actual file data and can't be used
+              to archive or restore files.  See -DF for more information.
+
               Note:  We are considering adding  Deflate64  (Enhanced  Deflate)
               and XZ compression to zip shortly.
 
@@ -3887,11 +4063,11 @@ OPTIONS
               For  example,  to  add bar.c to archive foo using Bzip2 compres-
               sion:
 
-                     zip -Z bzip2 foo bar.c
+                     zip  -Z bzip2  foo  bar.c
 
               The compression method can be abbreviated:
 
-                     zip -Zb foo bar.c
+                     zip  -Zb  foo  bar.c
 
               As of zip 3.1 it is possible to control the  compression  method
               used  on  a particular type of file with finer granularity.  See
@@ -3959,7 +4135,9 @@ OPTIONS
               not  an  option, but listed here for comparison with -@ and -@@.
               argfilepath is an argument file  (argfile).   No  space  can  be
               between @ and argfilepath.  See the subsection on Argument Files
-              for more on argument files.
+              for more on argument files.  Argfiles are not recognized as such
+              unless  the  -AF  option  is  used to turn on argfiles, i.e. the
+              default is for argfiles to be turned off.
 
        -$
        --volume-label
@@ -3997,7 +4175,9 @@ EXAMPLES
               zip -r foo foo
 
        creates the archive foo.zip, containing all the files  and  directories
-       in the directory foo that is contained within the current directory.
+       in  the  directory  foo,  a  directory  in  the current directory.  (-r
+       recurses down directory trees provided as input files  on  the  command
+       line.)
 
        You  may  want  to  make  a zip archive that contains the files in foo,
        without recording the directory name, foo.  You can use the  -j  option
@@ -4016,13 +4196,14 @@ EXAMPLES
               zip -rm foo foo/harry
 
        where  the  first  command creates foo.zip, and the next two add to it.
-       At the completion of each zip command,  the  last  created  archive  is
-       deleted,  making  room for the next zip command to function.  (But read
-       up on the -m option, especially the potential risks, before using  it.)
+       At the completion of each zip command, the files moved into the archive
+       are  deleted,  as well as the last created archive, making room for the
+       next zip command to function.  (But read up on  the  -m  option,  espe-
+       cially the potential risks, before using it.)
 
        zip  allows  output  from a program to be piped in and compressed.  For
-       example, to get a list of files in a directory tree and save it in com-
-       pressed form in a zip archive:
+       example, to get a list of files in a directory tree and save  the  list
+       in compressed form in a zip archive:
 
               ls -lR foo | zip foo_ls -
 
@@ -4034,14 +4215,14 @@ EXAMPLES
        To get a list of .c and .h files that would be archived and  pipe  that
        list through less:
 
-              zip foo -r .  -i "*.c" "*.h" @  -sf  |  less
+              zip foo  -r .  -i "*.c" "*.h" @  -sf  |  less
 
        This  command  would  create/update  the archive foo.zip, recursing the
        current directory (-r .) and including only files that match  the  pat-
-       terns  "*.c"  and "*.h" (-i "*.c" "*.h" @), which are quoted to prevent
-       shell expansion of the "*", the list terminated by "@".   However,  the
-       -sf  tells  zip to do the file scan, but just list the files that would
-       have been operated on if -sf was not there.
+       terns  "*.c"  and "*.h" (-i "*.c" "*.h" @), the patterns quoted to pre-
+       vent shell expansion of the "*", the list terminated by "@".   However,
+       the  -sf  tells  zip  to do the file scan, but just list the files that
+       would have been operated on if -sf was not there.
 
        Both input and output streaming can be done at the same time:
 
@@ -4068,7 +4249,7 @@ EXAMPLES
        would zip up the directory foo and put  the  contents  in  the  foo.zip
        archive.   zip  displays the bytes processed and bytes to go (-db), the
        entries processed and to go (-dc), and progress  dots  for  each  entry
-       where  each  dot  represents 1 GiB bytes processed (-ds 1g).  (Progress
+       where each dot represents 1 GiB of bytes processed (-ds 1g).  (Progress
        dots avoid long periods of quiet while large entries are processed.)  A
        log  is opened with name foo.log (-lF), and log entries are appended to
        any existing log content (-la).  Entry processing details (such as  the
@@ -4077,8 +4258,8 @@ EXAMPLES
 
 PATTERN MATCHING
        This section mostly applies only to Unix.  Watch this space for details
-       on MSDOS and VMS operation.  However, the special wildcard characters *
-       and [] below apply to at least MSDOS also.
+       on  MSDOS/Windows  and  VMS  operation.   However, the special wildcard
+       characters * and [] below apply to at least MSDOS/Windows also.
 
        The Unix shells (sh, csh, bash, and others) normally do  filename  sub-
        stitution (also called "globbing") on command arguments.  Generally the
@@ -4091,20 +4272,29 @@ PATTERN MATCHING
        []     match any character in the range indicated within  the  brackets
               (example:  [a-f], [0-9]).  This form of wildcard matching allows
               a user to specify a list of characters between  square  brackets
-              and  if any of the characters match the expression matches.  For
-              example:
+              and  if  any of the characters match the character at that posi-
+              tion the expression matches.  For example:
 
                      zip archive *.[hc]
 
               would archive all files in the current directory that end in  .h
               or  .c.   (This  example  is  allowing the Unix shell to process
-              wildcards, so the wildcards are not escaped or quoted.)
+              wildcards, so the wildcards  are  not  escaped  or  quoted.   On
+              MSDOS/Windows,  the  shell does not do globbing so zip processes
+              the wildcards in a similar way.  If, on Unix, quotes were used:
+
+                     zip archive "*.[hc]"  -RE
+
+              zip would process the wildcards.  But note that []  matching  is
+              internally  disabled  in  zip  (to  avoid  confusion  when names
+              include '[' and ']') unless -RE is used to enable it.  The  need
+              for -RE also applies if the above is run on MSDOS/Windows.)
 
               Ranges of characters are supported:
 
                      zip archive [a-f]*
 
-              would add to the archive all files  starting  with  "a"  through
+              would  add  to  the  archive all files starting with "a" through
               "f".
 
               Negation is also supported, where any character in that position
@@ -4115,9 +4305,9 @@ PATTERN MATCHING
 
               matches files that don't end in ".o".
 
-              On  Unix, when wildcards are escaped or quoted, zip performs the
-              wildcard processing.  (-RE is needed for zip  to  recognize  and
-              process  []  lists.)  A notable difference, though, is the shell
+              On Unix, when wildcards are escaped or quoted, zip performs  the
+              wildcard  processing.   (-RE  is needed for zip to recognize and
+              process [] lists.)  A notable difference, though, is  the  shell
               generally only searches the current directory for matches, while
               zip can match within subdirectories depending on the command.
 
@@ -4125,83 +4315,88 @@ PATTERN MATCHING
 
                      zip -RE archive *.[!o]
 
-              As  of  zip 3.0, on WIN32 [] matching needs to be turned on with
-              the -RE option to avoid the confusion that names  with  [  or  ]
-              have  caused.   As of zip 3.1, -RE is needed on all platforms to
-              enable use of [] for character ranges.  This is only  needed  on
+              As of zip 3.0, on WIN32 [] matching needs to be turned  on  with
+              the  -RE  option  to  avoid the confusion that names with [ or ]
+              have caused.  As of zip 3.1, -RE is needed on all  platforms  to
+              enable  use  of [] for character ranges.  This is only needed on
               Unix if the [] are escaped (not handled by the shell).
 
-              Prior  to zip 3.1, on Unix zip only provides wildcard support of
+              Prior to zip 3.1, on Unix zip only provides wildcard support  of
               -i, -x and -R patterns, not of input files.  (Full wildcard sup-
               port is provided for internal modes such as delete and copy that
-              match internal archive entries.)  The  idea  was  to  allow  the
-              shell  to  provide that support on Unix.  (Full wildcard support
-              is provided by zip on Windows.)  zip 3.1 now provides full  Unix
-              wildcard  support  internally  when  wildcards  are escaped from
+              match  internal  archive  entries.)   The  idea was to allow the
+              shell to provide that support on Unix.  (Full  wildcard  support
+              is  provided by zip on Windows.)  zip 3.1 now provides full Unix
+              wildcard support internally  when  wildcards  are  escaped  from
               shell processing.
 
-       On Unix, when these characters are encountered (without  being  escaped
-       with  a backslash or quotes), the shell will look for files relative to
-       the current path that match the pattern, and replace the argument  with
-       a list of the names that matched.
+       On  Unix, when these wildcard characters are encountered (without being
+       escaped with a backslash or quotes), the shell will look for files rel-
+       ative to the current path that match the pattern, and replace the argu-
+       ment with a list of the names that matched.
 
-       The  zip  program can do the same matching on names that are in the zip
-       archive being modified or, in the  case  of  the  -x  (exclude)  or  -i
-       (include)  options,  on  the  list of files to be operated on, by using
-       backslashes or quotes to tell the shell not to do the  name  expansion.
-       In  general,  when zip encounters a name in the list of files to do, it
-       first looks for the name in the file system.  If it finds it,  it  then
-       adds  it  to the list of files to do.  If it does not find it, it looks
-       for the name in the zip archive being modified (if  it  exists),  using
-       the  pattern matching characters described above, if present.  For each
-       match, it will add that name to the list  of  files  to  be  processed,
-       unless  this  name  matches  one  given with the -x option, or does not
+       The zip program can do the same matching on names that are in  the  zip
+       archive  being  modified  or,  in  the  case  of the -x (exclude) or -i
+       (include) options, on the list of files to be  operated  on,  by  using
+       backslashes  or  quotes to tell the shell not to do the name expansion.
+       In general, when zip encounters a name in the list of files to  do,  it
+       first  looks  for the name in the file system.  If it finds it, it then
+       adds it to the list of files to do.  If it does not find it,  it  looks
+       for  the  name  in the zip archive being modified (if it exists), using
+       the pattern matching characters described above, if present.  For  each
+       match,  it  will  add  that  name to the list of files to be processed,
+       unless this name matches one given with the  -x  option,  or  does  not
        match any name given with the -i option.
 
        The pattern matching includes the path, and so patterns like \*.o match
-       names  that  end  in  ".o",  no  matter  what the path prefix is.  (The
+       names that end in ".o", no  matter  what  the  path  prefix  is.   (The
        default is for zip to match * across directory boundaries.  See -ws for
-       more  on  this.)   Note  that  the backslash must precede every special
-       character (i.e. ?, *, [, and ] for Unix), or the entire  argument  must
-       be  enclosed  in double quotes ("").  (Some systems also permit quoting
-       using single quotes ('') as well as quoting just  the  special  charac-
-       ters,  as in foo"*"bar.c, which matches all paths that start with "foo"
-       and end with "bar.c".)  Follow the specific rules for the OS and  shell
+       more on this.)  Note that the  backslash  must  precede  every  special
+       character  (i.e.  ?, *, [, and ] for Unix), or the entire argument must
+       be enclosed in double quotes ("").  (Some systems also  permit  quoting
+       using  single  quotes  ('') as well as quoting just the special charac-
+       ters, as in foo"*"bar.c, which matches all paths that start with  "foo"
+       and  end with "bar.c".)  Follow the specific rules for the OS and shell
        you are using.
 
-       In  general, use backslashes or double quotes for paths that have wild-
-       cards to make zip do the pattern matching for file  paths,  and  always
+       In general, use backslashes or double quotes for paths that have  wild-
+       cards  to  make  zip do the pattern matching for file paths, and always
        for paths and strings that have spaces or wildcards for -i, -x, -R, -d,
        and -U and anywhere zip needs to process the wildcards.
 
    Filters
        The options -i, -x and -R are considered filters.  When used, zip first
-       gathers  all  file  names referenced by the input files during the file
+       gathers all file names referenced by the input files  during  the  file
        scan, recursing into directories if requested as needed.  Then the fil-
        ters are applied to remove files from this list.  So, for:
 
               zip foo.zip -r bar -RE -i "*.[ch]"
 
-       the  entire bar directory will be scanned, then any files not ending in
-       .c or .h will be dropped.  If bar is large, this could take  awhile  to
-       scan.   When  possible,  narrow  the scope of the input scan as much as
-       possible to minimize what zip needs to look at to  speed  up  the  file
+       the entire bar directory will be scanned, then any files not ending  in
+       .c  or  .h will be dropped.  If bar is large, this could take awhile to
+       scan.  When possible, narrow the scope of the input  scan  as  much  as
+       possible  to  minimize  what  zip needs to look at to speed up the file
        scan.
 
 LIBRARIES/API
-       The  zip source can be used to build both static and dynamic libraries.
+       The zip source can be used to build both static and dynamic  libraries.
        On Unix a static library can be built using Makefile, and the resulting
-       library  is  named  libizzip.a.   On  Windows  both  static and dynamic
-       libraries  can  be  built,  these  libraries  having  names   such   as
-       zip32_dll.dll.   The  source  kit  also  includes example programs that
+       library is named  libizzip.a.   On  Windows  both  static  and  dynamic
+       libraries   can   be  built,  these  libraries  having  names  such  as
+       zip32_dll.dll.  The source kit  also  includes  example  programs  that
        demonstrate using the static and dynamic libraries.
 
-       The zip LIB and DLL libraries have evolved since zip 3.0.   As  of  zip
-       3.1d  the  application  programming interface (API) seems stable and no
-       changes are expected from this  beta  to  release,  unless  issues  are
-       found.
+       The  zip LIB and DLL libraries have evolved since zip 3.0.  The zip 3.1
+       application programming interface (API) is not directly compatible with
+       the  old zip 3.0 interface (and neither are compatible with the old zip
+       2.32 interface) and programs using the old interface will need updating
+       to  use  the  new  interface.   The API now seems stable and no further
+       changes are expected that would be incompatible with the current inter-
+       face.
 
-       See ReadLibDll.txt in the zip source kit for more information.
+       See  ReadLibDll.txt  in  the zip source kit for more information.  Also
+       see the Unix example program izzip_example.c in the source  kit  for  a
+       quick look at how to use the Unix zip library.
 
 ENVIRONMENT
        The  following  environment  variables  are  read  and  used  by zip as
@@ -4377,7 +4572,7 @@ BUGS
        so even this one shows the 32-bit-mode size.
 
 AUTHORS
-       Copyright (C) 1997-2015 Info-ZIP.
+       Copyright (C) 1997-2017 Info-ZIP.
 
        Currently distributed under  the  Info-ZIP  license.   A  copy  of  the
        license  is  included  in  the zip source kit.  The license can also be
@@ -4422,4 +4617,4 @@ ACKNOWLEDGEMENTS
        The  manual page was rewritten for Unix by R. P. C. Rodgers and updated
        by E. Gordon for zip 3.0 and zip 3.1.
 
-Info-ZIP                    6 November 2015 (v3.1)                      ZIP(1)
+Info-ZIP                     28 August 2017 (v3.1)                      ZIP(1)

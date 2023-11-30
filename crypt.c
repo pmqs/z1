@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -112,7 +112,9 @@ local int testkey OF((__GPRO__ int hd_len, ZCONST uch *h,
                       ZCONST char *key));
 #  endif /* ndef FUNZIP */
 # else /* def UNZIP */          /* moved to globals.h for UnZip */
+#  ifdef IZ_CRYPT_TRAD
 local z_uint4 keys[3];          /* keys defining the pseudo-random sequence */
+#  endif /* def IZ_CRYPT_TRAD */
 # endif /* def UNZIP [else] */
 
 # ifndef Trace
@@ -246,7 +248,7 @@ void crypthead(passwd, crc)
     if (calls == 0)
     {
 #ifndef IZ_CRYPT_SKIP_SRAND
-        srand((unsigned)time(NULL) ^ ZCR_SEED2);
+        srand((unsigned)time(NULL) ^ (unsigned)(ZCR_SEED2));
 #endif /* ndef IZ_CRYPT_SKIP_SRAND */
         calls = 1;
     }
@@ -294,7 +296,7 @@ unsigned int zfwrite(buf, item_size, nb)
       if (encryption_method >= AES_MIN_ENCRYPTION)
       {
         /* assume all items are bytes */
-        fcrypt_encrypt(buf, item_size * nb, &zctx);
+        fcrypt_encrypt(buf, (unsigned int)(item_size * nb), &zctx);
       }
       else
       {
@@ -481,6 +483,9 @@ int ef_scan_for_aes( ef_buf, ef_len, vers, vend, mode, mthd)
  * catch underflow of ef_len caused by corrupt/malicious data.  (32-bit
  * is adequate.  Used "long" to accommodate any systems with 16-bit
  * "int".)  Made function static.
+ *
+ * 2017-06-22 SMS.  (VS 2017 complaints.)
+ * Changed long types to size_t.  (Assume size_t >= 32 bits.)
  */
 
 local int ef_strip_aes( ef_buf, ef_len)
@@ -489,10 +494,10 @@ local int ef_strip_aes( ef_buf, ef_len)
 {
     int ret = -1;               /* Return value. */
     unsigned eb_id;             /* Extra block ID. */
-    long eb_len;                /* Extra block length. */
+    size_t eb_len;              /* Extra block length. */
     uch *eb_aes;                /* Start of AES block. */
     uch *ef_buf_d;              /* Sliding extra field pointer. */
-    long ef_len_d;              /* Remaining extra field length. */
+    size_t ef_len_d;            /* Remaining extra field length. */
 
 /*---------------------------------------------------------------------------
     This function strips an EF_AES_WG block from an extra field.
@@ -547,8 +552,8 @@ local int ef_strip_aes( ef_buf, ef_len)
          * Note: memmove() is supposed to be overlap-safe.
          */
         eb_len += EB_HEADSIZE;  /* Total block size (header+data). */
-        ret = ef_len- eb_len;   /* New (reduced) extra field size. */
-        ef_len_d = ef_buf+ ef_len- eb_aes- eb_len;      /* Move size. */
+        ret = (int)(ef_len- eb_len);    /* New (reduced) extra field size. */
+        ef_len_d = (ef_buf+ ef_len- eb_aes- eb_len);    /* Move size. */
 
         if (ef_len_d > 0)
         {
@@ -751,7 +756,9 @@ int zipbare(z, passwd)
     zoff_t size;          /* size of input data */
     struct zlist far *localz; /* local header */
     uch buf[1024];        /* write buffer */
+#   ifdef IZ_CRYPT_AES_WG
     zoff_t z_siz;
+#   endif
     int passwd_ok;
     int r;                /* size of encryption header */
     int res;              /* return code */
@@ -770,11 +777,12 @@ int zipbare(z, passwd)
 #   else /* def IZ_CRYPT_AES_WG */
 #    define HEAD_LEN RAND_HEAD_LEN      /* Constant trad. header length. */
 #   endif /* def IZ_CRYPT_AES_WG [else] */
-
+#   ifdef IZ_CRYPT_AES_WG
     ush vers = 0;               /* AES encryption version (1 or 2). */
     ush vend = 0;               /* AES encryption vendor (should be "AE" (LE: x4541)). */
     zoff_t pos_local = 0;       /* Local header position. */
     zoff_t pos = 0;             /* End data position. */
+#   endif
 #   if defined(IZ_CRYPT_AES_WG) || defined(IZ_CRYPT_AES_WG_NEW)
     ulg crc;                    /* To calculate CRC. */
 #   endif
@@ -895,8 +903,9 @@ int zipbare(z, passwd)
     /* Good password.  Proceed to decrypt the entry. */
     z->siz -= HEAD_LEN;         /* Subtract the encryption header length. */
     localz->siz = z->siz;       /* Local, too. */
+#   ifdef IZ_CRYPT_AES_WG
     z_siz = z->siz;             /* Save z->siz as Use z_siz for I/O later. */
-
+#   endif
     localz->flg = z->flg &= ~9;         /* Clear the encryption and */
     z->lflg = localz->lflg &= ~9;       /* data-descriptor flags. */
 
@@ -915,6 +924,7 @@ int zipbare(z, passwd)
         localz->how = aes_mthd; /* Set the compression method value(s) */
         z->how = aes_mthd;      /* to the value from the AES extra block. */
         z->thresh_mthd = aes_mthd;
+        localz->thresh_mthd = aes_mthd;
 
         /* Subtract the MAC size from the compressed size(s). */
         localz->siz -= MAC_LENGTH( aes_mode);
@@ -945,7 +955,11 @@ int zipbare(z, passwd)
     }
 #   endif /* def IZ_CRYPT_AES_WG */
 
+#   ifdef IZ_CRYPT_AES_WG
     pos_local = zftello(y);
+#   else
+    zftello(y);
+#   endif
 
     /* Put out the (modified) local extra field. */
     if ((res = putlocal(localz, PUTLOCAL_WRITE)) != ZE_OK)
@@ -972,7 +986,7 @@ int zipbare(z, passwd)
             n = fread(buf, 1, nn, in_file);
             if (n == nn)
             {
-                fcrypt_decrypt(buf, n, &zctx);
+                fcrypt_decrypt(buf, (unsigned int)n, &zctx);
                 n = IZ_MIN(n, (size_t)(z->siz - nout));
                 bfwrite(buf, 1, n, BFWRITE_DATA);
                 if (vers == 2) {

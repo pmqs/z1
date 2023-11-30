@@ -138,6 +138,18 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
+SOURCE=..\..\wrap\aescrypt.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\aeskey.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\aestab.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\crc32.c
 # End Source File
 # Begin Source File
@@ -146,11 +158,31 @@ SOURCE=..\..\crypt.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\wrap\fileenc.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\fileio.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\globals.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\hmac.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\prng.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\pwd2key.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\wrap\sha1.c
 # End Source File
 # Begin Source File
 
@@ -180,6 +212,10 @@ SOURCE=..\..\zipfile.c
 # Begin Group "Header Files"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
+# Begin Source File
+
+SOURCE=..\..\control.h
+# End Source File
 # Begin Source File
 
 SOURCE=..\..\crc32.h

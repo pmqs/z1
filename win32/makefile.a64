@@ -17,7 +17,8 @@ ASMOBJS = gvmat64.obj
 
 # ------------- 32-bit Microsoft Visual C++ -------------
 CC=cl -nologo
-CFLAGS=-W3 -O2 -DNO_ASM_CRC -DASMV -DWIN32 $(LOC)
+CFLAGS_EXTRA=
+CFLAGS=-W3 -O2 -DNO_ASM_CRC -DASMV -DWIN32 $(LOC) $(CFLAGS_EXTRA)
 UTILFLAGS=$(CFLAGS) -DUTIL -Fo$@
 
 # Remove "-coff" from ASFLAGS if you do not have MASM 6.11.
@@ -30,7 +31,7 @@ ASFLAGS= /c /Zi /DINFOZIP
 # by passing the -stub switch to the 32-bit linker to specify the 16-bit part.
 
 LD=link -nologo
-LDFLAGS=advapi32.lib
+LDFLAGS=advapi32.lib user32.lib shell32.lib
 
 # variables
 OBJZ = zip.obj crypt.obj ttyio.obj zipfile.obj zipup.obj fileio.obj util.obj \
@@ -39,9 +40,9 @@ OBJZ = zip.obj crypt.obj ttyio.obj zipfile.obj zipup.obj fileio.obj util.obj \
 OBJI = deflate.obj trees.obj $(ASMOBJS) win32.obj win32zip.obj nt.obj
 
 OBJU = zipfile_.obj fileio_.obj util_.obj globals.obj win32_.obj
-OBJN = zipnote.obj $(OBJU)
+OBJN = zipnote.obj $(OBJU) crc32_.obj
 OBJC = zipcloak.obj crc32_.obj crypt_.obj ttyio.obj $(OBJU)
-OBJS = zipsplit.obj $(OBJU)
+OBJS = zipsplit.obj $(OBJU) crc32_.obj
 
 ZIP_H = zip.h ziperr.h tailor.h win32/osdep.h
 
@@ -132,3 +133,9 @@ zipnote.exe: $(OBJN)
 
 zipsplit.exe: $(OBJS)
     $(LD) $(LDFLAGS) $(OBJS)
+
+clean:
+	-del *.obj
+	-del *.res
+	-del *.exe
+	-del *.tds 

@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2009 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -15,7 +15,7 @@
 #include <time.h>
 #include <stdio.h>
 
-#include "swiven.h"
+/* #include "swiven.h" */
 
 #define MAXFILENAMELEN 1024  /* RISC OS 4 has 1024 limit. 1024 is also the same as FNMAX in zip.h */
 #define DIR_BUFSIZE MAXFILENAMELEN   /* Ensure we can read at least one full-length RISC OS 4 filename */
@@ -78,6 +78,18 @@ typedef struct {
 #  define S_IWRITE 0000200
 #  define S_IREAD  0000400
 #endif
+
+/* aSc added begin, is not defined anywhere acorn/riscos needs help */
+#ifndef S_ISTYPE
+#  define        S_ISTYPE(mode, mask)         (((mode) & S_IFMT) == (mask))
+#endif
+#ifndef S_ISDIR
+#  define        S_ISDIR(mode)         S_ISTYPE((mode), S_IFDIR)
+#endif
+#ifndef S_ISREG
+#  define        S_ISREG(mode)         S_ISTYPE((mode), S_IFREG)
+#endif
+/* aSc added end */
 
 extern char *exts2swap; /* Extensions to swap */
 

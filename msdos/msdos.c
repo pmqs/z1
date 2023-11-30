@@ -1,7 +1,7 @@
 /*
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 2005-Feb-10 or later
+  See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, all these files are missing, the Info-ZIP license
   also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
@@ -289,7 +289,7 @@ char *w;                /* path/pattern to match */
       /* "zip -$ foo a:" can be used to force drive name */
     }
     /* special handling of stdin request */
-    if (strcmp(w, "-") == 0)   /* if compressing stdin */
+    if (is_stdin || (strcmp(w, "-") == 0))   /* if compressing stdin */
         return newname(w, 0, 0);
 
     /* Allocate and copy pattern, leaving room to add "." if needed */
@@ -339,7 +339,7 @@ unsigned attribs;       /* file attributes, if available */
   if (n == NULL)        /* volume_label request in freshen|delete mode ?? */
     return ZE_OK;
 
-  if (strcmp(n, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(n, "-") == 0))   /* if compressing stdin */
     return newname(n, 0, caseflag);
   else if (*n == '\0') return ZE_MISS;
   else if (attribs != MSDOS_INVALID_ATTR)
@@ -585,7 +585,7 @@ iztimes *t;             /* return value: access, modific. and creation times */
   /* convert FNMAX to malloc - 11/8/04 EG */
   char *name;
   int len = strlen(f);
-  int isstdin = !strcmp(f, "-");
+  int isstdin = is_stdin || (!no_stdin && !strcmp(f, "-"));
 
   if (f == label) {
     if (a != NULL)
@@ -622,7 +622,7 @@ iztimes *t;             /* return value: access, modific. and creation times */
     *a = ((ulg)s.st_mode << 16) | (isstdin ? 0L : (ulg)GetFileMode(name));
 #if (S_IFREG != 0x8000)
     /* kludge to work around non-standard S_IFREG flag used in DJGPP V2.x */
-    if (S_ISREG( s.st_mode) *a |= 0x80000000L;
+    if (S_ISREG( s.st_mode)) *a |= 0x80000000L;
 #endif
   }
   free(name);
@@ -1012,11 +1012,14 @@ unsigned _dos_setfileattr(char *name, unsigned attr)
 
 #if (defined(__DJGPP__) && (__DJGPP__ >= 2))
 
+/* aSc disabled multiple definitions, already in djgpp/lib/libc.a */
+#if 0
 /* Disable determination of "x" bit in st_mode field for [f]stat() calls. */
 int _is_executable (const char *path, int fhandle, const char *ext)
 {
     return 0;
 }
+#endif
 
 /* Prevent globbing of filenames.  This gives the same functionality as
  * "stubedit <program> globbing=no" did with DJGPP v1.

@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2013 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2016 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -73,7 +73,7 @@ char *w;                /* path/pattern to match */
     return ZE_OK;
 
   /* special handling of stdin request */
-  if (strcmp(w, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(w, "-") == 0))   /* if compressing stdin */
     return newname(w, 0, 0);
 
   /* Allocate and copy pattern */
@@ -199,7 +199,7 @@ int caseflag;           /* true to force case-sensitive match */
   if (n == NULL)        /* volume_label request in freshen|delete mode ?? */
     return ZE_OK;
 
-  if (strcmp(n, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(n, "-") == 0))   /* if compressing stdin */
     return newname(n, 0, caseflag);
   else if (LSSTAT(n, &s)
 #if defined(__TURBOC__) || defined(__WATCOMC__)
@@ -392,7 +392,7 @@ iztimes *t;             /* return value: access, modific. and creation times */
   char *name;
   ulg r;
   unsigned int len = strlen(f);
-  int isstdin = !strcmp(f, "-");
+  int isstdin = is_stdin || (!no_stdin && !strcmp(f, "-"));
 
   if (f == label) {
     if (a != NULL)

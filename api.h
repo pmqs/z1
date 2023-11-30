@@ -1,7 +1,7 @@
 /*
   api.h - Zip 3
 
-  Copyright (c) 1990-2014 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2023 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -21,8 +21,17 @@
                               used is compatible with your application.
 
        ZpZip                - Single call main entry point for calling Zip with
-                              command line to execute.  This is now the only
-                              recommended way to call Zip as a DLL or LIB.
+                              command line to execute.  This interface takes a
+                              command line string, which is parsed.  This and
+                              ZpZipArgs are now the only recommended ways to
+                              call Zip as a DLL or LIB.
+
+       ZpZipArgs            - Same as ZpZip, but takes an argv[] array of args
+                              and an argc argument count instead of a combined
+                              command line string.  Args are the same as would
+                              be passed to Zip on the command line.  This and
+                              ZpZip are now the only recommended ways to call
+                              Zip as a DLL or LIB.
 
        ZpStringCopy         - A simple string copy function used only by the
                               Visual Studio 2010 Visual Basic example in the
@@ -33,12 +42,20 @@
 
        ZpInit               - Initializes function callbacks.  This is now done
                               by providing the callback pointer structure to
-                              ZpZip.
+                              ZpZip or ZpZipArgs.  This call is flawed when
+                              used with the DLL as it sets values that may be
+                              overridden before ZpArchive is called to actually
+                              perform the work.  If there is interest in this
+                              API entry point, let us know.
 
-       ZpArchive            - Calls DLL or LIB using old options structure.
+       ZpArchive            - Calls DLL or LIB using the old options structure.
                               The options structure is now deprecated as much
                               more functionality is provided by using the
-                              command line interface of ZpZip.  The options
+                              command line interfaces of ZpZip and ZpZipArgs.
+                              Typically this is used by first calling ZpInit to
+                              set up the callbacks, but those addresses can get
+                              modified or lost before ZpArchive is called,
+                              which is one reason it's deprecated.  The options
                               structure has not been updated and ZpArchive has
                               not been recently tested.
 
@@ -48,52 +65,64 @@
                               interfaces.  See the vb10 example for how this
                               is used.
 
-       ZpTestComParse       - Test command line parsing.  See the vb10 example
-                              for how this is used.
+       ZpTestComParse       - Test command line parsing, as used by ZpZip.
+                              See the vb10 example for how this is used.
 
        ZpTestCallback       - Test calling a user callback.  See the vb10
                               example for how this is used.
 
-       ZpTestCallbackStruct - Test providing callback addresses to DLL using
-                              structure.  See the vb10 example for how this is
-                              used.
+       ZpTestCallbackStruct - Test providing callback addresses to the DLL
+                              using the callback structure.  See the vb10
+                              example for how this is used.
 
+       ZpCalcCrc32          - Calculates the CRC32 checksum for a buffer.
+       
    Calling zipmain directly is now deprecated.  The preferred invocation when
-   using the LIB or DLL is via ZpZip.  When the Zip source is included
-   directly, USE_ZIPMAIN_NO_API may be useful, but the API callbacks would not
-   be available without code modification.
+   using the LIB or DLL is via ZpZip (or ZpZipArgs).  When the Zip source is
+   included directly, USE_ZIPMAIN_NO_API may be useful, but the API callbacks
+   would not be available without code modification.
 
    Currently the LIB has the following versions:
 
       zip32_lib.lib       - The Zip static library on Windows.
       zip32_libd.lib      - Debug version of zip32_lib.lib.
-      libizzip.a          - The Zip static library on Unix.
+      libizzip.a          - The Zip static library on Unix.  This library may
+                            be buildable and so available on other ports.  We
+                            are looking to add support for .so dynamic
+                            libraries in the future.
 
    Currently the DLL has the following components:
 
       zip32_dll.dll       - The Zip dynamic library on Windows.
       zip32_dll.lib       - Library to link to with linkages to zip32_dll.dll.
+      zip64_dll.dll       - 64-bit version.
+      zip64_dll.lib       - 64-bit version.
 
-   In brief, a user program using the DLL calls ZpVersion() to get the
-   version of the DLL.  If the version is compatible, ZpZip() is then called
-   to both set callbacks and to pass command line to execute.  Because of a
-   need to maintain DLL calling context, best to pass all information in
-   a single call to the DLL, which is what ZpZip() does.  The old approach of
-   setting callbacks using ZpInit() and then calling ZpArchive() to perform
-   the actual archiving operations should no longer be used for the DLL as
-   it could result in corrupted data or the app crashing on some platforms.
-   (One should not assume the context of the DLL has not changed between
-   the ZpInit() and the ZpArchive() calls.  It probably hasn't, but it's still
-   an assumption.  Older Windows platforms has known issues with this.)  All
-   interactions with the DLL once ZpZip() is called is through callbacks and
-   the final return code.
+   We are looking to add .NET support shortly.  This will likely only be
+   available using VS 2015 or later.
 
-   When the LIB is linked in, many of the DLL context issues do not apply.
-   In this case ZpInit() could be used to set function callbacks once and
-   the local function zipmain() used to actually call Zip.  And, unlike the
-   DLL, the LIB inherits the caller's stdin, stdout, and stderr.  The LIB
-   also inherits any directory context.  However, using ZpZip() is still
-   recommended.
+   In brief, a user program using the DLL calls ZpVersion() to get the version
+   of the DLL.  If the version is compatible, ZpZip() is then called to both
+   set callbacks and to pass the command line to execute.  (Alternatively,
+   ZpZipArgs is used and the individual command line args passed in.  Be
+   careful to break the command line into arguments that Zip can process.)
+   Because of a need to maintain DLL calling context, best to pass all
+   information in a single call to the DLL, which is what ZpZip() and ZpZipArgs
+   do.  The old approach of setting callbacks using ZpInit() and then calling
+   ZpArchive() to perform the actual archiving operations should no longer be
+   used for the DLL as it could result in corrupted data or the app crashing on
+   some platforms.  (One should not assume the context of the DLL has not
+   changed between the ZpInit() and the ZpArchive() calls.  It probably hasn't,
+   but it's still an assumption.  Older Windows platforms has known issues with
+   this.)  All interactions with the DLL once ZpZip() is called is through
+   callbacks and the final return value.
+
+   When the LIB is linked in, many of the DLL context issues do not apply.  In
+   this case ZpInit() could be used to set function callbacks once and the
+   local function zipmain() used to actually call Zip.  And, unlike the DLL,
+   the LIB inherits the caller's stdin, stdout, and stderr.  The LIB also
+   inherits any directory context.  However, using ZpZip() or ZpZipArgs is
+   still recommended.
 
    See WhatsNew_DLL_LIB.txt for related information on the LIB and DLL.
 
@@ -105,19 +134,28 @@
      (print)               output of Zip is routed through this callback.
                            If set to NULL, standard output is discarded,
                            except for specific output also routed through
-                           other callbacks below.
+                           other callbacks below.  Until you are comfortable
+                           using the API, you may want to use this to see
+                           what's happening.
 
      DLLPASSWORD         - If a password is needed by Zip, this function is
      (password)            called.  If the user will be encrypting entries,
                            this callback must be defined to set the password
-                           or an error will occur.
+                           or an error will occur.  Note that this is only
+                           called if Zip needs to prompt for a password.
 
-     DLLSERVICE          - If defined, called as each entry is processed.
-     (service)             This callback provides stats at the entry level.
+     DLLSERVICE          - If defined, called after each entry is processed.
+     (service)             This callback provides stats about the archiving
+                           of each file/entry, including compression stats.
                            It also allows the Zip operation to be aborted by
-                           setting the callback return code to 1.  This
-                           version uses long long (64-bit) parameters for
-                           file sizes (except on VMS).
+                           setting the callback return code to 1.  (Aborting
+                           the operation using this callback can only be
+                           done after the current entry has finished
+                           processing.  A very large entry could delay this
+                           for quite some time.  DLLPROGRESS can provide a
+                           finer level of control.)  This version uses long
+                           long (64-bit) parameters for file sizes (except
+                           on VMS).
 
      DLLSERVICE_NO_INT64 - A version of DLLSERVICE that does not use 64-bit
      (service_no_int64)    args for file size, but instead uses high and low
@@ -129,23 +167,29 @@
                            such, this callback is now only available on WIN32
                            and is deprecated.
 
-     DLLSPLIT            - Called to request split destination if splitting
-     (split)               (not yet implemented).  DO NOT USE the split
+     DLLSPLIT            - Called to request split destination if splitting.
+     (split)               THIS IS NOT YET IMPLEMENTED.  DO NOT USE the split
                            destination feature or split pause feature (-sp)
                            with the DLL until this is implemented.  (-sp is,
                            in fact, locked out when Zip is compiled as a LIB
                            or DLL.)  Note that -s does not interact with the
                            user and can be used by the LIB/DLL to create
-                           split archives.
+                           split archives where all the splits go to the same
+                           place.  This callback would only be needed to send
+                           some splits to different locations, such as to
+                           multiple removable media.
 
      DLLECOMMENT         - Called to request a comment for an entry.  If the
-     (ecomment)            caller will be working with entry comments this
+     (ecomment)            caller will be working with entry comments (-c) this
                            callback must be defined or an error will result.
 
      DLLACOMMENT         - Called to request the archive zipfile comment.  If
      (acomment)            the caller will be working with archive comments
-                           this callback must be defined or an error will
-                           result.
+                           (-z) this callback must be defined or an error will
+                           result.  Note that -z now allows specifying a short
+                           (one line) archive comment using the form zip:
+                             -z="some comment"
+                           which does not use the DLLACOMMENT callback.
 
      DLLPROGRESS         - If defined, this callback is called to report
      (progress)            progress during the Zip operation.  It returns:
@@ -162,14 +206,14 @@
                            This callback is called at start and end of each
                            entry processing as well as after so many bytes
                            processed for that entry.  The processing chunk
-                           size is set as an argument to ZpZip(), which sets
-                           the global progress_chunk_size.  (If ZpArchive is
-                           used, or zipmain called directly, and this callback
-                           is used, the user must ensure that this global is
-                           properly set.)  This is the number of bytes to
-                           process before putting out another progress
-                           report.  The chunk size should be at least 1K
-                           bytes.  The smaller the chunk size, the more fine
+                           size is set as an argument to ZpZip()/ZpZipArgs(),
+                           which sets the global progress_chunk_size.  (If
+                           ZpArchive is used, or zipmain called directly, and
+                           this callback is used, the user must ensure that
+                           this global is properly set.)  This is the number
+                           of bytes to process before putting out another
+                           progress report.  The chunk size should be at least
+                           1K bytes.  The smaller the chunk size, the more fine
                            the control and reporting, but the slower the
                            execution (as callbacks take time).  100m (100 MiB)
                            may be a good compromise.  Setting the return code
@@ -188,8 +232,9 @@
                            (ignore any normal Zip output) while still getting
                            any generated warnings and errors.
 
-     DLLFINISH           - If defined, this callback is called at end of zip
-     (finish)              operation to provide stats.
+     DLLFINISH           - If defined, this callback is called at end of the
+     (finish)              zip operation to provide stats for the entire
+                           operation.
 
    Unused callbacks should be set to NULL.  Zip will skip any callbacks where
    the address is set to NULL, though using some features (such as -c or -z)
@@ -204,7 +249,7 @@
    The ZPOPT structure was used to pass settings, such as root directory, to
    Zip via the ZpArchive() call.  As ZpArchive() is now obsolete, this
    structure should no longer be used and is no longer being updated.  Both
-   DLL and LIB users should only use ZpZip().
+   DLL and LIB users should only use ZpZip() or ZpZipArgs().
 
    The LIB is now supported on Unix, VMS, and Windows.  The DLL is currently
    only supported on Windows platforms. */
@@ -245,7 +290,7 @@
 
      WIN32 and ZIPDLL     - This would be used to build a Windows DLL using
                             other than Visual Studio.  However, currently no
-                            other Windows platforms are suppported for building
+                            other Windows platforms are supported for building
                             the DLL.  (OS2 may again be supported some day.)
 
      USE_ZIPMAIN          - Use zipmain() instead of main().  Set automatically
@@ -262,10 +307,11 @@
 
      NO_ZPARCHIVE         - Deprecated.  Set if not using ZpArchive.  It was
                             used with ZIPLIB on some ports.  (The DLL has to
-                            call an established entry point so can't call
-                            zipmain() directly.)  ZpZip is now preferred over
-                            calling zipmain() directly.  NO_ZPARCHIVE is NOT
-                            set when using ZpZip, just call ZpZip.
+                            be called from an established entry point so can't
+                            be called from zipmain() directly.)  ZpZip is now
+                            preferred over calling zipmain() directly.
+                            NO_ZPARCHIVE is NOT set when using ZpZip or
+                            ZpZipArgs, just call them directly.
 
      UNIXLIB              - Set when UNIX and ZIPLIB are set.
 
@@ -274,13 +320,13 @@
    project settings in Visual Studio, these should be set for you.
 
    When building applications using the LIB, set ZIPLIB in the build environment
-   and include api.h.  When building DLL applications, set WINDLL (on Windows)
+   and include api.h.  When building DLL applications, define WINDLL (on Windows)
    or ZIPDLL in the build environment.
 
    DLL_ZIPAPI is deprecated.  Use of USE_ZIPMAIN && DLL_ZIPAPI for UNIX and VMS
    is replaced by ZIPLIB && NO_ZPARCHIVE.  Creates LIB that calls zipmain()
    directly.  But actually this is now deprecated as well.  The preference now
-   is to use ZpZip().
+   is to define ZIPLIB and use ZpZip() or ZpZipArgs().
 
    File size in the calls below is of type API_FILESIZE_T, which defaults in
    zip.h to uzoff_t.  On Windows (the only port providing a DLL currently) this
@@ -417,6 +463,10 @@
 
 #  endif
 
+
+#define ZIPADDR char *
+
+
 /*---------------------------------------------------------------------------
     Prototypes for public Zip API (DLL and LIB) functions.
   ---------------------------------------------------------------------------*/
@@ -429,6 +479,15 @@
 #  define D2_MINORVER 0
 #  define D2_PATCHLEVEL 0
 
+
+/* Minimum sizes for ZpVer elements */
+#define ZPVER_BETA_LEVEL_SIZE    10      /* e.g. "g BETA" */
+#define ZPVER_VERSION_SIZE       20      /* e.g. "3.1d28" */
+#define ZPVER_REV_DATE_SIZE      20      /* e.g. "4 September 1995" */
+#define ZPVER_REV_YMD_SIZE       20      /* e.g. "1995/09/04" */
+#define ZPVER_ZLIB_VERSION_SIZE  10      /* e.g. "0.95" */
+#define ZPVER_FEATURES_SIZE      4000    /* e.g. "; backup; compmethods:store,deflate,cd_only,bzip2,lzma,ppmd;" */
+   
    /* intended to be a private struct: */
    typedef struct _zip_ver {
     uch major;              /* e.g., integer 3 */
@@ -493,8 +552,8 @@
 
   typedef long (ZIPEXPENTRY DLLPROGRESS) (char *file_name,
                                           char *unicode_file_name,
-                                          long percent_all_done_x_100,
                                           long percent_entry_done_x_100,
+                                          long percent_all_done_x_100,
                                           API_FILESIZE_T uncompressed_size,
                                           char *uncompressed_size_string,
                                           char *action,
@@ -504,7 +563,7 @@
     /* DLLERROR:
        called when ZipWarn or ZIPERR are called to return the warning or
        error message */
-  typedef long (ZIPEXPENTRY DLLERROR) (char *errstring);
+  typedef void (ZIPEXPENTRY DLLERROR) (char *errstring);
 
     /* DLLFINISH:
 	   called at end of operation to return stats */
@@ -723,22 +782,98 @@
     {
 #  endif /* def __cplusplus */
 
-  int   ZIPEXPENTRY ZpTestComParse(char *commandline, char *parsedline);
-  void  ZIPEXPENTRY ZpTestCallback(long cbAddress);
+
+#ifndef NO_PROTO
+  unsigned long ZIPEXPENTRY ZpCalcCrc32Buffer(unsigned char *buffer,
+                                              unsigned long len);
+#else
+  unsigned long ZIPEXPENTRY ZpCalcCrc32Buffer(unsigned char *, unsigned long *);
+#endif
+
+#ifndef NO_PROTO
+unsigned long ZIPEXPENTRY ZpCalcCrc32File(char *path);
+#else
+unsigned long ZIPEXPENTRY ZpCalcCrc32File(char *);
+#endif
+
+#ifndef NO_PROTO
+  int   ZIPEXPENTRY ZpTestComParse(char *commandline,
+                                   char *parsedline);
+#else
+  int   ZIPEXPENTRY ZpTestComParse(char *, char *);
+#endif
+
+#ifndef NO_PROTO
+  void  ZIPEXPENTRY ZpTestCallback(ZIPADDR cbAddress);
+#else
+  void  ZIPEXPENTRY ZpTestCallback(ZIPADDR);
+#endif
+
+#ifndef NO_PROTO
   void  ZIPEXPENTRY ZpTestCallbackStruct(LPZpTESTFUNCTION lpTestFuncStruct);
+#else
+  void  ZIPEXPENTRY ZpTestCallbackStruct(LPZpTESTFUNCTION);
+#endif
   
-  int   ZIPEXPENTRY ZpZipTest(char *commandline, char *CurrentDir,
+#ifndef NO_PROTO
+  int   ZIPEXPENTRY ZpZipTest(char *commandline,
+                              char *CurrentDir,
                               LPZIPUSERFUNCTIONS lpZipUserFunc);
-  int   ZIPEXPENTRY ZpZip(char *commandline, char *CurrentDir,
+#else
+  int   ZIPEXPENTRY ZpZipTest(char *, char *, LPZIPUSERFUNCTIONS);
+#endif
+
+#ifndef NO_PROTO
+  int   ZIPEXPENTRY ZpZip(char *commandLine,
+                          char *currentDir,
                           LPZIPUSERFUNCTIONS lpZipUserFunc,
-                          char *ProgressChunkSize);
+                          char *progressChunkSize);
+#else
+  int   ZIPEXPENTRY ZpZip(char *, char *, LPZIPUSERFUNCTIONS, char *);
+#endif
+
+#ifndef NO_PROTO
+  int   ZIPEXPENTRY ZpZipArgs(char *args[],
+                              int argc,
+                              char *currentDir,
+                              LPZIPUSERFUNCTIONS lpZipUserFunc,
+                              char *progressChunkSize);
+#else
+  int ZIPEXPENTRY ZpZipArgs(char *, int, char *, LPZIPUSERFUNCTIONS, char *);
+#endif
   
-  int   ZIPEXPENTRY ZpStringCopy(char *deststring, char *sourcestring,
+#ifndef NO_PROTO
+  int   ZIPEXPENTRY ZpStringCopy(char *deststring,
+                                 char *sourcestring,
                                  int maxlength);
+#else
+  int   ZIPEXPENTRY ZpStringCopy(char *, char *, int);
+#endif
   
+#ifndef NO_PROTO
   void  ZIPEXPENTRY ZpVersion(ZpVer far *);
+#else
+  void  ZIPEXPENTRY ZpVersion(ZpVer far *);
+#endif
+
+#ifndef NO_PROTO
   int   ZIPEXPENTRY ZpInit(LPZIPUSERFUNCTIONS lpZipUserFunc);
-  int   ZIPEXPENTRY ZpArchive(ZCL C, LPZPOPT Opts);
+#else
+  int   ZIPEXPENTRY ZpInit(LPZIPUSERFUNCTIONS);
+#endif
+
+#ifndef NO_PROTO
+  int   ZIPEXPENTRY ZpArchive(ZCL C,
+                              LPZPOPT Opts);
+#else
+  int   ZIPEXPENTRY ZpArchive(ZCL, LPZPOPT);
+#endif
+
+#ifndef NO_PROTO
+char *  ZIPEXPENTRY ZpArgvToCommandlineString(int argc, char *argv[]);
+#else
+char *   ZIPEXPENTRY ZpArgvToCommandlineString(int, char *[]);
+#endif
 
 #  ifdef __cplusplus
     }

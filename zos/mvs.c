@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2014 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2016 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -239,7 +239,7 @@ int procname(
   struct    zlist far *z;  /* steps through zfiles list       */
   int       rc;            /* return code                     */
 
-  if (strcmp(n, "-") == 0) {
+  if (is_stdin || (!no_stdin && strcmp(n, "-") == 0)) {
     /* A: compressing stdin                                 */
     return newname(n, 0, caseflag);
   }

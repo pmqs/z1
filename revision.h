@@ -1,7 +1,7 @@
 /*
   revision.h - Zip 3
 
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2023 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -19,20 +19,20 @@
 #define Z_MAJORVER   3
 #define Z_MINORVER   1
 #define Z_PATCHLEVEL 0
-#define Z_BETALEVEL "d BETA"
+#define Z_BETALEVEL "e BETA"
 
 /* set this to 1 for a beta, 0 for a release */
 #define BETA 1
 
-#define VERSION "3.1d-BETA"
-#define REVDATE "November 15th 2015"
-#define REVYMD  "2015-11-15"
+#define VERSION "3.1e22"
+#define REVDATE "November 30th 2023"
+#define REVYMD  "2023-11-30"
 
 /* Setting these to the Zip version seems a waste, as the version
    structure already tells the user the Zip version through Z_MAJORVER,
    Z_MINORVER, and Z_PATCHLEVEL.  Starting with Zip 3.1c, these are now
    only updated when the LIB/DLL interface changes.  This means that these
-   numbers might stay at 3, 1, 0 for awhile if the DLL interface stays
+   numbers might stay at 3, 1, 0 for awhile if the LIB/DLL interface stays
    backward compatible. */
 #define LD_MAJORVER    3
 #define LD_MINORVER    1
@@ -64,9 +64,9 @@ extern ZCONST char * far cryptnote[7];
 
 ZCONST char *copyright[] = {
 # ifdef VMS
-"Copyright (c) 1990-2015 Info-ZIP - Type '%s \"-L\"' for software license."
+"Copyright (c) 1990-2023 Info-ZIP - Type '%s \"-L\"' for software license."
 # else /* def VMS */
-"Copyright (c) 1990-2015 Info-ZIP - Type '%s -L' for software license."
+"Copyright (c) 1990-2023 Info-ZIP - Type '%s -L' for software license."
 # endif /* def VMS [else] */
 /* XXX still necessary ???? */
 #ifdef AZTEC_C
@@ -107,7 +107,7 @@ ZCONST char * far cryptnote[] = {
 };
 
 ZCONST char * far swlicense[] = {
-"Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.",
+"Copyright (c) 1990-2023 Info-ZIP.  All rights reserved.",
 "",
 "This is version 2009-Jan-02 of the Info-ZIP license.",
 "",

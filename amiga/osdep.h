@@ -1,7 +1,7 @@
 /*
-  Copyright (c) 1990-2005 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
-  See the accompanying file LICENSE, version 2005-Feb-10 or later
+  See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
   If, for some reason, all these files are missing, the Info-ZIP license
   also may be found at:  ftp://ftp.info-zip.org/pub/infozip/license.html
@@ -98,7 +98,7 @@ void ClearIOErr_exit(int e);
 
 extern int real_timezone_is_set;
 void tzset(void);
-#define VALID_TIMEZONE(tempvar) (tzset(), real_timezone_is_set)
+#define VALID_TIMEZONE() (tzset(), real_timezone_is_set)
 
 #ifdef ZCRYPT_INTERNAL
 #  ifndef CLIB_EXEC_PROTOS_H

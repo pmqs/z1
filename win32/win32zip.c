@@ -1,7 +1,7 @@
 /*
   win32/win32zip.c - Zip 3.1
 
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2016 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -32,6 +32,11 @@
 #  ifndef CP_UTF8
 #    define CP_UTF8             65001           /* UTF-8 translation */
 #  endif
+/* aSc added missing include, because of error in line 147 operands of == have
+   illegal types 'int' and 'pointer to unsigned short' */
+# ifdef UNICODE_SUPPORT
+#  include <wchar.h>
+# endif
 #endif
 
 #include <io.h>
@@ -348,7 +353,7 @@ zDIRSCAN *d;            /* directory stream to read from */
    */
   if (e == NULL)
     return (char *) NULL;
-  if (strchr(e->d_fd.cFileName, '?') && e->d_fd.cAlternateFileName) {
+  if (strchr(e->d_fd.cFileName, '?') && e->d_fd.cAlternateFileName[0]) {
     /* Have '?' in name, assume wide character we can't handle is in
        the name and use short name if there is one.
     */
@@ -967,7 +972,7 @@ int wild(w)
     /* "zip -$ foo a:" can be used to force drive name */
   }
   /* special handling of stdin request */
-  if (strcmp(w, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(w, "-") == 0))   /* if compressing stdin */
     return newname(w, 0, 0);
 
   /* Allocate and copy pattern, leaving room to add "." if needed */
@@ -1062,7 +1067,7 @@ local int procname_win32(n, caseflag, attribs)
   z_stat s;             /* result of stat() */
   struct zlist far *z;  /* steps through zfiles list */
 
-  if (strcmp(n, "-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && strcmp(n, "-") == 0))   /* if compressing stdin */
     return newname(n, 0, caseflag);
   else if (attribs != INVALID_WIN32_FILE_ATTRIBS)
   {
@@ -1163,6 +1168,8 @@ local int procname_win32(n, caseflag, attribs)
       while ((e = readd(d)) != NULL) {
         if (strcmp(e, ".") && strcmp(e, ".."))
         {
+//          printf("readd:  p: '%s'   e: '%s'\n", p, e);
+//
           if ((a = malloc(strlen(p) + strlen(e) + 1)) == NULL)
           {
             CloseDirScan(d);
@@ -1173,6 +1180,8 @@ local int procname_win32(n, caseflag, attribs)
           if ((m = procname_win32(a, caseflag, GetDirAttribs(d)))
               != ZE_OK)         /* recurse on name */
           {
+//            printf("a: '%s'\n", a);
+//
             if (m == ZE_MISS)
               zipwarn("name not matched: ", a);
             else
@@ -1223,7 +1232,7 @@ local int procname_win32w(nw, caseflag, attribs)
   struct zlist far *z;  /* steps through zfiles list */
   int do_not_follow = 0;/* if 1, do not recurse */
 
-  if (wcscmp(nw, L"-") == 0)   /* if compressing stdin */
+  if (is_stdin || (!no_stdin && wcscmp(nw, L"-") == 0))   /* if compressing stdin */
     return newnamew(nw, 0, caseflag);
   else if (attribs != INVALID_WIN32_FILE_ATTRIBS)
   {
@@ -1246,7 +1255,6 @@ local int procname_win32w(nw, caseflag, attribs)
 #endif
           )
   {
-    wchar_t *unamew = NULL;
     char *uzname = NULL;
     char *p = NULL;
 
@@ -1481,6 +1489,10 @@ local int procname_win32w(nw, caseflag, attribs)
       while ((ew = readdw(dw)) != NULL) {
         if (wcscmp(ew, L".") && wcscmp(ew, L".."))
         {
+//          char *aaw;
+//          char *eew = wchar_to_local_string(ew);
+//          printf("eew: '%s'\n", eew);
+//
           if ((aw = malloc((wcslen(pw) + wcslen(ew) + 1) * sizeof(wchar_t))) == NULL)
           {
             CloseDirScanW(dw);
@@ -1488,6 +1500,9 @@ local int procname_win32w(nw, caseflag, attribs)
             return ZE_MEM;
           }
           wcscat(wcscpy(aw, pw), ew);
+//          aaw = wchar_to_local_string(aw);
+//          printf("aaw: '%s'\n", aaw);
+//
           if ((m = procname_win32w(aw, caseflag, GetDirAttribsW(dw)))
               != ZE_OK)         /* recurse on name */
           {
@@ -1529,7 +1544,7 @@ local int procname_win32w(nw, caseflag, attribs)
     }
   } /* S_ISDIR( s.st_mode) [else] */
   return ZE_OK;
-}
+} /* procname_win32w */
 #endif
 
 
@@ -1784,7 +1799,7 @@ ulg filetime(f, a, n, t)
   /* converted to malloc instead of using FNMAX - 11/8/04 EG */
   char *name;
   unsigned int len = (unsigned int)strlen(f);
-  int isstdin = !strcmp(f, "-");
+  int isstdin = is_stdin || (!no_stdin && !strcmp(f, "-"));
 
   if (f == label) {
     if (a != NULL)
@@ -1870,7 +1885,7 @@ ulg filetimew(fw, a, n, t)
   /* converted to malloc instead of using FNMAX - 11/8/04 EG */
   wchar_t *namew;
   unsigned int len = (unsigned int)wcslen(fw);
-  int isstdin = !wcscmp(fw, L"-");
+  int isstdin = is_stdin || (!no_stdin && !wcscmp(fw, L"-"));
   wchar_t *labelw = local_to_wchar_string(label);
 
   if (labelw && wcscmp(fw, labelw) == 0) {
@@ -2069,6 +2084,7 @@ local int GetExtraTime(struct zlist far *z, iztimes *z_utim)
 {
   char *eb_l_ptr;
   char *eb_c_ptr;
+  int i;
   ulg ultime;
   /* brain-dead IBM compiler defines time_t as "double", so we have to convert
    * it into unsigned long integer number...
@@ -2099,28 +2115,45 @@ local int GetExtraTime(struct zlist far *z, iztimes *z_utim)
 
   z->extra = eb_l_ptr;
   eb_l_ptr += z->ext;
+#if 0
   z->ext += EB_L_UT_SIZE;
+#endif
 
-  eb_l_ptr[0]  = 'U';
-  eb_l_ptr[1]  = 'T';
-  eb_l_ptr[2]  = EB_UT_LEN(3);          /* length of data part of e.f. */
-  eb_l_ptr[3]  = 0;
-  eb_l_ptr[4]  = EB_UT_FL_MTIME | EB_UT_FL_ATIME | EB_UT_FL_CTIME;
+  i = 0;
+  eb_l_ptr[i++]  = 'U';
+  eb_l_ptr[i++]  = 'T';
+  if (no_access_time) {
+    eb_l_ptr[i++]  = EB_UT_LEN(2);          /* length of data part of e.f. */
+  }
+  else {
+    eb_l_ptr[i++]  = EB_UT_LEN(3);          /* length of data part of e.f. */
+  }
+  eb_l_ptr[i++]  = 0;
+  if (no_access_time) {
+    eb_l_ptr[i++]  = EB_UT_FL_MTIME | EB_UT_FL_CTIME;
+  }
+  else {
+    eb_l_ptr[i++]  = EB_UT_FL_MTIME | EB_UT_FL_ATIME | EB_UT_FL_CTIME;
+  }
   ultime = (ulg)z_utim->mtime;
-  eb_l_ptr[5]  = (char)(ultime);
-  eb_l_ptr[6]  = (char)(ultime >> 8);
-  eb_l_ptr[7]  = (char)(ultime >> 16);
-  eb_l_ptr[8]  = (char)(ultime >> 24);
-  ultime = (ulg)z_utim->atime;
-  eb_l_ptr[9]  = (char)(ultime);
-  eb_l_ptr[10] = (char)(ultime >> 8);
-  eb_l_ptr[11] = (char)(ultime >> 16);
-  eb_l_ptr[12] = (char)(ultime >> 24);
+  eb_l_ptr[i++]  = (char)(ultime);
+  eb_l_ptr[i++]  = (char)(ultime >> 8);
+  eb_l_ptr[i++]  = (char)(ultime >> 16);
+  eb_l_ptr[i++]  = (char)(ultime >> 24);
+  if (!no_access_time) {
+    ultime = (ulg)z_utim->ctime;
+    eb_l_ptr[i++] = (char)(ultime);
+    eb_l_ptr[i++] = (char)(ultime >> 8);
+    eb_l_ptr[i++] = (char)(ultime >> 16);
+    eb_l_ptr[i++] = (char)(ultime >> 24);
+  }
   ultime = (ulg)z_utim->ctime;
-  eb_l_ptr[13] = (char)(ultime);
-  eb_l_ptr[14] = (char)(ultime >> 8);
-  eb_l_ptr[15] = (char)(ultime >> 16);
-  eb_l_ptr[16] = (char)(ultime >> 24);
+  eb_l_ptr[i++] = (char)(ultime);
+  eb_l_ptr[i++] = (char)(ultime >> 8);
+  eb_l_ptr[i++] = (char)(ultime >> 16);
+  eb_l_ptr[i++] = (char)(ultime >> 24);
+
+  z->ext += i;
 
   z->cextra = eb_c_ptr;
   eb_c_ptr += z->cext;

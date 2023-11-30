@@ -1,7 +1,7 @@
 /*
   win32/win32.c - Zip 3.1
 
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -19,8 +19,6 @@
 
 #include "../zip.h"
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <limits.h>
 #include <time.h>
 #include <ctype.h>
@@ -35,6 +33,13 @@
 #include <io.h>
 /* Defines _SH_DENYNO */
 #include <share.h>
+
+/* aSc added include because of lcc error in line 215 (now 222, 141) */
+#if defined(WINDOWS_LONG_PATHS) || defined(UNICODE_SUPPORT)
+# ifdef LCC_WIN32
+#include <wchar.h>
+# endif
+#endif
 
 #ifdef __RSXNT__
 #  include <alloca.h>
@@ -219,11 +224,11 @@ int failed = 0;
 # endif
       }
       if (full_path) {
-        if ((namew_long = malloc((wcslen(full_path) + 5) * sizeof(wchar_t))) == NULL) {
+        if ((namew_long = (wchar_t *)malloc((wcslen(full_path) + 5) * sizeof(wchar_t))) == NULL) {
           ZIPERR(ZE_MEM, "GetFileModeW");
         }
       } else {
-        if ((namew_long = malloc((namew_len + 5) * sizeof(wchar_t))) == NULL) {
+        if ((namew_long = (wchar_t *)malloc((namew_len + 5) * sizeof(wchar_t))) == NULL) {
           ZIPERR(ZE_MEM, "GetFileModeW");
         }
       }
@@ -668,8 +673,7 @@ void ChangeNameForFAT(char *name)
          ((next - dot <= 4) ||
           ((next - src > 8) && (dot - src > 3))) )
     {
-      if ( dot )
-        *dot = '.';
+      *dot = '.';
 
       for ( ptr = src; (ptr < dot) && ((ptr - src) < 8); ptr++ )
         *dst++ = *ptr;
@@ -1019,11 +1023,11 @@ int zstat_zipwin32w(const wchar_t *pathw, zw_stat *buf)
                 sprintf(errbuf, "    full_path: '%S'", full_path);
                 zipmessage(errbuf, "");
 # endif
-                if ((pathw_long = malloc((wcslen(full_path) + 5) * sizeof(wchar_t))) == NULL) {
+                if ((pathw_long = (wchar_t *)malloc((wcslen(full_path) + 5) * sizeof(wchar_t))) == NULL) {
                       ZIPERR(ZE_MEM, "Getting long path for zwstat");
                 }
             } else {
-                if ((pathw_long = malloc((wcslen(pathw) + 5) * sizeof(wchar_t))) == NULL) {
+                if ((pathw_long = (wchar_t *)malloc((wcslen(pathw) + 5) * sizeof(wchar_t))) == NULL) {
                       ZIPERR(ZE_MEM, "Getting long path for zwstat");
                 }
             }
@@ -1177,7 +1181,7 @@ int zstat_zipwin32w(const wchar_t *pathw, zw_stat *buf)
             size_t pathw_long_len;
             size_t i;
 
-            if ((pathw_long = malloc((wcslen(pathw) + 5) * sizeof(wchar_t))) == NULL) {
+            if ((pathw_long = (wchar_t *)malloc((wcslen(pathw) + 5) * sizeof(wchar_t))) == NULL) {
                 ZIPERR(ZE_MEM, "Getting long path for GetFileAttributes");
             }
             wcscpy(pathw_long, L"\\\\?\\");
@@ -1719,7 +1723,7 @@ unsigned long write_console(FILE *outfile, ZCONST char *instring)
     handle = STD_ERROR_HANDLE;
   }
 
-  if (handle && isatty(fileno(outfile))) {
+  if (handle && ISATTY(fileno(outfile))) {
     /* output file is console */
     WriteConsoleA(
               GetStdHandle(handle),            /* in  HANDLE hConsoleOutput */
@@ -1747,7 +1751,7 @@ unsigned long write_console(FILE *outfile, ZCONST char *instring)
  */
 unsigned long write_consolew(FILE *outfile, wchar_t *instringw)
 {
-  long charswritten;
+  unsigned long charswritten;
   DWORD handle = 0;
 
   /* Only write to console if using standard stream (stdout or stderr) */
@@ -1758,9 +1762,9 @@ unsigned long write_consolew(FILE *outfile, wchar_t *instringw)
     handle = STD_ERROR_HANDLE;
   }
 
-  if (handle && isatty(fileno(outfile))) {
+  if (handle && ISATTY(fileno(outfile))) {
     WriteConsoleW(
-              GetStdHandle(STD_OUTPUT_HANDLE), /* in  HANDLE hConsoleOutput */
+              GetStdHandle(handle),            /* in  HANDLE hConsoleOutput */
               instringw,                       /* in  const VOID *lpBuffer */
               (DWORD)wcslen(instringw),        /* in  DWORD nNumberOfCharsToWrite */
               &charswritten,                   /* out LPDWORD lpNumberOfCharsWritten */
@@ -1807,7 +1811,7 @@ long write_consolew2a(wchar_t *inw)
    * character set may not be UTF-8 (and probably isn't) doesn't matter when
    * parsing args and path parts.  When args are later interpreted, the function
    * is_utf8_string() is used to determine if an arg is UTF-8 and, if it is, it
-   * gets converted to the proper Windows wide string using utf8_to_wide_string(),
+   * gets converted to the proper Windows wide string using utf8_to_wide_stringz(),
    * otherwise local_to_wide_string() is used and the local MBCS is converted to
    * wide.  This allows both UTF-8 and local MBCS strings to coexist seamlessly,
    * as long as the local MBCS does not look like UTF-8.
@@ -1863,11 +1867,58 @@ long write_consolew2a(wchar_t *inw)
   }
 # endif
 
+  
+char *read_utf8_line_from_console(int max_chars)
+{
+  unsigned long oldMode;
+  wchar_t *wbuffer;
+  unsigned long chars_read;
+  HANDLE hConIn;
+  char *u8;
+  long len;
+  int result;
+
+  if ((wbuffer = (wchar_t *)malloc((max_chars + 1) * sizeof(wchar_t))) == NULL) {
+    ZIPERR(ZE_MEM, "read_utf8_line_from_console");
+  }
+
+  hConIn = CreateFileW(L"CONIN$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+    NULL, OPEN_EXISTING, 0, NULL);
+
+  if (hConIn == INVALID_HANDLE_VALUE) {
+    ZIPERR(ZE_READ, "could not open console for reading");
+  }
+
+  GetConsoleMode(hConIn, &oldMode);
+  SetConsoleMode(hConIn, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT);
+
+  FlushConsoleInputBuffer(hConIn);
+
+  result = ReadConsoleW(hConIn, wbuffer, max_chars, &chars_read, NULL);
+
+  SetConsoleMode(hConIn, oldMode);
+  CloseHandle(hConIn);
+
+  if (result == 0) {
+    return NULL;
+  }
+
+  len = chars_read > 1 ? chars_read - 2 : 0;
+  wbuffer[len] = L'\0';
+
+  u8 = wchar_to_utf8_string(wbuffer);
+
+  free(wbuffer);
+
+  return u8;
+}
+  
+
 
   /*------------------------------- */
   /* from win32zip.c */
 
-wchar_t *local_to_wchar_string(ZCONST char *local_string)
+wchar_t *local_to_wchar_string_windows(ZCONST char *local_string)
 {
   wchar_t  *qw;
   int       ulen;
@@ -2012,8 +2063,7 @@ char *wchar_to_utf8_string_windows(wstring)
 
 /* convert wide character string to multi-byte character string */
 /* win32 version */
-char *wide_to_local_string(wide_string)
-  zwchar *wide_string;
+char *wide_to_local_string_windows(zwchar *wide_string)
 {
   int i;
   wchar_t wc;
@@ -2132,7 +2182,7 @@ char *wide_to_local_string(wide_string)
 
 /* convert multi-byte character string to wide character string */
 /* win32 version */
-zwchar *local_to_wide_string(local_string)
+zwchar *local_to_wide_string_windows(local_string)
   char *local_string;
 {
   int wsize;
@@ -2153,7 +2203,7 @@ zwchar *local_to_wide_string(local_string)
 
   /* convert it */
   if ((wc_string = (wchar_t *)malloc((wsize + 1) * sizeof(wchar_t))) == NULL) {
-    ZIPERR(ZE_MEM, "local_to_wide_string");
+    ZIPERR(ZE_MEM, "local_to_wide_string_windows");
   }
   wsize = MultiByteToWideChar(CP_ACP,
                               0,
@@ -2166,7 +2216,7 @@ zwchar *local_to_wide_string(local_string)
   /* in case wchar_t is not zwchar */
   if ((wide_string = (zwchar *)malloc((wsize + 1) * sizeof(zwchar))) == NULL) {
     free(wc_string);
-    ZIPERR(ZE_MEM, "local_to_wide_string");
+    ZIPERR(ZE_MEM, "local_to_wide_string_windows");
   }
   for (wsize = 0; (wide_string[wsize] = (zwchar)wc_string[wsize]); wsize++) ;
   wide_string[wsize] = (zwchar)0;

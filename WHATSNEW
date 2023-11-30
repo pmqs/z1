@@ -1,42 +1,168 @@
 What's New
 
-Last updated 30 October 2015
+Last updated 2 September 2018
 
-This file is the full list of new features and major changes for Zip 3.x
-by beta release.  See the announcement file zip31d.ann for a quick summary
-of all features and changes in Zip 3.1d (this beta).  Also see the file
-README for release information, INSTALL for installation procedures, and
-the manual pages (plain text versions of these being zip.txt, zipsplit.txt,
-zipcloak.txt, and zipnote.txt in the docs directory), as well as the
-extended help in Zip, for how to use the new features.  The file CHANGES
-has all the day-to-day changes made during development.  Please contact us
-if you have any questions.
+This file is the full list of new features and major changes for Zip 3.x by
+beta release.  See the announcement file zip31e.ann for a quick summary of
+all features and changes in Zip 3.1e (this beta).  Also see the file README
+for release information, INSTALL for installation procedures, and the manual
+pages (plain text versions of these being zip.txt, zipsplit.txt, zipcloak.txt,
+and zipnote.txt in the docs directory), as well as the extended help in Zip
+(-hh), for how to use the new features.  The file CHANGES is the definitive
+log of changes and has all the day-to-day changes made during development.
+Please contact us if you have any questions.
 
 
------------------------------------------------------------------------
-Zip 3.1d is a Release Candidate for Zip 3.1.  That means we are close
-to freezing the feature set and doing final preparations for releasing
-Zip 3.1.  If there's anything you feel is missing from Zip 3.1 or needs
-work, send in your suggestions, recommendations and patches.  If you
-find any bugs anywhere, let us know or, better yet, send in your bug
-fixes.  Barring any significant issues, we plan to repackage and
-release this beta with minimal modification as Zip 3.1.
+----------------------------------------------------------------------------
+Zip 3.1e is a Release Candidate for Zip 3.1.  We have frozen the feature set
+and am doing final preparations for releasing Zip 3.1.  If there's anything
+you feel is missing from Zip 3.1 or needs work, send in your suggestions.  If
+you find any bugs anywhere, let us know or, better yet, send in your bug fixes.
+Barring any significant issues, we plan to repackage and release this beta with
+minimal modification as Zip 3.1.
 
-UnZip 6.1 is also getting close.  Look for UnZip 6.1c soon.
------------------------------------------------------------------------
+UnZip 6.1 is also getting close.
+----------------------------------------------------------------------------
+
+
+Note that most short options (like -Y) have a long option equivalent (like
+--encryption-method).  For brevity, often only the short option is listed
+below.
 
 
 MAJOR CHANGES BY BETA VERSION
 -----------------------------
 
+New things in Zip 3.1e
+
+Compression/Encryption:
+- AES encryption included in standard build.  Now the standard build includes
+    all compression and encryption methods.  However, this makes the main
+    distribution export controlled.  See README for details.
+- AES compiler warning fixes.
+
+Command line and paths:
+- Change long option name for -cd from --current-directory to --chdir.
+- New option -p0 (--print0) allows accepting path lists with NUL ('\0')
+    separators, such as the output from "find -print0".
+- Add support for option value lists (such as -sF=usize,comment).
+- Don't trim whitespace from input paths (to restore backward compatibility).
+- Quick version (-vq) now output to log if logging enabled.
+- Allow negation of -dt, -sb, and -sv.
+- Make all long options all lower case for consistency.
+- Better handling of Zip environment variables.
+
+Show files:
+- For -sF, add options "none" and "all".  Fix usize bug.
+- Add multi-line comment support to -sF.
+
+API and LIB/DLL Libraries:
+- Add mapping of API relative paths to full paths.
+- Add CD_ONLY to API feature list.
+- Fix handling of quotes when API receives command string.
+- Add sizes to API version components.
+- API DLLERROR now returns void instead of long, as there's nothing
+    to return.
+- API DLLPROGRESS argument order now standard API order.
+- Update API (LIB/DLL) examples to include Progress, Error, and Finish
+    callbacks.  Add additional comments.
+- For DLL, disable output to stdout.
+- API percent_this_entry_processed now percent_this_entry_processed_x_100.
+- Update whatsnew_dll_lib.txt.
+- Update API entry points.
+
+Unix:
+- Updates to Unix Unicode checks.  Updated iconv test.
+- Add setlocale() to Unix wchar_t check.
+- Add missing locale.h to unix/configure.
+- Free BSD Unicode fixes.
+- glibc pre 2.23 LARGE_FILE_SUPPORT fix.
+- Add Unix NO_UNICODE_SUPPORT to test no UNICODE_SUPPORT builds.
+
+Windows:
+- Windows console output fixes.  Better Unicode support.
+- Windows performance improvements.
+- Clean up Windows Unicode calls.
+- Update windll.aps.
+
+VMS:
+- VMS AES updates.
+- Fix VMS Adjust option.
+- VMS CLI updates.
+- VMS filesize fix.
+
+CYGWIN:
+- Add --stdinout-tty option that forces Zip to assume stdin and stdout
+    are ttys.  This is mainly to allow proper filter handling on CYGWIN
+    where stdin and stdout are pipes.  This option can be added to an
+    environment variable to allow proper handling of commands like
+    "zip" (outside a pipe) and "zip -v".  Note that, with this option,
+    to use Zip as a filter the form "... | zip - - | ..." is needed.
+
+Languages and Unicode:
+- Allow Unicode path matching by default when Unicode enabled.
+- Unicode options refactored.  Now -UD (--unicode-dont-use), -UE
+    (--unicode-escapes), -UL (--unicode-local), and -US (--unicode-show).
+    -UN (--unicode) now only handles mismatch action.  See manual for
+    what each option does.
+- Change eno12 to eno11 in iconv test.
+
+Pipes, stdin, stdout and streaming:
+- Support streaming symlinks.
+- Can now process "-" as a file name rather than just as stdin.  (See -SI.)
+    Fix some stdin issues.  When "-" is stdin show as "- (stdin)".
+- Better handling of zipping to stdout.
+- -SI (--rename-stdin).
+
+Dates, times and timing:
+- Support for ISO 8601 "T" date time separator (e.g. 2018-05-27T14:44:20).
+- Require minute and second (if present) time fields to be two digits.
+
+Comments:
+- For entry comments, now support -c (interactive entry), -c="entry comment",
+    and -cc="entry-comment-file".
+- For archive comment, now support -z (interactive entry), -z="archive comment",
+    and -zz="archive-comment-file".
+- Better support for Unicode comments.
+- Support reading Windows wide characters (Unicode) when prompting for comments
+    on Windows and converting to UTF-8 comments.
+- Fix bug by disabling OEM when comment is flagged as UTF-8 (now default).
+
+Performance:
+- Add Skip Scan which, when enabled, can speed up archive processing in some
+    cases.  (Much of this is now included in the main code and done
+    automatically.)  Ben Rubson.
+- Ben Rubson performance updates.
+- Unix FTS fast directory sorting.  Ben Rubson.
+
+Bug fixes, debugging, warnings, errors, and error codes:
+- Symlink fixes.
+- Unix append detection bug fixed.
+- Fix "." path bug.
+- New error code ZE_PATH (27) for bad names and paths.
+- Fix isspace() issues.
+- Environmental arg fixes so things like "zip -v" work correctly when command
+    line information is defined in environment variables.
+- Fix filterlist (patterns list) bug.
+- Update warnings to use new multi-line format (when needed).
+- Switch to dynamic buffers in output message routines to remove potential for
+    buffer overflow exploit
+
+Builds, maintenance and testing:
+- -sd (show debugging) now works with -pt (performance timing).
+- New --corrupt option to create corrupted archives for testing.
+- Can corrupt entry uncompressed and compressed sizes for testing.
+- Pre-ANSI compiler fixes.
+- VS 2017 compiler fixes.
+- Add Unix Makefile rule for zipup_l.o.
+- NO_BUILD_DATE compile option.  This removes changing build date from the -v
+    page that was messing with automated regression tests.
+- Basic regression testing.
+    
+    
+-----------------------------------------------------------------------
+
 New things in Zip 3.1d
-
-There were a lot of changes and additions in Zip this beta cycle.
-We've broken them up by category for easier reading.
-
-Note that most short options (like -Y) have a long option equivalent
-(like --encryption-method).  For brevity often only the short option
-is listed below.
 
 Compression/Encryption:
 - AES/WG (AES WinZip/Gladman) encryption.  Original (traditional/ZipCrypto)
@@ -198,6 +324,8 @@ Backups:
     date/time stamps in file names, this feature is currently only available
     on ports that support long file names.
 
+
+
 Libraries:
 - Revamped LIB/DLL interface.  The updated Zip library interface now
     takes a Zip command line rather than the old options structure.
@@ -316,6 +444,7 @@ Windows:
     fastest.  (Not Win32 with assembly or 64-bit executables, as you might
     expect on 64-bit Windows.)  We plan to investigate this further shortly.
 
+
 z/OS and MVS:
 - z/OS and MVS.  A revamping of the MVS and z/OS ports is under way.
     This beta contains some of those updates, including better Unix
@@ -396,6 +525,7 @@ Languages and Unicode:
     unsupported include files.  Unicode include files must be UTF-8.
 - ZipNote UTF-8 names.  ZipNote now accepts UTF-8 names and file comments.
 
+
 Streaming:
 - Streaming mode.  The new option -st enables a new streaming mode that
     stores file attributes and other central directory only information
@@ -419,6 +549,7 @@ Zip64 and large file support:
     use of Zip64 in some rare cases, such as creating archives that very old
     utilities can read, especially if streaming to stdout.
 
+
 Dates, times and timing:
 - Options -t and -tt that set a date range now support times in the forms
     :hh:mm and :hh:mm:ss.  Times are local in 24-hour format.  For example:
@@ -426,6 +557,7 @@ Dates, times and timing:
 - New option -pt provides performance timing, i.e. the total time it takes
     Zip to execute.  When -pt is used, the execution time is displayed by
     Zip just before it exits.
+
 
 Content detection and conversion, binary detection:
 - Inconsistencies regarding line end conversions using -l and -ll have been
@@ -440,6 +572,7 @@ Content detection and conversion, binary detection:
     would corrupt it.  With this change, no binary files should be converted
     or corrupted using -l, -ll or -a.    
 
+
 Comments:
 - Comment lengths.  Comment length now limited to 32765 characters.
 - Multi-line entry comments.  Multi-line archive (zip file) comments have been
@@ -453,6 +586,7 @@ Comments:
     existing comment.  When getting an archive comment from stdin, a line
     with just a dot "." still terminates the comment for backward
     compatibility.
+
 
 Other new features:
 - Easy logging.  New option -lF is shorthand for creating a log file with
@@ -481,6 +615,7 @@ Other new features:
     Normally when "-" is used as an input file to read content from stdin,
     the file stored in the archive is named "-".  The -SI option allows
     this file to be renamed to a name specified by the user.
+
 
 Bug fixes, debugging and error codes:
 (Many of these are discussed on the Info-ZIP User Forum.)
@@ -551,11 +686,14 @@ Bug fixes, debugging and error codes:
     to clarify just how this works.  (See the forum thread for more info:
     http://www.info-zip.org/phpBB3/viewtopic.php?f=6&t=492)
 
+
 Utilities (ZipCloak, ZipNote, and ZipSplit):
 - ZipSplit long output names.  On ports that support it, ZipSplit now allows
     for output file names longer than 8 characters.
 - Long option support and some improvements to ZipCloak, ZipNote, and
     ZipSplit.
+
+
 
 Documentation and manuals:
 - Numerous updates and clarifications in the manuals (man pages).

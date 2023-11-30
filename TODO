@@ -1,16 +1,1296 @@
-Todo list for Zip (last updated 2015-10-18).
+TODO list for Zip (last updated 2023-11-11)
 
 ===============================================================================
 
-Before release of Zip 3.1 maybe
--------------------------------
+This TODO list tracks what work is in the queue and in progress for Zip.
+See the file DONE for a list of work that has been completed or rejected.
 
-- May be inconsistencies in how "=" is handled on command line:
-      zip archive file1 -sd= file2
-    Get "short option '=' not supported.
-    Should run some tests.
-- Is keyfile_pass needed after zip.c line 9635?
-- Gap tests.
+Note that not all changes are tracked here.  For example, small stuff may
+just be fixed without tracking it here.  See CHANGES for all changes.
+
+Put new stuff in the New Stuff section (and tell us you did that).  Stuff there
+should eventually get moved to the appropriate spot.
+
+Some day we may have a real work tracking system, but this is what we got for
+now.
+
+
+Format notes
+------------
+
+Status:
+  REVIEW          = Still trying to figure out what to do with this.
+  IN QUEUE        = Want to work it, but not high enough priority yet.
+  PENDING         = Waiting to be worked for this release.
+  ON HOLD         = Waiting for something to happen.
+  WORKING         = The feature or bug is currently being worked.
+  PARTIALLY DONE  = Some parts done and merged, but more to do.
+  TESTING NEEDED  = A feature or bug fix may be done, but needs to be tested.
+  VERIFY          = Looks done but needs verification (like checking a doc).
+  DONE            = Feature implemented or bug fixed.
+  OBE             = Overcome by events.  Probably no longer useful.
+  DUPLICATE       = Work is covered by another task in the queue or done.
+  REJECTED        = Task rejected for given reasons.
+
+Target Release:
+  The public beta or release this feature or fix is targetted for.
+
+Estimated Work:
+  A guess on how much work the task would be.  (For this, a "day" is one
+  sitting in front of the keyboard of a couple hours within a busy day.)
+  
+  TRIVIAL = Less than an hour.
+  SMALL   = Less than a day.
+  MEDIUM  = A couple days.
+  LARGE   = More than a couple days, but no more than a couple weeks.
+  BIG     = More than a couple weeks.
+  HUGH    = Some major rewrite or something like that.
+  
+Priority:
+  A number category showing where in the queue the item is.  1 is top (in the
+  group of things likely next to work).
+
+Format notes:
+ - {Curly braces show where the task came from.}
+ - [Square brackets show who added an entry to this list and when.]
+ - (Parantheses show work done, when, and by who.) 
+
+The file CHANGES is considered the final authority on what was done and
+why.
+ 
+-------------------------------------
+
+The parts of a task entry
+-------------------------
+
+Given this example:
+---
+1094 - BUG - Unix "adding:" issue
+    Adding files to new archive OK, but when updating Zip reports "adding"
+    instead.  Example:
+      # touch test
+      # ./zip test.zip test
+      adding: test (stored 0%)
+      # ./zip test.zip test
+      updating: test (stored 0%)
+
+      zip31e07, with Unicode iconv support :
+      # touch test
+      # ./zip test.zip test
+      adding: test (stored 0%)
+      # ./zip test.zip test
+      adding: test (stored 0%)
+
+    The last adding should be an update.
+    {BenRubson, forum "FreeBSD & UNICODE", 2017-09-02}
+    [2017-09-02 EG]
+    (Bug was traced to not properly terminating the output string from
+    iconv in wide_to_local_string(), leaving extra characters that prevented
+    matching.  Fixed.  2017-09-04 EG)
+    ...
+    Priority:  1
+    Status:  PARTIALLY DONE  Target Release:  3.1e    Estimated Work:  TRIVIAL
+---
+These fields mean:
+1094                   - Unique ID number.  Add one to the "Last used ID Number".
+BUG                    - BUG, FEATURE, TEST, or DOCS issue.
+Unix "adding:" issue   - A descriptive one-line title for this task.
+Adding files to...     - Detailed description.
+{BenRubson, forum...   - { Source for this task, e.g. specific email, forum posting, ... }
+[2017-09-02 EG]        - When task was added to this list and who added it.
+(Bug was traced to     - ( Work entry for this task.  Each update is surrounded by
+                           parentheses and includes date worked and who worked it. )
+Priority               - Generally a number from 1 (highest) to 4 suggesting when to
+                           work this.
+Status                 - Where this task is.  Use one of the statuses above.
+Target Release         - The beta or release this is planned for, if known.
+Estimated Work         - A guess of how big a job this will be.
+
+
+
+============================================================
+============================================================
+
+    
+Last used ID Number:  1163
+(Be sure to update this.)
+
+
+============================================================
+============================================================
+
+List of what's being worked on and what's in the queue
+------------------------------------------------------
+
+    NEW STUFF
+    
+New stuff goes here, newest at the top.  Items here need to be assigned a
+priority before being worked.
+
+------
+
+201228
+
+Timeout when zip gets stuck.  c/cygwin64xx/usr/share/avogadro/crystals/zeolitesx/CON.cif
+while cygwin is running.
+
+Hit keystroke to get status update.
+
+------
+
+231111
+
+Need to add items from emails.
+
+
+------
+
+230815
+
+New issue where Windows Wide code is running out of memory while backing up my C: drive.  malloc is failing.  May
+have something to do with the limit discussed in the getrlimit man page.  May need to redo how Windows Wide is done.
+
+New option to output status every so many bytes.  Same as -dg, but with count and size info.
+Or just output one out of so many display lines.  Like every hundredth line to screen.  Log always gets all lines.
+
+Integrate changes from project.
+
+230815
+Summary line missing on displayed output:
+--
+630300/ 14 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/Local Folders/Inbox (0) (172 bytes security) (stored 0%)
+630301/ 13 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/Local Folders/Inbox.msf (2.5K) (172 bytes security) (deflate 54%)
+630302/ 12 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/Local Folders/msgFilterRules.dat (27) (172 bytes security) (stored 0%)
+630303/ 11 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/Local Folders/Trash (0) (172 bytes security) (stored 0%)
+630304/ 10 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/Local Folders/Trash.msf (2.0K) (172 bytes security) (deflate 51%)
+630305/  9 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/Local Folders/Unsent Messages (0) (172 bytes security) (stored 0%)
+630306/  8 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/Local Folders/Unsent Messages.msf (2.5K) (172 bytes security) (deflate 56%)
+630307/  7 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/ (0) (260 bytes security) (stored 0%)
+630308/  6 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/Inbox (84M) (172 bytes security)  (deflate 77%)
+630309/  5 [289G/3.3M] <  0s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/Inbox.msf (3.1M) (172 bytes security)  (deflate 72%)
+630310/  4 [289G/201K] <  0s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/msgFilterRules.dat (27) (172 bytes security) (stored 0%)
+630311/  3 [289G/201K] <  0s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/popstate.dat (199K) (172 bytes security)  (deflate 68%)
+630312/  2 [289G/1.3K] <  0s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/Trash (0) (172 bytes security) (stored 0%)
+630313/  1 [289G/1.3K] <  0s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/Trash.msf (1.3K) (172 bytes security) (deflate 45%)
+zip warning: Archive contains at least one Windows long path
+zip warning: - Archive may not be readable in some utilities
+
+J:\230815>
+--
+but appears in log:
+--
+630306/  8 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/Local Folders/Unsent Messages.msf (2.5K) (172 bytes security) (deflate 56%)
+630307/  7 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/ (0) (260 bytes security) (stored 0%)
+630308/  6 [289G/ 88M] <  4s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/Inbox (84M) (172 bytes security) (deflate 77%)
+630309/  5 [289G/3.3M] <  0s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/Inbox.msf (3.1M) (172 bytes security) (deflate 72%)
+630310/  4 [289G/201K] <  0s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/msgFilterRules.dat (27) (172 bytes security) (stored 0%)
+630311/  3 [289G/201K] <  0s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/popstate.dat (199K) (172 bytes security) (deflate 68%)
+630312/  2 [289G/1.3K] <  0s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/Trash (0) (172 bytes security) (stored 0%)
+630313/  1 [289G/1.3K] <  0s to go>  adding: Thunderbird/Ed/Mail/pop.earthlink-1.net/Trash.msf (1.3K) (172 bytes security) (deflate 45%)
+zip warning: Archive contains at least one Windows long path
+zip warning: - Archive may not be readable in some utilities
+total bytes=306732216883, compressed=277185215442 -> 10% savings
+
+Total 630314 entries (planned 289G bytes, actual 285G bytes)
+Done Tue Aug 15 19:00:58 2023
+--
+M4700_2023-08-15-1455_e_2.log
+
+
+
+
+============================================================
+============================================================
+ 
+  
+Targetted for this beta/release (this list changes often)
+---------------------------------------------------------
+
+
+----- Working -----
+(This list should be empty whenever a beta goes out, with the exception of
+items that are worked across multiple betas.  Items may be left open if
+outside testing of a beta is needed.)
+
+1163 - BUG - --force-zip64 with small files is not creating Zip64 end headers.
+    [2022-08-01 EG]
+    See SourceForge bugs #61 and #68.  Note that #61 is different as Fred is a directory being
+    added, not a file.  zipsleuth has issues with the #61 file.
+    Priority:  1
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+Mar 30 email 509P
+
+1162 - MISC - Verify crypt kits on ftp site.
+    [2019-09-11 EG]
+    Make sure crypt kits are on the ftp site and available for gov review.
+    Priority:  1
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  TRIVIAL
+    
+1161 - MISC - Python test script.
+    [2019-08-30 EG]
+    A Python script that does basic regression testing.  Take a look to
+    see if can be small enough but comprehensive enough to maybe include
+    in the Zip kit.
+    Priority:  1
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1160 - MISC - Clean up SourceForge
+    [2019-07-09 EG]
+    Much to clean up.
+    Priority:  1
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1159 - FEATURE - [SourceForge bug #59] Drive full error message for work drive
+    [2019-07-09 EG]
+    See SourceForge bugs:#59 2019-07-08.  From the bug:
+      The zip for DOS, OS/2 and windows has an option to specify a work
+      directory. Zip writes the same error message for inadequate space on
+      the target drive and inadequate space on the work drive, without
+      substituting the drive letter into the message text.
+    Probably just note the path that filled up.
+    Priority:  1
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1158 - BUG - @ outside list hangs
+    [2019-06-28 EG]
+    Command line:
+      zip -sf test1 * -AF -i@b.args @c.args @ a.args
+    where @ occurs outside list hangs.
+      zip -sf test1 * -i@b.args @c.args @ a.args
+    seems to work as expected.
+    (Fixed.  Error was not handling '@' argument when not ending a list or,
+    if arg files enabled, is arg file introducer without arg file name.
+    2019-06-30 EG)
+    (Fixed related bug where the global variable args was not being updated
+    in get_optionz() when args were added, causing a memory error when
+    freeup() tried to clean up an error return from get_optionz().
+    2019-07-02 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  TESTING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1157 - FEATURE - zip bomb detection/mitigation
+    [2019-06-13 EG]
+    See emails 2019-06-12.  In brief, this is addressing the creation of
+    archives where the internals have been constructed to expand into TB of
+    content to extract.  This is mainly an UnZip thing, but some safeguards
+    might make sense in Zip, especially when reading existing archives.    
+    Priority:  2
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1156 - FEATURE - Fractional seconds on times
+    [2019-05-16 EG]
+    See emails 2019-05-15.  User is requesting that it be possible to filter
+    contents (such as using -t and -tt) by fractions of seconds.  This is
+    not trivial, however, as timestamps used by zip archives generally are
+    only accurate to 1 second.  This may require creating a new time field
+    for comparisions that uses a timestamp reconstructed from the various
+    time extra fields used on different platforms, when available.
+    Priority:  1
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1155 - DOC - Performance test zip32 vs. zip64
+    [2019-03-05 EG]
+    Update performance information in /proginfo to include 64-bit versions.
+    Priority:  1
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1120 - FEATURE - -sf on Unix should probably sort list.
+    [2018-06-17 EG]
+    (Should do this for Zip 3.1e.  2018-08-01 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1154 - FEATURE - Implement DLLSPLIT callback
+    [2019-03-05 EG]
+    This callback would support the -sp option.  It's been waiting to be
+    implemented for some time now.
+    Priority:  1
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1153 - FEATURE - Add x64 support to WinDLL
+    [2019-01-27 EG]
+    Andreas provided WinDLL updates.  See 2019-01-27 7 AM email.
+    (Looks implemented.  2019-02-04 EG)
+    (Cleaned up to work with C examples.  64-bit LIB/DLL now called
+    zip64.  Still need to test what happens when zip64 used with
+    32-bit application.  2019-03-05 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  TESTING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1152 - FEATURE - Grow split archive
+    [2019-01-26 EG]
+    It should be possible to grow a split archive.  Not a high priority.
+    Priority:  3
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1     Estimated Work:  SMALL
+    
+1151 - BUG - VC10 DLL example doing double cd
+    [2019-01-21 EG]
+    The Windows command line example first calls ZpZip then ZpZipArgs.  If
+    a relative directory is provided (like "."), if -cd is used to move
+    relative to this (like "../..") Zip works for ZpZip but then uses the
+    new current dir for ZpZipArgs, doing a double "cd ../..".
+    (The example now restores the original current directory between the
+    ZpZip and ZpZipArgs calls.  Looks fixed.  2019-01-27 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  TESTING         Target Release:  3.1e    Estimated Work:  TRIVIAL
+    
+1150 - BUG - Sync AES version with published kit
+    [2019-01-21 EG]
+    Zip is using AES verison 1.4.  Update kit to use posted version.
+    Priority:  1
+    REFERENCES:
+    Status:  WORKING         Target Release:  3.1e    Estimated Work:  TRIVIAL
+    
+1149 - BUG - Does zipnote handle large and split archives?
+    [2019-01-08 EG]
+    The manual says it doesn't.  It should.
+    (Looks to handle split archives.  Now outputs comments using
+    print_utf8() to display on Windows as Unicode.  2019-01-20 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  TESTING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1148 - FEATURE - Create Win32 project that combines Zip and UnZip
+    [2019-01-06 EG]
+    Task 1140 did this for Unix.  This does same for Windows.
+    Priority:  1
+    REFERENCES:  1140
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1147 - BUG - Update VC6 and VB6 projects
+    [2019-01-06 EG]
+    Make sure these work with the current DLL/LIB.
+    (Looks done.  2019-01-07 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1146 - BUG - Remove Win32 and WinDLL bzip2 projects
+    [2019-01-06 EG]
+    As Zip includes the bzip2 files directly, the projects and the building
+    of the bzip2 lib is not needed.
+    (Looks done.  2019-01-07 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1145 - BUG - Fix Acorn/RISCOS build issues
+    [2019-01-06 EG]
+    Implement build fixes from Andreas.
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1144 - BUG - Fix LIB/DLL to handle c= and z=
+    [2019-01-06 EG]
+    The comment callbacks are called for -c and -z, even if a comment is
+    provided.
+    (May be fixed.  2019-02-04 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  TESTING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1143 - MISC - Determine fate of forum
+    [2018-12-31 EG]
+    Email today (Paul Marquess <pmqs@users.sourceforge.net>) at 4:51 AM asking
+    if forum is coming back.  Looks like it could be hosted on SourceForge,
+    but not sure if group wants additional workload.
+    (Replied to email.  2019-01-01 12:30 AM EG)
+    Priority:  2
+    REFERENCES:
+    Status:  PENDING         Target Release:  ????    Estimated Work:  SMALL
+    
+1142 - BUG - AES WG not compiling on CYGWIN
+    [2018-12-31 EG]
+    This was due to the changing of how CYGWIN is detected.  The macro
+    __CYGWIN32__ is no longer used.  The macro __CYGWIN__ should be used
+    instead for new CYGWIN releases.  Updated aes_wg/brg_endian.h to look
+    for either.  Can now compile Zip on CYGWIN.
+    Priority:  1
+    REFERENCES:
+    Status:  DONE            Target Release:  3.1e    Estimated Work:  SMALL
+    
+1140 - FEATURE - Add LIB example combining Zip and UnZip
+    [2018-12-27 EG]
+    Suggested by email from Andreas regarding Visual Studio example.  We need
+    a command line lib example that includes both Zip and UnZip LIBs to
+    verify they can work together.  Can be simple example.
+    (Created Unix example libs_example.c which combines the Zip and UnZip
+    LIBs in one application.  Some function conflicts resolved by renaming
+    some Zip functions.  To speed work, no UnZip changes were made.  All
+    major Zip callbacks are still used, but only the UnZip password
+    callback is currently used.  Other UnZip callbacks will be needed to
+    implement a fully functional graphical application.  Also, some of
+    the UnZip callbacks use return methods that may not be compatible
+    with Visual Basic and other Windows DLL applications.  Still want to
+    review and update the UnZip API.  Testing shows everything looks to
+    be working.  Would like to add additional UnZip callbacks before
+    Zip 3.1e beta is final.  2018-12-31 EG)
+    (Needed to modify unzip.h to remove basic type conflicts.  2019-01-07 EG)
+    Priority:  1
+    REFERENCES:  1148
+    Status:  TESTING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1139 - BUG - RISC OS (Acorn) issues on Raspberry Pi, Amiga issues
+    [2018-11-23 EG]
+    See email from Andreas, 2018-11-22.  Includes changes to get RISCOS to
+    compile on Raspberry Pi, Amiga fixes and some general fixes.
+    (Many updates based on inputs from Andreas in referenced email and later
+    emails.  Implemented in Zip 3.1312.  2018-12-16 EG)
+    (No further replies from Andreas.  Will be closing this task shortly as
+    we currently can't test.  I need to get a Raspberry Pi.  Maybe in a
+    month or two.  Then can revisit this task.  2018-12-31 EG)
+    (Changes documented in CHANGES.  2019-01-06 EG)
+    (Andreas provided a few minor addional fixes for compiling on RISCOS.
+    Issues addressed.  2019-01-06 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  TESTING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1136 - TASK - Update docs for Zip 3.1e, including WhatsNew.
+    [2018-08-01 EG]
+    Priority:  1
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1134 - BUG - zipnote should update UTF-8 extra fields.
+    [2018-07-29 EG]
+    This may get done before Zip 3.1 goes out.
+    (May be sufficient to test with UTF-8 inputs, given UTF-8 main fields
+    are now the default.  2018-08-01 EG)
+    (zipnote now handles Unicode and the new option -u allows zipnote to output
+    UTF-8, which can be edited in a UTF-8 aware editor, then read back into
+    zipnote to update paths and comments.  zipnote now sets the UTF-8 bit for
+    an entry when a UTF-8 path or comment is encountered.  zipnote does not
+    use Unicode extra fields.  2018-12-27 EG)
+    (Needs testing on Linux.  2018-12-31 EG)
+    (Looks dup of 1067.  2018-12-31 EG)
+    Priority:  1
+    REFERENCES:
+    Status:  TESTING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1132 - FEATURE - Should be possible to use zipcloak to change encryption without
+    decrypting archive first.
+    [2018-06-18 EG]
+    (This may require two passes, as must decrypt before reencrypt.  Moving this
+    to Priority 3 as probably not worth holding up Zip 3.1e for.  2018-08-01 EG)
+    (Could be done in one pass.  Probably need second temp file to store the
+    unencrypted version, which might be a security issue.  2018-12-16 EG)
+    (This one is probably too complex to do for 3.1.  2018-12-27 EG)
+    Priority:  3
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1     Estimated Work:  MEDIUM
+
+1094 - Unix "adding:" issue
+    Adding files to new archive OK, but when updating Zip reports "adding"
+    instead.  Example:
+      # touch test
+      # ./zip test.zip test
+      adding: test (stored 0%)
+      # ./zip test.zip test
+      updating: test (stored 0%)
+
+      zip31e07, with Unicode iconv support :
+      # touch test
+      # ./zip test.zip test
+      adding: test (stored 0%)
+      # ./zip test.zip test
+      adding: test (stored 0%)
+
+    The last adding should be an update.
+    {BenRubson, forum "FreeBSD & UNICODE", 2017-09-02}
+    [2017-09-02 EG]
+    (Bug was traced to not properly terminating the output string from
+    iconv in wide_to_local_string(), leaving extra characters that prevented
+    matching.  Fixed.  2017-09-04 EG)
+    (Still need to address:
+    - Make sure other iconv use terminates output buffer.
+    - Check if local character set is UTF-8, and if so maybe just return
+        input instead of converting to wide and back to UTF-8.
+    2017-09-05 EG)
+    (Everything seems working at this point, based on rather thin testing,
+    so may let this go for now.  2019-01-01 EG)
+    Priority:  1
+    Status:  PARTIALLY DONE  Target Release:  3.1e    Estimated Work:  SMALL
+
+1048 - Test if UTF-8 locale is available in unix/configure and set UNICODE_FILE_SCAN
+    if so.
+    [2017-07-30 EG]
+    (This could be done in the existing unix/configure wchar_t check.  However,
+    actual support is dependent on if Zip is started up in a UTF-8 environment.
+    Setting this may be as simple as matching the setting of UNICODE_WCHAR.
+    2017-08-06 EG)
+    (When configure sets UNICODE_WCHAR it now also sets UNICODE_FILE_SCAN.
+    2017-08-06 EG)
+    (Moved to Priority 1 to resolve.  2017-08-06 EG)
+    (What counts is what the file system scan returns, so if UTF-8 is supported,
+    we might assume that the scan returns UTF-8 and that should be enough.  So
+    maybe just check if a UTF-8 locale is available.  Should be a quick change
+    to configure.  Currently a UTF-8 locale is set in the wchar_t test.  If it
+    can't be set, that call should fail.  Just need to capture this and set
+    UNICODE_FILE_SCAN if we can set a UTF-8 locale.  2017-08-06 EG)
+    (UNICODE_FILE_SCAN now set if UNICODE_WCHAR or (HAVE_WCHAR and UNICODE_ICONV
+    set.  In both cases we should have enough to process Unicode paths and
+    assume paths are given to us as Unicode if in a UTF-8 environment.
+    2019-01-20 EG)
+    REFERENCES:  1046
+    Priority:  1
+    Status:  TESTING         Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1112 - Performance tests.
+    [2018-05-03 EG]
+    Do some performance testing and record the results.  Include testing the
+    Rubson changes.
+    (Plan one extensive backup operation that should show any major issues.
+    After that, moving this to Priority 2 to do before Zip 3.1 goes out.
+    2018-06-17 EG)
+    Priority:  1
+    REFERENCES:  1025
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  MEDIUM
+
+   
+-------------------
+
+    Currently the cutoff for Zip 3.1 is expected to include Priority 1 and 2
+    items.  Also the New items need to be added to appropriate sections.
+
+    At this point remaining key items have been moved to Priority 1 and it looks
+    like that will be the cutoff for Zip 3.1e, and possibly Zip 3.1.
+    
+-------- 1 --------
+(Probably next in line to be worked.  The plan is for all Priority 1 items
+to make it into the Zip 3.1e public beta.  Items that take too long may get
+bumped to a lower priority.)
+
+
+1029 - Post updated AES doc.  (2016-07-11)
+    (AES kit 1.5 posted.  2016-12-03 EG)
+    (SMS has posted an update that when reviewed was found to have issues.
+    Awaiting another update from SMS.  2017-06-17 EG)
+    (SMS says to use what's in UnZip kit.  2017-07-08 EG)
+    (At this point will do a review of what's there, change anything that
+    has to be changed, and leave the rest as is.  Zip 3.1e needs to be
+    complete, but coordination with UnZip can happen before Zip 3.1 is
+    released.  2018-06-17 EG)
+    (Probably good enough.  Probably not worth further word smithing.
+    2018-07-29 EG)
+    Priority:  1
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  SMALL
+    
+	
+1034 - Determine state of force_compression.  (email 2017-05-26 SMS)
+    [2017-06-03 EG]
+    (Make -fc work, or remove.  2017-07-29 EG)
+    (Need to look at.  Not trivial as the compress/store decisions are made
+    in different spots.  2018-06-17 EG)
+    (May need to drop this for this release.  2019-01-20 EG)
+    Priority:  1
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1052 - Populate the Zip regression testing script with cases.  (2017-06-17 EG)
+    (Started doing that.  2018-02-24 EG)
+    (Change this to just create initial set of basic tests.  Expanding on that
+    can come later.  Moving to Priority 1.  2018-04-08 EG)
+    (This task should focus on a minimum comprehensive set of tests, especially
+    tests of the new features.  2018-06-17 EG)
+    (Test 1050 (-td) here.  2018-06-17 EG)
+    (Test cases that could, for example, create a buffer overflow to make sure
+    they are gracefully handled.  See 1124.  2018-07-15 EG)
+    (Should be test for arg lists, and single @ outside arg list.  See 1033.
+    2018-07-15 EG)
+    (This probably won't get done before Zip 3.1e goes out.  2018-12-31 EG)
+    REFERENCES:  1051, 1053, 1113, 1050, 1124, 1033
+    Priority:  1
+    Status:  WORKING         Target Release:  3.1e    Estimated Work:  LARGE
+    
+1087 - Update VMS options to match final version used by Zip main code.
+    [2017-08-06 EG]
+    (Assigned to Priority 2.  2017-08-17 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL 
+    
+1083 - Finish update and review of manual.
+    [2017-07-28 EG]
+    (Assigned to Priority 2.  2017-08-17 EG)
+    (zip.1 mostly done.  Still need to do other three.  2018-06-17 EG)
+    (zipcloak.1, zipnote.1 and zipsplit.1 have been updated.  2018-07-29 EG)
+    Priority:  1
+    Status:  WORKING         Target Release:  3.1e    Estimated Work:  SMALL 
+    
+
+
+==============================  Zip 3.1e cutoff  ==============================
+
+-------- 2 --------
+
+Items in this section still need review to determine which will get done
+before Zip 3.1 goes out.  Also, task 1116 takes a look at the rest of the
+list to see if anything should be moved up before Zip 3.1e goes out.
+    
+    
+1126 - BUGS file.
+    [2018-07-15 EG]
+    Do something with old BUGS file, which was more or less replaced by TODO.
+    (Leave as is for Zip 3.1e.  Moving to Priority 2.  2018-07-29 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1128 - -FF should look at UTF-8 paths.
+    [2018-07-15 EG]
+    This may be a dup.
+    (May have been addressed.  2019-01-20 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1127 - FEATURE - Allow multiple entry comments to be updated in one command line.
+    [2018-07-15 EG]
+    Currently only one entry comment can be updated for each zip operation.
+    Somehow allow specifying multiple comments on the command line and tie
+    them to specific entries.
+    This may not get into Zip 3.1.
+    (Maybe something like this:
+      zip archive -cm "*.log:Comment for .log entries"
+    where -cm is new option --comment-match and "*.log:" says to update the
+    comments that match pattern "*.log".  Multiple comments can then be
+    set like this (all on one line, could use argfile):
+      zip archive -cm "*.log:Comment for .log entries"
+                  -cm "*.txt:Comment for .txt entries"
+                  -cm "foo/*:Comment for entries in foo directory"
+    2018-07-25 EG)
+    (Now that zipnote supports UTF-8, that is likely the most efficent
+    approach to bulk comment update.  However, this feature still seems
+    useful.  2018-12-31 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1114 - FEATURE - For -BT, track deletion of files.
+    [2018-06-10 EG]
+    (Moved to Priority 1 to look at.  If too much work may get bumped out of
+    Zip 3.1.  2018-06-17 EG)
+    (Nice to have, but hard to justify holding Zip 3.1e for this.  Pushing
+    this to Priority 2, but may drop out of Zip 3.1.  2018-07-15 EG)
+    (This  might be done by creating a Deleted compression method.
+    2018-12-27 EG)
+    (Continuing that thought, if a file is found to be missing on the file
+    system, that file entry can be switched to the "Deleted" compression
+    method.  That might work, though no one would know what to do with that
+    compression method.  So a diff archive could be considered a patch, and
+    UnZip could be used to patch a file system, including deleting files.
+    2019-01-01 EG)
+    Priority:  1
+    Status:  PENDING         Target Release:          Estimated Work:  MEDIUM
+    
+1028 - Add top index to extended help?
+    (Could be done.  2017-06-16 EG)
+    (Not done.  Was added to manual.  2017-07-08 EG)
+    (This could be a brief listing of the sections that follow.
+    2017-08-06 EG)
+    (Worry about this after Zip 3.1e goes out.  Changing to Priority 2.
+    2018-07-15 EG)
+    Priority:  2
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1050 - New option that allows a set difference to exist between archive entries
+    and file system times.  This would allow manual accounting for things
+    like timezone changes and daylight saving time.  For instance:
+      -TD=-1:00:00
+    would consider file system times that matched entry times to be
+    matches and file system times that were an hour behind to also be
+    matches.  Multiple values could be specified, as in:
+      -TD=-1,1
+    (leaving off zero minute and second fields) so that times that were
+    off by exactly one hour less or more would match.  Odds are, if a
+    time is off by exactly one hour and the file size is the same, it is
+    the same file, just with a timezone offset.
+    [2017-07-23 EG]
+    (Probably the way to do this is to create a compare date/time function
+    and update any date/time compares to use this function.  Then modify
+    this function to allow passing the compare also if the delta is this.
+    Probably -td makes more sense as the option.  Also, makes sense to
+    have this an absolute delta, so don't need to figure out if the offset
+    is positive or negative as Daylight Saving Time comes and goes.
+      -td=0:30   delta of 30 minutes (either way)
+    Probably still want to accept more than one value, as someone may have
+    an archive where the contents came from multiple time zones.  Note that
+    an exact match (delta of 0) still always matches.
+    2017-08-06 EG)
+    (Moved to Priority 2 as I can use this feature.  2017-08-06 EG)
+    (Moved to Priority 1.  2017-08-13 EG)
+    (Looks done.  One delta where the actual time is checked, the time minus
+    this delta is checked, and the time plus this delta is checked.  This
+    should handle most cases.  Needs testing, which should be done in 1052.
+    2018-06-17 EG)
+    (Moving this to Priority 2 for review before Zip 3.1 goes out.  Basic
+    testing should be covered by 1052 before Zip 3.1e goes out.
+    2018-06-17 EG)
+    REFERENCES:  1052
+    Priority:  2
+    Status:  TESTING         Target Release:  3.1e    Estimated Work:  SMALL  
+    
+1027 - WinZip .zipx splits use split extentions like .zx01 instead of .z01.
+    [2014-09-12 EG]
+    (Zip should be able to read these.  These are part of the .zipx format.
+    However, Zip should continue outputting only split extensions like .z01,
+    as archives created by Zip only contain AppNote standard compression
+    methods (except for WinZip AES encryption).  2017-07-29 EG)
+    (Will take a look.  2018-06-17 EG)
+    (Zip already reads .zipx normal archives.  Split archive support would
+    good, but maybe can wait a bit.  2018-07-08 EG)
+    (Probably not worth holding up Zip 3.1e for.  Moving to Priority 2.
+    2018-07-15 EG)
+    (Could be done.  Needs testing.  2019-01-20 EG)
+    Priority:  2
+    Status:  TESTING         Target Release:  3.1e    Estimated Work:  SMALL
+    
+1106 - DOCS - Performance table.
+    {Forum, Performance improvements (--skip-scan related), 2017-09-07}
+    (As the forum is no more, this is now just creating a table of simple
+    performance test results.  Moved to Priority 2.  2018-06-17 EG)
+    Priority:  2
+    REFERENCES:  1112
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1104 - DOCS - Maybe make Zip man page more like GAWK man page as far as formatting.
+    [2017-09-17 EG]
+    (Doubt this will happen before Zip 3.1e goes out.  Moving to Priority 2.
+    2018-06-17 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  MEDIUM
+    
+1030 - Coordinate new extra fields with PKWARE.
+    (Plan to do this when Zip 3.1e goes out, assuming that is a release
+    candidate.  2017-07-28 EG)
+    (Moving this to Priority 2, as won't be done until Zip 3.1e is out there
+    for PKWARE to look at.  2018-06-17 EG)
+    Priority:  1
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1038 - -pa does not seem to limit to just new entries.
+    Works if adding entries, otherwise -pa acts like -pp.  Should doc.
+    [2016-04-29 EG]
+    (This should be checked to see if this is a bug.  Moving to Priority 1.
+    2017-08-06 EG)
+    (Moving to Priority 2 to resolve before Zip 3.1 goes out.  2018-06-17 EG)
+    Priority:  1
+    REFERENCES:  1042, 1044
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  SMALL
+
+1042 - -SI should support UTF-8.  Also -pa and -pp.  Maybe relax constraints to
+    just check for non-print and "..".  (2016-04-07 EG)
+    (Convert check_path to use wide characters where supported (UNICODE_SUPPORT).
+    2016-04-09 EG)
+    (May be implemented for -SI.  2016-04-29 EG)
+    (-pp and -pa seem to handle UTF-8 now.)
+    (With relaxing of constraints on -pa and -pp, only standard path characters
+    are now checked.  So may be nothing more to do on this.  2017-08-06 EG)
+    (Moved this to Priority 1 to test it.  2017-08-06 EG)
+    (Moved to Priority 2 to resolve before Zip 3.1 goes out.  2018-06-17 EG)
+    Priority:  2
+    REFERENCES:  1044, 1038
+    Status:  NEEDS TESTING   Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1043 - Enable -st as default?  (2016-04-09 EG)
+    (As people already complain when an archive is a few bytes larger, probably
+    not.  2017-08-06 EG)
+    (This seems already decided.  Moved to Priority 1 to resolve.
+    2017-08-06 EG)
+    (Probably will leave as is, requiring -ST to enable.  Moving to Priority 2.
+    2018-06-17 EG)
+    Priority:  2
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1044 - Better handle ALLOWED_PREFIX_CHARS and limitations on -pa, pp and -SI.
+    (Need to evaluate the utility of limiting what characters the user can
+    use here.  In the end, it may be up to the user and the OS what is
+    allowed.)
+    (As of 3.1e03, most printable characters are allowed.  2016-04-30 EG)
+    (This may be done.  Moved to Priority 1 for resolution.  2017-08-06 EG)
+    (Moved to Priority 2 to address before Zip 3.1 goes out.  2018-06-17 EG)
+    Priority:  2
+    REFERENCES:  1042, 1038
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1113 - Additional automated testing test cases - non-interactive
+    [2018-05-03 EG]
+    Create test cases for automated testing.
+    (This task moved to Priority 2.  Should get done before Zip 3.1 goes out.
+    2018-06-17 EG)
+    REFERENCES:  1051, 1052, 1098, 1053, 1114
+    Priority:  2
+    Status:  WORKING         Target Release:  3.1e    Estimated Work:  MEDIUM
+
+1114 - Additional automated testing test cases - interactive
+    [2018-05-03 EG]
+    Create way to automate testing features that include responding to prompts.
+    Maybe call Expect as part of non-interactive test.
+    (This one moved to Priority 2.  Should get to before Zip 3.1 goes out.
+    2018-06-17 EG)
+    REFERENCES:  1051, 1052, 1098, 1053, 1113
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  MEDIUM
+
+1095 - Mac OS X Unicode fix; bad iconv on Mac OS X.
+    In tailor.h:
+      >#ifdef UNICODE_SUPPORT
+      ># ifdef UNICODE_WCHAR        <---
+      >#  include <stdlib.h>
+      >/* wchar support may be in any of these three headers */
+    need to account for dependency on wchar_t.
+    Also, related issue in fileio.c with MAX_COM_LEN.
+    {SMS email, 2017-09-01}
+    [2017-09-01 EG]
+    (Changed line to:
+      # if defined(UNICODE_WCHAR) || defined(UNICODE_ICONV)
+    2017-09-01 EG)
+    (Apparently Unicode has not been enabled on Mac OS X before.  This may be
+    because it's based on FreeBSD and that was just fixed.  Now need to test
+    Unicode on Mac OS X.  2017-09-05 EG)
+    (This may not get done before Zip 3.1e goes out, as I have no way to test
+    it.  Moving to Priority 2.  2018-06-17 EG)
+    Priority:  2
+    Status:  VERIFY          Target Release:  3.1e    Estimated Work:  TRIVIAL
+    
+1115 - FEATURE - Verify delete option.
+    When set, when entries are deleted, the user is asked to confirm each
+    deletion.  This is similar to how unzip works when overwriting files.
+    [2018-06-10 EG]
+    Priority:  2
+    Status:  PENDING         Target Release:          Estimated Work:  MEDIUM
+    
+1088 - Update Win32 LIB and DLL examples to convert UTF-8 to wide characters for
+    display.
+    [2017-08-06 EG]
+    (Assigned to Priority 2.  2017-08-17 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  TRIVIAL
+
+1085 - Unicode File Scan.  Should UNICODE_FILE_SCAN be set if UNICODE_ICONV?
+    [2017-07-21 EG]
+    (This may be OBE.  See the other UNICODE_FILE_SCAN task.  2017-08-06 EG)
+    (Assigned to Priority 2.  2017-08-17 EG)
+    Priority:  2
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  SMALL 
+
+1076 - Fast updates.  See Forum topic "Info-ZIP Software Discussions and Feature
+    Requests / Info-ZIP Zip / Fast updating of small file in large archive".
+    [2017-06-21 EG]
+    (This might involve creating a way to "NULL out" an entry in an archive
+    that is deleted, allowing fast deletions.  A fast update can be a fast
+    delete followed by an add.  Adds would be to the end of the archive.
+    Assuming the archive is seekable, then all this could be done on the
+    existing archive (similar to --grow).  If --out is used, a file system
+    copy command could be used to make a quick copy of the archive, and
+    that copy updated using fast methods.  2017-07-23 EG)
+    (Given the possible speed improvement, worth looking at.  Assigned to
+    Priority 2.  2017-08-17 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL 
+    
+1075 - Continue changing function calls to support both NO_PROTO and PROTO.
+    [2017-06-24 EG]
+    (Should be nearly done.  Assigned to Priority 2.  2017-08-17 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  TRIVIAL
+    
+1091 - Maybe add a blank line at end of zip-comment.txt so get that blank line
+    in unzip -l listing.
+    [2017-08-06 EG]
+    (Assigned to Priority 2.  2017-08-17 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  TRIVIAL
+    
+1090 - On Windows, if doing something like:
+      type zip31e06\zip-comment.txt | zip zip31e06 -z
+    but the input file doesn't exist, get a Zip "aborting" error.
+    [2017-08-06 EG]
+    (Assigned to Priority 2.  2017-08-17 EG)
+    (This may not be a bug in Zip 3.1e08.  2018-02-24 EG)
+    Priority:  2
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  SMALL 
+    
+1056 - In zipup.c, maybe use 45 for "needed to extract" instead of 63 for the
+    added compression methods.  63 doesn't really gain us much.  (2016-03-24 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1057 - If zip warning at end (e.g. "Not all files were readable" ...),
+    "total bytes ... savings" message not on new line.  (2016-03-29)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1058 - "zip archive -pp prefix" should work.  (2016-04-29 EG)
+    Priority:  2
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  SMALL
+
+1059 - Add Linux dynamic library and example to test it.  (2017-01-19 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  MEDIUM
+
+1060 - For -t and -tt, support -mm-dd and -dd formats, where unspecified fields
+    default to current year and month.  (2016-12-03 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e
+    
+1061 - Put skip-scan code in SKIP_SCAN blocks.
+    (This should be done for Zip 3.1.  2017-06-17 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  MEDIUM
+    
+1062 - UTF-8 and -FF.
+    (Currently -FF does not handle UTF-8 very well, if at all.  There was
+    a complaint about this.  Should be a simple to moderate fix.  2017-06-17 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  MEDIUM
+    
+1063 - Clean up output of fcount and zcount.  (See note around line 10808 in zip.c.)
+    (2016-04-21 EG)
+    (See around line 11648 in zip.c.  2019-01-20 EG)
+    Priority:  2
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  SMALL
+
+1064 - No Win32 Security messages in log when -q?
+    (Get messages in log when not -q.)
+    (Should be checked.  2017-06-17 EG)
+    Priority:  2
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  SMALL
+    
+1065 - Make sure Zip handles jar CAFA ef correctly.  (2017-06-11 EG)
+    Priority:  2
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL  
+
+1066 - Deprecated GetVersion() in Windows 10.
+    (Still works.  May not get to this in Zip 3.1.)
+    (Really should get to this before release.  Moved to Priority 2.
+    2017-08-06 EG)
+    (Probably need to move Windows version determination into a new function
+    and call either the old or new version API call from there depending on
+    availability of the new call.  The new call is a bit more complex.
+    2017-08-06 EG)
+    (As MS is moving away from versions, this old call seems the only way to
+    easily tell if Windows XP and Windows 7 features are supported.
+    2018-12-27 EG)
+    Priority:  2
+    REFERENCES:  1074
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL  
+   
+
+==============================  Zip 3.1 cutoff  ==============================
+   
+-------- 3 --------
+
+
+1101 - Add Symbolic Link to -sF.
+    [2017-08-27 EG]
+    (unzip does this.  May not be worth holding Zip 3.1e for.  2018-08-01 EG)
+    (Bumping this to Priority 3.  Nice to have, but...  2019-01-01 EG)
+    Priority:  3
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  TRIVIAL
+      
+1141 - FEATURE - Add Zip error num to string function to API
+    [2018-12-31 EG]
+    A user of the API may want a standard way to output a Zip error message
+    associated with a return code.  May add this in next internal beta.
+    (This may be something others can do and we should not put much time on.
+    2019-01-01 EG)
+    (Bumping to Priority 3.  2019-01-01 EG)
+    Priority:  3
+    REFERENCES:
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1054 - Change -tn to -tu, so -tn => -tu-.  [SMS email 2017-06-08] (2017-06-08 EG)
+    (This is more complex.  -tn allows removal of different times, such
+    as access time, or all UT times.  This is intended as a debugging
+    tool.  Does not seem worth the time to rework this at this time,
+    so change is rejected.  2017-06-16 EG)
+    (This may be a candidate for an options flag list to specify the
+    times to include.  Note that the times (like access time) available
+    vary by platform.  May be workable with more thought.  2017-06-17 EG)
+    (Probably not worth the time to work for release 3.1.  2017-08-06 EG)
+    (Works now.  Does not seem useful to put time on this currently.  Moving
+    to Priority 3.  2018-04-08 EG)
+    Priority:  3
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  MEDIUM
+
+1055 - Review -su and -sU options.  (From 2017-05-24 SMS email (2017-06-03 EG))
+    (Will probably go out with Zip 3.1 as is.  2017-07-29 EG)
+    Priority:  3
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  MEDIUM
+
+1130 - General path modifier capability.
+    [2018-07-15 EG]
+    Something more general than -pp, -pa, -Cl and -Cu.
+    Probably won't make Zip 3.1.
+    Priority:  3
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  LARGE
+    
+1129 - Implement -EA (--extra-attributes).
+    [2018-07-15 EG]
+    Probably won't make Zip 3.1.
+    Priority:  3
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  LARGE
+    
+1096 - FEATURE - Merging of unix.c FTS sort with main sorts.
+    {EG, BenRubson}
+    [2017-09-01 EG]
+    (It works, so this is not a high priority.  2017-09-05 EG)
+    (Currently the two sorts are in separate places.  2018-02-24 EG)
+    (Moving to Priority 3 as it's not likely to change before Zip 3.1
+    goes out.  2018-06-17 EG)
+    Priority:  3
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL  
+    
+1067 - ZipNote is not Unicode aware.
+    (zipfile.c, line 5806 and below makes assumptions about UTIL that
+    are probably no longer valid.)
+    (Should look at this before Zip 3.1 goes out.)
+    (This is dup of 1134, which is done.  2018-12-31 EG)
+    Priority:  3
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  MEDIUM
+
+1068 - ZipCloak, ZipNote and ZipSplit should use Windows wide command line as
+    Zip does.
+    (This may require enabling some features that up to now have been
+    excluded from the utilities.  The original philosophy was that utilities
+    only needed to do specific things, but as features and needs evolve, the
+    utilities are being asked to do much the same things as Zip itself, such
+    as properly handling locales.)
+    (May not be worth holding up Zip 3.1 to fix.)
+    Priority:  3
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  MEDIUM
+
+1069 - Get rid of dependency on year 2107 in datetime() in zip.c.  (2016-12-03 EG)
+    Priority:  3
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  SMALL
+
+1070 - Can't force bzip2 compression of small file.  (For instance, can use
+    "zip archive tiny.zip -Z deflate -n :" to force deflation.  Also works
+    for lzma and ppmd. But not for bzip2.)  This may be more the auto
+    switch to store, though.  Should be way to force compression of tiny
+    files.  (2016-07-11 EG)
+	  (-fc (--force-compression) added but not yet implemented.  2016-12-03 EG)
+    Priority:  3
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL
+
+1071 - Look at efficiently handling huge_list.zip from BenRubson using
+    --skip-scan.
+    [2016-07-11 EG]
+    (This may be OBE if the performance enhancements from BenRubson work out.
+    These are being implemented as task 1025.  Depending on performance of Zip
+    with and without --skip-scan after the improvements, --skip-scan may be OBE
+    and may be removed before Release 3.1 goes out.  2017-08-20 EG)
+    Priority:  3
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  MEDIUM
+
+1084 - Implement DLLSPLIT (split) callback.  This callback is used with -sp to allow
+    the library caller to set the destination of each split of a split archive.
+    [2017-07-28 EG]
+    Priority:  3
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL 
+    
+1080 - Encrypt and decrypt entries using --copy.
+    [2017-07-23 EG]
+    Priority:  3
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL 
+
+1079 - Consider option that would store full (relative) paths in the archive,
+    rather than paths relative to the zip root directory.  This may
+    require asking the OS what the full path is, which may not be
+    supported on some systems.  This should work on Unix and Windows,
+    though, which do have calls to get the full path.  The -jj option
+    already exists (for MacOS) and might be used for this also.
+    [2017-07-23 EG]
+    (Assigned to Priority 3.  2017-08-17 EG)
+    Priority:  3
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL 
+
+1078 - Track deletion of files when doing -BT backups.  This might be done by
+    creating a "deleted file" entry in the DIFF and INCR archives.  UnZip
+    would need to know to delete such flagged files on restoring the DIFF
+    or INCR archive.  Probably should also flag DIFF and INCR archives as
+    being such also, allowing UnZip to automatically detect them.  But this
+    may not be needed.  UnZip should not delete flagged files without some
+    option specified to allow the deletions.
+    [2017-07-23 EG]
+    (Assigned to Priority 3.  2017-08-17 EG)
+    Priority:  3
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL 
+
+1077 - Long option names split at a dash (-) where the dash is the last character
+    probably should be negated.
+    [2017-07-22 EG]
+    (What do others do?  2017-08-06 EG)
+    (Assigned to Priority 3.  2017-08-17 EG)
+    Priority:  3
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  SMALL 
+
+1051 - Test creating a Python test script that runs Zip through basic tests.
+    Probably use Python 3 since new application.  Test on Windows and
+    Unix.  Include streaming tests.  Determine how to verify output
+    of tests was as expected within script.  Determine how to track
+    and report test results, and how to log them.  (2017-06-17 EG)
+    (Doesn't have to be Python, but it needs to be usable on multiple
+    platforms.  2017-07-28 EG)
+    (BASH tool may be sufficient.  2018-02-24 EG)
+    (The BASH tool seems sufficient.  Doesn't seem useful to look at this
+    at this time.  Moving to Priority 3.  2018-04-08 EG)
+    (In the future Python may be better, so will keep this one around for
+    now.  2018-05-29 EG)
+    REFERENCES:  1052, 1053
+    Priority:  3
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  MEDIUM
+
+    
+-------- 4 --------
+
+
+1072 - Sparse files.  See March 2016 emails.
+    (Some version of this may be possible by modifying the stream to the
+    compressor to write zeros (or something else) for sparse regions when
+    found.  This requires being able to detect sparse regions.  UnZip could
+    see these large regions and output sparse chunks.  This approach would
+    need to be verified as adequate.  Others store a sparse regions table,
+    allowing recreation of the sparse structure as the original.  Review is
+    needed.  2017-06-17 EG)
+    Priority:  4
+    Status:  REVIEW          Target Release:  3.1e    Estimated Work:  LARGE
+
+1073 - Update C# example to work with changes to API.  Verify all
+    works.
+    Priority:  4
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  MEDIUM
+
+1086 - Implement --iconv-from-code and --iconv-to-code?
+    [2017-07-30 EG]
+    (Assigned to Priority 4.  2017-08-17 EG)
+    Priority:  4
+    Status:  PENDING         Target Release:  3.1e    Estimated Work:  MEDIUM
+    
+    
+
+
+
+    
+    
+    ============================================================
+    ============================================================
+    
+    
+    
+Completed/Rejected
+------------------
+
+Batch of DONE moved to DONE file 2017-07-30.
+    
+Below are temporarily stored here until moved to DONE.  Items are added at the
+top of the list in order completed.
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    ============================================================
+    ============================================================
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+So far the below didn't make the cut for the next release
+---------------------------------------------------------
+
+- Ability to add entries from one archive into another.  (This is an old one.)
+    Maybe a --merge option that takes the name of an input archive, then
+    selections are made against that archive (that is the input archive) and
+    the normal zipfile is used as the output.  All entries in zipfile are
+    copied, then any selected from --merge archive appended.  (EG.  2016-04-05)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+
+- ZipSplit splitting by file.  (https://sourceforge.net/p/infozip/bugs/48/.
+    2016-04-02)  (Being considered, but as there is a workaround using zip -U
+    to copy files into separate archives and a script can be used to do that,
+    we may not get to it any time soon.)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+
+- Support for path/./path to set the relative path to include in an archive?
+    Change --current-directory to --chdir?  (Forum "Option to chdir".
+    2016-03-31)
+    (-cd (--chdir) already done.  2017-06-17 EG)
+    Status:  REVIEW          Target Release:  ?       Estimated Work:  MEDIUM
+
+- Add encryption to symlinks.  Consider adding compression to symlinks.
+    (The contents of symlinks (the path of the link) is not encrypted, but
+    the paths of entries in a WinZip encrypted archive are not either.
+    More thought is needed.  2017-06-17 EG)
+    Status:  REVIEW          Target Release:  ?       Estimated Work:  SMALL
+
+- Update --skip-scan to handle zflags.  Look at zlist processing.
+    (This should get done.  2017-06-17 EG)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  SMALL
+
+- Cross platform symlinks.
+    (Not sure how much more work is needed to do this.  2017-06-17 EG)
+    Status:  REVIEW          Target Release:  ?       Estimated Work:  SMALL
+    
+- Mismatch issue in deflate.c.  (2016-03-11 8:39 AM ET email.)
+    Status:  REVIEW          Target Release:  ?       Estimated Work:  MEDIUM
+    
+- Deprecate -@@ path in favor of -@=path.  (2016-03-15 Steve email.)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  SMALL
+
+- Add -lF=path and -lF-.  (2016-03-15 Steve email.)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  SMALL
+
+- Extended storage.  (2016-03-16 EG)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  LARGE
+
+- Zip should check UnZip for features (like Splits), not for version 6.1c.
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  SMALL
+
+- "zip infile -Yaes128 -O outfile" should work.  (ToDo item?)
+    (Copies, but does not encrypt.  Should encrypt.)
+    (May be looked at before release.)
+    (May not happen for 3.1e.  2017-06-17 EG)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  SMALL
+
+- Non-flushed console I/O?  (To minimize slowdown caused by console output.)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+
 - Finish -DI.
     (This is adding as a separate feature the capability now implemented
     in -BT to look through a series of archives to create a diff (an
@@ -19,6 +1299,8 @@ Before release of Zip 3.1 maybe
     in the order to be searched (base archive first).  So -DI gets a list
     of archives similar to how -i gets a list of patterns.)
     (This may wait until after Zip 3.1.)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+
 - Streaming Zip64 filter issue.
     (When using Zip as a filter, if the local record used Zip64 (because it
     didn't know better at that point, and so needed a Zip64 data descriptor)
@@ -26,7 +1308,124 @@ Before release of Zip 3.1 maybe
     compressed)), should the archive use the Zip64 end records to flag this
     as a Zip64 archive?  Or is the existence of the Zip64 extra field in the
     local record enough?)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+    
 - "zip -0 not supported for I/O on pipes or devices".  Why?
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+
+- bfcopy() (and STORE) should be more efficient.
+    (Compare to 7-Zip, which is twice as fast.)
+    (Maybe use low-level reads and writes.  Increase buffer size?)
+    (Needs to be looked at.  2017-06-17 EG)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+
+
+- If huge archive and just updating entry comments (-c), maybe output something
+    while the entry copying is being done before start updating comments.
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  SMALL
+
+- Binary detection on LZMA.
+    (LZMA does not handle binary/text detection the same as other methods.
+    -BF does not work for LZMA.  Block size (and so how far looks for binary)
+    depends on compression level.)
+    (This may have been related to -ll issue where asking to read 1 byte
+    returned 0 bytes and may be fixed.)
+    (Need to test.)
+    (This should be fixed.  2017-06-17 EG)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  SMALL
+    
+- LZMA revert to store?
+    (This is not currently implemented for LZMA compression.)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  SMALL
+
+- ZipNote should handle UTF-8 extra fields, UTF-8 bit.
+    (This gets complex.  May not be looked at until after Zip 3.1.)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+    
+- Verify UTF-8 comments are properly handled.  (2015-04-22 EG)
+    (This may get moved to next beta.  UTF-8 comments require ability to
+    input UTF-8.  Currently using fgets to get input.  This works for Linux
+    using UTF-8 locale, but not for Windows.  For a Windows console probably
+    need to use ReadConsoleW to get Unicode (wide characters) and then need
+    to convert to UTF-8.)
+    (Given lack of Unicode comment support elsewhere, this may get moved to
+    next release, unless UnZip supports.  UTF-8 comment support should be
+    natural on Linux using UTF-8 locale, but for compatibility with other
+    utilities we may want to limit comments to ASCII.  PKZip may allow
+    UTF-8 comments and UTF-8 entry comments are supported by AppNote.  There
+    seems nothing preventing use of UTF-8 in archive comment (as UTF-8 would
+    not allow duplication of EOCDR signature).)
+    (This may be duplicated above.  2017-06-17 EG)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+    
+- Saving local character set in archive?  This is storing in the entry meta
+    data the character set detected by Zip.  The local character set/code page
+    is currently displayed by "zip -v".)
+    (The main reason for this is to allow direct conversions between file path
+    character sets, rather than going through UTF-8.  This could be useful for
+    EBCDIC platforms.  It might also allow content conversions, which are
+    currently outside the scope of Zip.  As one-for-one character conversions
+    between distinct character sets tends to result in unconvertable
+    characters, this could be problematic.  Zip currently uses Unicode escapes
+    for characters that do not convert when converting file paths.  It may be
+    better to leave content conversions to other tools.)
+    (Given many unanswered questions, this is not likely to be addressed until
+    after Zip 3.1.)
+    (Not likely will make 3.1.  2017-06-17 EG)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+    
+- Are scanning dots included in -q -dg?  If so, should be space between scan
+    and zip dots.
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+    
+- Consider moving ecomment() and acomment() from api.c to main code
+    and replacing embedded code for non-LIB/DLL case with these.  For
+    LIB/DLL, consider enforcing \r\n line ends.
+    (Some work done.  Need to look at.)
+    (May be partially duplicated above in -z=comment.  2017-06-17 EG)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+    
+- Document ENABLE_USER_PROGRESS.
+    (Very little documentation on this feature provided by a developer.)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  MEDIUM
+
+- ACL longer than can fit in a header.  (2014-04-15, but this issue has been
+    around for years.)  This may require a new place to store long data
+    in the archive for each record.
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  LARGE
+    
+- XZ?
+    (XZ is based on LZMA and is part of the LZMA SDK at
+    www.7-zip.org/sdk.html (version 9.04 and later).  WinZip
+    (http://www.winzip.com/comp_info.htm) says they got the source from
+    tukaani.org/xz/.)
+    (Would really like to include this in Zip 3.1, but probably not worth
+    holding up the release for.  Also, UnZip unlikely to support it soon.)
+    (We should do this.  2017-06-17 EG)
+    Status:  IN QUEUE        Target Release:  ?       Estimated Work:  LARGE
+
+   
+    
+    
+    
+
+Resolved Immediate List Items
+-----------------------------
+
+Moved to DONE file 2017-07-30.
+
+
+
+Before release of Zip 3.1 maybe
+-------------------------------
+
+- Zip might optionally output SHA checksum.
+- May be inconsistencies in how "=" is handled on command line:
+      zip archive file1 -sd= file2
+    Get "short option '=' not supported.
+    Should run some tests.
+- Is keyfile_pass needed after zip.c line 9635?
+- Gap tests.
 - Translation of line ends to and from MAC.
     (Does not look supported in iz_file_read() (zipup.c).  Does MAC now use
     Unix line ends?  (Yes.))
@@ -42,56 +1441,30 @@ Before release of Zip 3.1 maybe
 - Deflate does not need -BF as it already does full file check.
     (Added note.  As deflate can change to store, it may be necessary to keep
     doing the separate check in iz_file_read().  trees.c set_file_type().)
-    (Maybe leave like it is for now.)
-- If huge archive and just updating entry comments (-c), maybe output something
-    while the entry copying is being done before start updating comments.
+    (Maybe leave like it is for now.)   
 - Support -FI=regular to store FIFO as regular file.
     (May not be needed.  Seems others can handle/ignore the FIFO flag.)
-- Read Unicode comments from console on Windows.
-    (Requires opening input stream for comments as Unicode on Windows.)
-    (Support Unicode comments on Windows.  May need to use wide version of
-    fgets() (fgetws()) or ReadConsoleW() to read Unicode input.)
 - 32-bit v. 64-bit speed tests.  With and without assembly speed tests.
     (Initial tests suggest Release Win32 is fastest, then Release x64, then
     Release ASM Win32, then Debug Win32.)
     (Should get this done and include preliminary results, maybe in
     proginfo/perf_w32.txt.)
     (Created proginfo/perf_win.txt and added the preliminary data.)
-- Binary detection on LZMA.
-    (LZMA does not handle binary/text detection the same as other methods.
-    -BF does not work for LZMA.  Block size (and so how far looks for binary)
-    depends on compression level.)
-    (This may have been related to -ll issue where asking to read 1 byte
-    returned 0 bytes and may be fixed.)
-    (Need to test.)
-- LZMA revert to store?
-    (This is not currently implemented for LZMA compression.)
 - What to do about "-i @file1 includepat @file2 ... @", which is valid but
     user may not pick up on difference between "-i@file" and "-i @file ...".
     (The syntax is correct and documented.  No change expected before release
     of Zip 3.1.)
-- ZipNote should handle UTF-8 extra fields, UTF-8 bit.
-    (This gets complex.  May not be looked at until after Zip 3.1.)
-- Verify UTF-8 comments are properly handled.  (2015-04-22 EG)
-    (This may get moved to next beta.  UTF-8 comments require ability to
-    input UTF-8.  Currently using fgets to get input.  This works for Linux
-    using UTF-8 locale, but not for Windows.  For a Windows console probably
-    need to use ReadConsoleW to get Unicode (wide characters) and then need
-    to convert to UTF-8.)
-    (Given lack of Unicode comment support elsewhere, this may get moved to
-    next release, unless UnZip supports.  UTF-8 comment support should be
-    natural on Linux using UTF-8 locale, but for compatibility with other
-    utilities we may want to limit comments to ASCII.  PKZip may allow
-    UTF-8 comments and UTF-8 entry comments are supported by AppNote.  There
-    seems nothing preventing use of UTF-8 in archive comment (as UTF-8 would
-    not allow duplication of EOCDR signature).)
-- bfcopy() should be more efficient.
-    (Compare to 7-Zip, which is twice as fast.)
-    (Maybe use low-level reads and writes.  Increase buffer size?)
+    
 - Output something during long pauses when just updating comments?
+    (May be duplicate.  2017-06-17 EG)
+    
 - Probably should cache results of stat on zipfile.
     (newname() in fileio.c.)
     (There are multiple stats done.  May be able to cut this down.)
+    (Now cache zipfile stat.  Also Windows wide path.)
+    (Some of the changes for --skip-scan may have addressed some of this.
+    2017-06-17 EG)
+    
 - Check if -l and -ll undo each other.
     (Tests using -l with "-pp l_" and -ll with "-pp ll_" create files where
     the original matches the equivalent Windows or Unix version and the same
@@ -105,6 +1478,7 @@ Before release of Zip 3.1 maybe
     good for UnZip to support restoring a backup set.
     (Lack of this capability prevents full mapping of backups to file system.)
 - Does Zip compare file dates/times using UT?  Should it?
+    (It does if using UTC dates/times.  2018-07-15 EG)
 - Run out of disk space issue.  (Is ZE_TEMP error possible?)
     (Additional tests planned before public beta goes out.)
     (Did test on Win64 (Windows 7):
@@ -142,10 +1516,14 @@ Before release of Zip 3.1 maybe
     comma separated list, maybe (-sF=usize,comment).  This could also be used
     with -UN.
     (This may get looked at before release.)
+    (Duplicate.  Already addressed.  2017-06-17 EG)
+    
 - Check for \r\n (instead of just \n) when formatting multi-line comments.
     (May not be needed.  Assume \n always follows \r\n, so adding space
     after \n to indent next line should be reliable.)
     (May not be looked at for Zip 3.1.)
+    (May be addressed as part of -z=comment task above.  2017-06-17 EG)
+    
 - Option to inhibit sorting on Unix.
     (Is it needed?)
     (See if users have issues with sorting first.)
@@ -163,35 +1541,13 @@ Before release of Zip 3.1 maybe
     (Not able to duplicate - may have been issue with bad options table entry.)
 - Consider moving abbrevmatch() and strmatch() from util.c to fileio.c, or move
     string_dup() and others to util.c.
-- Saving local character set in archive?  This is storing in the entry meta
-    data the character set detected by Zip.  The local character set/code page
-    is currently displayed by "zip -v".)
-    (The main reason for this is to allow direct conversions between file path
-    character sets, rather than going through UTF-8.  This could be useful for
-    EBCDIC platforms.  It might also allow content conversions, which are
-    currently outside the scope of Zip.  As one-for-one character conversions
-    between distinct character sets tends to result in unconvertable
-    characters, this could be problematic.  Zip currently uses Unicode escapes
-    for characters that do not convert when converting file paths.  It may be
-    better to leave content conversions to other tools.)
-    (Given many unanswered questions, this is not likely to be addressed until
-    after Zip 3.1.)
-- No Win32 Security messages in log when -q?
-    (Get messages in log when not -q.)
-- Are scanning dots included in -q -dg?  If so, should be space between scan
-    and zip dots.
+
 - Can DLL and LIB support archive testing?
     (Given issues spawning UnZip to do testing, this feature has not been
     included in Zip LIB/DLL.  Any user of Zip LIB/DLL should also be able to
     link/call UnZip LIB/DLL to do testing.  Zip would just be a middleman
     where the user should call UnZip directly.)
     (Not planned for Zip 3.1.)
-- "zip infile -Yaes128 -O outfile" should work.  (ToDo item?)
-    (Copies, but does not encrypt.  Should encrypt.)
-    (May be looked at before release.)
-- On Windows, "zip archive -", when not in pipe, seems broke.
-    (May be addressed before Zip 3.1 is released.)
-    (Does look to be working now.)
 - On Windows, if UNICODE_SUPPORT_WIN32, set z->oname to UTF-8 name, unless
     disabled by -UN=ShowUTF8-?  Then all warnings and errors can use oname.
     (Significant work needed, but should be straight forward.)
@@ -240,21 +1596,13 @@ Before release of Zip 3.1 maybe
     would not be listed for those ports.)
     (No further work planned before Zip 3.1 goes out.)
 - IBM tests?
-    (Due to lack of IBM support, do not seem to be happening.)
+    (Due to lack of IBM support, does not seem to be happening.)
     (No further work planned for Zip 3.1, unless bug reports come in.)
-- Fix -SI to only rename stdin, instead of any entry named "-".
-    (This should be a quick check that the "-" entry came from stdin.)
-    (For now, user is responsible for not using -SI on non-stdin file,
-    not that that usage would hurt anything.  User file system files should
-    not be named "-" to avoid confusion.)
-- Better handle ALLOWED_PREFIX_CHARS and limitations on -pa, pp and -SI.
-    (Need to evaluate the utility of limiting what characters the user can
-    use here.  In the end, it may be up to the user and the OS what is
-    allowed.)
 - Consider controlling inclusion of -sd output in log using -li.
     (-sd output now uses the standard output routines, and so that output
     gets included in log.)
     (Should verify all is working correctly.)
+    (-sd output updated to use sdmessage().)
 - Standardize on using size_t where appropriate.  Retire extent, which seems
     generally defined as size_t.
     (Swapping size_t for the Zip extent type should be easy.  Resolving the
@@ -279,8 +1627,6 @@ Before release of Zip 3.1 maybe
     typed to "unsigned short" or "unsigned long".
 - Reconcile PATH_MAX stuff in api.h with path limits in zip.h, and PATH_MAX
     and similar used elsewhere.
-- Deprecated GetVersion() in Windows 10.
-    (Still works.  May not get to this in Zip 3.1.)
 - Add other callbacks to LIB and DLL C examples.
     (May not get to this before Zip 3.1 goes out.)
 - Look at making AES WG encryption selection consistent across ports.
@@ -292,6 +1638,8 @@ Before release of Zip 3.1 maybe
     (A test system for Zip may be in the works.)
     (Something may be done here before Zip 3.1 goes out.  Defining all the
     test cases is a significant task.)
+    (This may be duplicated above.  2017-06-17 EG)
+    
 - For EBCDIC, verify ASCII '/' ((char)0x2f) is used for iname parsing
     (and any internal names) and '/' (whatever for the character set) is
     used for name (and any external names).
@@ -303,18 +1651,6 @@ Before release of Zip 3.1 maybe
 - Fix utf8_to_local_string().
     (This can probably wait until after Zip 3.1, as this functionality is
     now rerouted through wide_to_local_string(), which knows what to do.)
-- ZipNote is not Unicode aware.
-    (zipfile.c, line 5806 and below makes assumptions about UTIL that
-    are probably no longer valid.)
-    (Should look at this before Zip 3.1 goes out.)
-- ZipCloak, ZipNote and ZipSplit should use Windows wide command line as
-    Zip does.
-    (This may require enabling some features that up to now have been
-    excluded from the utilities.  The original philosophy was that utilities
-    only needed to do specific things, but as features and needs evolve, the
-    utilities are being asked to do much the same things as Zip itself, such
-    as properly handling locales.)
-    (May not be worth holding up Zip 3.1 to fix.)
 - Consider Deflate64.
     (Probably won't happen, but it may be a faster alternative to the other
     compression methods to get a very small archive in some cases.)
@@ -328,21 +1664,12 @@ Before release of Zip 3.1 maybe
     any copyright they may have had is expired at this point.  We should
     ask PKWARE if we can use it now.)
     (Unlikely to happen before Zip 3.1 goes out.)
-- XZ?
-    (XZ is based on LZMA and is part of the LZMA SDK at
-    www.7-zip.org/sdk.html (version 9.04 and later).  WinZip
-    (http://www.winzip.com/comp_info.htm) says they got the source from
-    tukaani.org/xz/.)
-    (Would really like to include this in Zip 3.1, but probably not worth
-    holding up the release for.  Also, UnZip unlikely to support it soon.)
 - Look at sizing in crypt.c to verify appropriate sizing is used.  For
     instance, zoff_t versus size_t.  2015-04-25 (EG)
 - Encryption wrapper mode?  2015-05-22 (EG)
     (This is a new mode for wrapping an archive into an encrypted entry.)
     (Not likely to happen before Zip 3.1 goes out.)
 - Extended data ef?  Test?
-- Add top index to extended help?
-    (Considering.)
 - Update extrafld.txt with PH and other "new" extra fields.  Get to PKWARE.
     (extrafld.txt looks updated to include this PHold ef.)
 - Clean up envargs().
@@ -350,14 +1677,12 @@ Before release of Zip 3.1 maybe
 - Update C# WinDLL example.
     (This may need to be done mostly from scratch.  Will try to get to it.)
 - Verify assumption that can z->lflg = z->flg in zipup.c.
-- Consider moving ecomment() and acomment() from api.c to main code
-    and replacing embedded code for non-LIB/DLL case with these.  For
-    LIB/DLL, consider enforcing \r\n line ends.
-    (Some work done.  Need to look at.)
-- Document ENABLE_USER_PROGRESS.
-    (Very little documentation on this feature provided by a developer.)
+
 - Replace -tn with updated -X to remove universal time?
     (Does not seem high on the list.  Zip 3.1 may go out with this as is.)
+    (Now that -tn=a supported, probably won't replace.)
+    (This may be duplicate of -tu item above.  2017-06-17 EG)
+    
 - Look at utilities.
     (May be sufficiently done, or as done as it will get for now.)
 - Look at -v verbose mode.
@@ -373,9 +1698,6 @@ Before release of Zip 3.1 maybe
 - Look at total extra field size.
     (Some checks added to ensure end extra field block is kept within
     limits.)
-- Automated testing.
-    (Being looked at.  Actually, may have a system, just need to load
-    test cases.)
 - Utilities should be able to create logs.  (2015-10-18 EG)
 
 
@@ -411,9 +1733,6 @@ Unix:
 Zip structure:
 - Better check on comment size.  May want to limit it to much less than 32765
     bytes.  (2014-04-15)
-- ACL longer than can fit in a header.  (2014-04-15, but this issue has been
-    around for years.)  This may require a new place to store long data
-    in the archive for each record.
 - Option like -D (--default) for man that ignores contents of environment.
     Could be helpful for debugging.  (See
     http://man7.org/linux/man-pages/man1/man.1.html)  (2014-01-18)
@@ -453,12 +1772,14 @@ Dates and times:
     amount) when checking if a file to update has changed (as for freshen)
     to handle daylight saving and time zone differences.  (This might be
     -tz for --time-zone and take a relative time offset.)  (2014-09-12)
+    (New option -td addresses.  2018-07-29 EG)
 
 Status reporting:
 - Look at monitoring keyboard input to enable commands such as status,
     pause, and resume with single keystroke.  Would not be compatible with
     other uses of stdin so this feature would not be allowed in those cases.
     (2014-09-12)
+
 - Look at trapping console input to allow output of status with key stroke.
     (2014-09-12)
 
@@ -490,8 +1811,6 @@ Other:
 - Verbose mode -v may still need work.  (2014-09-12)
 - When user pattern is a directory, add end / automatically.  (2014-09-12)
 - Update Windows build projects to cover available options.  (2014-09-12)
-- WinZip .zipx splits use split extentions like .zx01 instead of .z01.
-    (2014-09-12)
 - FAQ says exact byte counts for downloads are in readme files in same
     directory.  Is this true?  Are the byte counts up to date?  (2014-09-12)
 - Provide hashes (such as MD5) for kits?  (2014-09-12)
@@ -512,6 +1831,7 @@ Other:
 - Look at how many times a stat() or similar is done and see if can cache
     some of the results.  Still need to check file just before archiving
     as scan stat() may be stale by then.  (2014-09-12)
+- z/OS support.
 
 
 
@@ -657,7 +1977,7 @@ Main features still missing for next official version (last updated 2/11/2001):
   (LF to CR LF but CR LF remains unchanged)
 
 
-Known bugs:
+Known bugs (should be merged with BUGS):
 
 - On VMS, zip fails reading some files with "byte record too large for
   user's buffer". You must use the "-V" option for such files.

@@ -1,6 +1,6 @@
 #===========================================================================
 # Makefile for Zip, ZipNote, ZipCloak, ZipSplit     AMIGA SAS/C Version 6.58
-# Version:  2.3                                   last revised:  07 Jan 2007
+# Version:  2.3                                   last revised:  12 Dec 2018
 #===========================================================================
 # -John Bush, <John.Bush@East.Sun.COM>
 #         or: <JBush@Bix.COM>
@@ -83,6 +83,7 @@ AUSECPU = 0
 # recommend as a minimum default stack for all applications) or more using the
 # shell stack command. Type 'Stack 20000' or add it to your S:Shell-Startup.
 # BTW: Typing 'Stack' prints your current stack size.
+# aSc: stack 6400 works, default is 4096
 #
 CSTACK = NOSTACKCHECK STACKEXTEND     # slow, but always works
 #CSTACK = STACKCHECK NOSTACKEXTEND    # slow, requester & graceful exit
@@ -107,7 +108,9 @@ CSTACK = NOSTACKCHECK STACKEXTEND     # slow, but always works
 
 # Library to use with near data and 4-byte integers (DEFAULT)
 # *** use this with the utility.library ***
-DATAOPTS = DATA=NEAR DEF=_NEAR_DATA
+# aSc changed to far instead of near because of too much data in zip.c
+#DATAOPTS = DATA=NEAR DEF=_NEAR_DATA
+DATAOPTS = DATA=FAR DEF=_FAR_DATA
 SASLIB   = sc
 ASMOPTS  =
 LSTARTUP = cres.o
@@ -229,13 +232,17 @@ CXREFOPT = XHEAD XSYS
 
 # Compiler warnings to ignore
 #
+# aSc Warning 51 : C++ comment detected (should be fixed)
+# aSc Warning 100 : no prototype declared for function (should be fixed)
 # Warning 105 : module does not define any externally-known symbols
+# aSc Warning 161 : no prototype declared at definition... (should be fixed)
 # Warning 304 : Dead assignment eliminated...
 # Note    306 : ...function inlined...
 # Warning 317 : possibly uninitialized variable...
 # Comment to enable.
 #
-CIGNORE = IGNORE=105,304,306,317
+#CIGNORE = IGNORE=105,304,306,317
+CIGNORE = IGNORE=51,85,94,100,109,120,161,182,225,304,305,306,308,317,394
 
 
 #
@@ -319,9 +326,13 @@ OPT  = $(OPT1) $(OPT2)
 # Compiler flags
 #
 CDEFINES = $(CMEMLIB) $(CDEFBETA) DEF=AMIGA
-COPTIONS = $(DATAOPTS) CODE=NEAR CPU=$(CUSECPU) VERBOSE PARAMETERS=BOTH NOMINC
+# aSc get rid of error 502 Reloc16 ... , using FAR instead of NEAR
+#COPTIONS = $(DATAOPTS) CODE=NEAR CPU=$(CUSECPU) VERBOSE PARAMETERS=BOTH NOMINC
+COPTIONS = $(DATAOPTS) CODE=FAR CPU=$(CUSECPU) VERBOSE PARAMETERS=BOTH NOMINC
 COPTIONS = $(COPTIONS) ERRORREXX NOERRORCONSOLE MEMSIZE=HUGE $(CLIST) $(CXREF)
-COPTIONS = $(COPTIONS) $(CSTACK) $(CUTIL) STRICT UNSCHAR NOICONS STRINGMERGE
+# aSc removed STRINGMERGE
+#COPTIONS = $(COPTIONS) $(CSTACK) $(CUTIL) STRICT UNSCHAR NOICONS STRINGMERGE
+COPTIONS = $(COPTIONS) $(CSTACK) $(CUTIL) STRICT UNSCHAR NOICONS
 CFLAGS = $(CDEFINES) $(COPTIONS) $(OPT) $(CDBG) $(CIGNORE)
 
 
@@ -475,6 +486,9 @@ ziplm:    local_zip CommonFlags $(OBJL)
           $(LD) TO ZipLM    WITH $(LWITHL)
 
 
+# aSc added -Delete >nil: $(ZIPS) quiet
+# This change rejected - the spotless target covers this
+# Added target cleanall to do this
 clean:
         -Delete >nil: $(OBJZ) quiet
         -Delete >nil: $(OBJN) quiet
@@ -491,6 +505,21 @@ clean:
 
 spotless: clean
         -Delete >nil: $(ZIPS) quiet
+
+cleanall:
+        -Delete >nil: $(ZIPS) quiet
+        -Delete >nil: $(OBJZ) quiet
+        -Delete >nil: $(OBJN) quiet
+        -Delete >nil: $(OBJC) quiet
+        -Delete >nil: $(OBJS) quiet
+        -Delete >nil: $(OBJL) quiet
+        -Delete >nil: $(OBJLISTZ) $(OBJLISTL) $(OBJLISTN) $(OBJLISTS) $(OBJLISTC) quiet
+        -Delete >nil: $(MAPFZ) $(MAPFN) $(MAPFC) $(MAPFS) $(MAPFL) quiet
+        -Delete >nil: \#?$(LISTEXTZ) \#?$(LISTEXTU) \#?$(LISTEXTL) quiet
+        -Delete >nil: $(CWITHOPT) $(CFILE) quiet
+        -Delete >nil: $(LWITHZ) $(LWITHN) $(LWITHC) $(LWITHS) $(LWITHL) quiet
+        -Delete >nil: env:VersionDate quiet
+        -Delete >nil: \#?.q.?? \#?.tmp \#?.cov quiet
 
 
 ################
@@ -556,6 +585,8 @@ timezone$(OL):  timezone.c $(ZIP_H) timezone.h
 stat$(OL):      amiga/stat.c     amiga/z-stat.h
 filedate$(OL):  amiga/filedate.c crypt.h timezone.h
 amiga$(OL):     amiga/amiga.c    ziperr.h
+# aSc missing amigazip added
+amigazip$(OL): amiga/amigazip.c $(ZIP_H) amiga/amiga.h env:Workbench
 # Substitute assembly version of deflate.c:
 #deflate$(OL): amiga/deflate.a
 #        $(ASM) $(ASMOPTSL) -o$@ $*.a

@@ -1,7 +1,7 @@
 /*
   win32/osdep.h
 
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -153,7 +153,12 @@
 #   ifndef NO_UNICODE_SUPPORT
 #     define UNICODE_SUPPORT
 #     ifndef UNICODE_WCHAR
-#      define UNICODE_WCHAR
+#      ifndef HAVE_WCHAR
+#       define HAVE_WCHAR
+#      endif
+#      ifndef UNICODE_WCHAR
+#       define UNICODE_WCHAR
+#      endif
 #     endif
 #   endif
 # endif
@@ -365,8 +370,10 @@ int wild(char *path);
    the epoch (to avoid rollover), so we need long long variables
    to do entry timing. - 2009 Aug 9 EG */
 #ifdef LARGE_FILE_SUPPORT
-# ifndef ENABLE_ENTRY_TIMING
-#  define ENABLE_ENTRY_TIMING
+# ifndef NO_ENABLE_ENTRY_TIMING
+#  ifndef ENABLE_ENTRY_TIMING
+#   define ENABLE_ENTRY_TIMING
+#  endif
 # endif
 #endif
 

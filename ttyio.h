@@ -15,10 +15,6 @@
 #ifndef __ttyio_h
 # define __ttyio_h
 
-# ifndef __crypt_h
-#  include "crypt.h"    /* Ensure that encryption header file has been seen. */
-# endif
-
 # if defined(IZ_CRYPT_ANY) || (defined(UNZIP) && !defined(FUNZIP))
 /*
  * Non-echo keyboard/console input support is needed and enabled.

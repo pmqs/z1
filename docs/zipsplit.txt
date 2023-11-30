@@ -8,7 +8,7 @@ SYNOPSIS
        [-L] zipfile
 
 ARGUMENTS
-       zipfile  Zipfile to split.
+       zipfile Zipfile to split.
 
 OPTIONS
        -t

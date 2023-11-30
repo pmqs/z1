@@ -1,8 +1,8 @@
 #==============================================================================
 # unix/Makefile
-# - For Zip, ZipCloak, ZipNote, ZipSplit, and Zip library   Revised: 2015-09-02
+# - For Zip, ZipCloak, ZipNote, ZipSplit, and Zip library   Revised: 2017-07-22
 #
-# Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+# Copyright (c) 1990-2018 Info-ZIP.  All rights reserved.
 #
 # See the accompanying file LICENSE, version 2009-Jan-2 or later (the
 # contents of which are also included in zip.h) for terms of use.  If,
@@ -87,7 +87,9 @@
 #   To include bzip2 compression support, there are three options:
 #   - Let the Zip builders build a bzip2 object library from the
 #     source kit in the bzip2 subdirectory.  This is the preferred
-#     method and should be used to create a "standard" build.
+#     method (as we have tested this version of bzip2 for compatibility
+#     with our code and we've already addressed the error handler
+#     issue) and should be used to create a "standard" build.
 #   - Use an existing build of the bzip2 library by setting the "make"
 #     macro IZ_BZIP2 to a directory containing the bzip2 header file and
 #     object (and/or shared) library files.
@@ -96,24 +98,27 @@
 #     Makefile, libbz2.a, or bzlib.h.  It may be safer to use one of the
 #     above options first, if possible, to avoid a possible problem with
 #     error handling that may not be done as expected by the system
-#     library.
+#     library.  (See the notes in bzip2/README_ZIP.txt.)
 #
-# Zlib deflation - To use zlib to handle Deflate compression instead of
+# Zlib deflation - To use zlib to handle Deflate compression, instead of
 #   Zip's built-in Deflate code, there are two options:
-#   - Use an existing build of the zlib support by setting the "make"
-#     macro IZ_ZLIB to a directory containing suitable zlib header and
-#     object/shared library files.
+#   - Use an existing build of zlib by setting the "make" macro IZ_ZLIB
+#     to a directory containing suitable zlib header and object/shared
+#     library files.
 #   - Use the system zlib support by ensuring that the local ./zlib
 #     subdirectory exists, and does not contain the files libz.a or
 #     bzlib.h.  Set the "make" macro IZ_ZLIB to "zlib".
 #
 # Zip Library - Zip now can be built into a library archive (libizzip.a).
-#   See below.  izzip_example.c is an example of using the library.  See
-#   the comments in that file for more information.
+#   See below.  izzip_example.c is an example of using the static library.
+#   See the comments in that file for more information.
 #
 #   We currently do not support a dynamic library, except in the Windows
 #   environment (zip32_dll.dll).  More information on that can be found
-#   in the windll directory.
+#   in the windll directory.  We are in the process of adding dynamic
+#   library (.so) support for Unix and some other ports.  More on this
+#   coming soon.
+
 #
 # -----------------------------------------------------------------------------
 #
@@ -138,6 +143,7 @@
 #
 # Be sure to test your new Zip (and ZipCloak, ZipNote, and ZipSplit).  A
 # successful build does not guarantee a working or fully functional program.
+# Do let us know of any issues you find so we can work to fix them.
 
 
 ###########
@@ -168,6 +174,11 @@ help:
 	@echo 'For a list including specific targets for older systems:'
 	@echo '   make -f unix/Makefile list'
 	@echo ''
+	@echo 'The default build now enables the full set of features.'
+	@echo 'You shouldn''t need to set any additional macros to'
+	@echo 'build the standard zip build.  You do need to specify'
+	@echo 'BINS=L to build the static library.'
+	@echo ''
 	@echo '"make" macros to control various optional features:'
 	@echo '    "NO_AES_WG=1"     Disable AES_WG encryption.'
 	@echo '    "BINS=[L][M][U]   Binaries build list:'
@@ -177,6 +188,7 @@ help:
 	@echo '                          and ZipSplit)'
 	@echo '                       Default: MU.'
 	@echo '    "CC=gcc"          Use "gcc" instead of "cc" for C compiler.'
+	@echo '    "NO_NAT_ICONV=1"  Disable use of native iconv from the OS.'
 	@echo '    "NO_ICONV=1"      Disable use of iconv.'
 	@echo '    "IZ_BZIP2=bz2dir" Use bzip2 compression from dir "bz2dir".'
 	@echo '    "NO_IZ_BZIP2=1"   Disable bzip2 compression.'
@@ -186,6 +198,7 @@ help:
 	@echo '    "NO_LZMA=1"       Disable LZMA compression.'
 	@echo '    "NO_PPMD=1"       Disable PPMd compression.'
 	@echo '    "PROD=subdir"     Build product files in "subdir", not ".".'
+	@echo '    "NO_UNICODE_SUPPORT" Disable detection of Unicode support.'
 	@echo ''
 	@echo 'The generic targets use unix/configure to test the target'
 	@echo 'system and compiler to determine what capabilities are'
@@ -195,10 +208,9 @@ help:
 	@echo 'automatically build Zip for the target system.'
 	@echo ''
 	@echo 'Default is to include all compression and encryption that source'
-	@echo 'is available for.  (bzip2, LZMA, and PPMd now included in Zip'
-	@echo 'source kit.  Need separate Info-ZIP AES WG kit to add AES'
-	@echo 'encryption, available on our site.)  See above to disable'
-	@echo 'these.  Macro names are case sensitive.'
+	@echo 'is available for.  (bzip2, LZMA, and PPMd compression and AES'
+	@echo 'encryption are now all included in the Zip source kit.)  See'
+	@echo 'above macros to disable these.  Macro names are case sensitive.'
 	@echo ''
 	@echo 'Examples:'
 	@echo '   Make Zip programs (zip, zipnote, ...) using cc:'
@@ -221,7 +233,9 @@ help:
 	@echo ''
 	@echo 'Use the "clean" target to delete any intermediate and product'
 	@echo 'files previously generated using one of the other "make"'
-	@echo 'targets.  If PROD= was used, you must use it on the clean'
+	@echo 'targets.  This is very useful if you fix a build issue, but'
+	@echo 'the flags don''t see the fix.  "clean" forces configure to'
+	@echo 'check again.  If PROD= was used, you must use it on the clean'
 	@echo 'command also to clean those files.'
 	@echo ''
 	@echo 'If needed, use "flags" target to rebuild the system-specific'
@@ -250,11 +264,11 @@ help:
 	@echo 'After Zip has been built, you can use "dashv" target to get a'
 	@echo '"zip -v" (version information) report from the created'
 	@echo 'executable.  This will show what capabilities were included in'
-	@echo 'Zip.'
+	@echo 'Zip.  (Or you can just do "./zip -v".)'
 	@echo ''
-	@echo 'See the file INSTALL and the comments in unix/Makefile for more'
-	@echo 'on building Zip.  See docs/zip.txt or man/man1/zip.1 for more'
-	@echo 'on using Zip, and the related man pages for the utilities.'
+	@echo 'See the file INSTALL and the comments in this unix/Makefile for'
+	@echo 'more on building Zip.  See docs/zip.txt or man/man1/zip.1 for'
+	@echo 'more on using Zip, and the related man pages for the utilities.'
 	@echo ''
 
 # list
@@ -375,7 +389,7 @@ MANPERMS = 644
 
 # C compiler and flags: core and bzip2
 # - CC and LD must match, else "unresolved symbol: ___main" is possible.
-# - To use "gcc", specify "make" macro, "CC=gcc", instead of editing here.
+# - To use "gcc", specify "make" parameter "CC=gcc" instead of editing here.
 CC      = cc
 CC_BZ   = $(CC)
 
@@ -454,7 +468,7 @@ H_PPMD   = szip/CpuArch.h   \
 #  Build configuration:  object files
 #----------------------------------------------------------------------------
 
-# File names ending in "_" are for the utilities.
+# File names ending in "_" are for the utilities (including zip).
 # File names ending in "_l" are for the library.
 
 # OSDEP_* are port-dependent and can be updated by unix/configure.
@@ -469,18 +483,19 @@ O_ZIPL   = $(PROD)/crc32.o      \
            $(PROD)/util.o       \
            $(PROD)/zbz2err.o    \
            $(PROD)/zipfile.o    \
-           $(PROD)/zipup.o      \
            $(OSDEP_OCZ)         \
            $(OSDEP_OSZ)
 
 # object files: zip application
 O_ZIP    = $(PROD)/zip.o        \
-           $(PROD)/fileio.o        \
+           $(PROD)/zipup.o      \
+           $(PROD)/fileio.o     \
            $(O_ZIPL)
 
 # object files: zip library
 O_ZIPN   = $(PROD)/api.o        \
-           $(PROD)/zip_l.o       \
+           $(PROD)/zip_l.o      \
+           $(PROD)/zipup_l.o    \
            $(PROD)/fileio_l.o
 
 # object files: zipcloak
@@ -726,18 +741,18 @@ $(PROD)/zbz2err.o:   zbz2err.c  $(H_ZIP)
 $(PROD)/zipfile.o:   zipfile.c  $(H_ZIP) crc32.h
 	$(CC) -c $(CF) -o $@ zipfile.c
 
-$(PROD)/zipup.o:     zipup.c    $(H_ZIP) crc32.h crypt.h revision.h unix/zipup.h
-	$(CC) -c $(CF) -o $@ zipup.c
-
 # A') Callable Zip C files (Zip static library)
 
 $(PROD)/api.o:       api.c      $(H_ZIP) api.h crc32.h crypt.h revision.h
 	$(CC) -c $(CF) -DZIPLIB -o $@ api.c
 
-$(PROD)/zip_l.o:      zip.c      $(H_ZIP) crc32.h crypt.h revision.h ttyio.h
+$(PROD)/zip_l.o:     zip.c      $(H_ZIP) crc32.h crypt.h revision.h ttyio.h
 	$(CC) -c $(CF) -DZIPLIB -o $@ zip.c
 
-$(PROD)/fileio_l.o:   fileio.c   $(H_ZIP) crc32.h crypt.h revision.h ttyio.h
+$(PROD)/zipup_l.o:   zipup.c    $(H_ZIP) crc32.h crypt.h revision.h unix/zipup.h
+	$(CC) -c $(CF) -DZIPLIB -o $@ zipup.c
+
+$(PROD)/fileio_l.o:  fileio.c   $(H_ZIP) crc32.h crypt.h revision.h ttyio.h
 	$(CC) -c $(CF) -DZIPLIB -o $@ fileio.c
 
 # B) C files for specific ports
@@ -771,7 +786,7 @@ $(PROD)/win32zip.o: win32/win32zip.c  $(H_ZIP)
 
 # C Compile rules: Zip utilities
 
-# A) Core Zip utility C files
+# A) Zip utility C files (including zip)
 
 $(PROD)/zipcloak.o:  zipcloak.c $(H_ZIP) $(H_CLOAK) crc32.h crypt.h \
                      revision.h ttyio.h
@@ -799,6 +814,9 @@ $(PROD)/util_.o:    util.c      $(H_ZIP) $(H_CLOAK) $(H_NOTE) $(H_SPLIT)
 $(PROD)/zipfile_.o: zipfile.c   $(H_ZIP) $(H_CLOAK) $(H_NOTE) \
                                 $(H_SPLIT) crc32.h
 	$(CC) -c $(CF) -DUTIL -o $@ zipfile.c
+
+$(PROD)/zipup.o:     zipup.c    $(H_ZIP) crc32.h crypt.h revision.h unix/zipup.h
+	$(CC) -c $(CF) -o $@ zipup.c
 
 # B) C files for specific ports
 #    - Generated when referenced by OSDEP_OC.
@@ -986,6 +1004,7 @@ $(AR_Z):
 # Object library rule: Callable Zip (create Zip static library)
 
 $(AR_ZIP): $(O_ZIPL) $(O_ZIPN) $(LIB_AES_WG) $(LIB_LZMA) $(LIB_PPMD) $(LIB_BZ)
+	@echo ''
 	@echo 'Building/updating Callable Zip object library...'
 	sh unix/mlz.sh "$(AR_ZIP)" "$(O_ZIPL) $(O_ZIPN)" \
          $(LIB_AES_WG) $(LIB_LZMA) $(LIB_PPMD) $(LIB_BZ)
@@ -1313,6 +1332,7 @@ generic_msg:
 # - Generate flags file (if doesn't exist), then Zip modules.
 
 generic: $(PROD)/flags
+	@echo "BINS = $(BINS)"
 	eval $(MAKE) $(MAKEF) $(BINS) ACONF_DEP=$(PROD)/flags \
           `cat $(PROD)/flags`
 

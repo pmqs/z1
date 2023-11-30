@@ -1,6 +1,6 @@
-                                                30 November 2010.  SMS.
+                                                15 August 2019.  SMS.
 
-                      BZIP2 1.0.6a Changes for VMS
+                      BZIP2 1.0.8a Changes for VMS
                       ============================
 
 ------------------------------------------------------------------------
@@ -18,15 +18,15 @@ more realistic than high ones.
       Description
       -----------
 
-   This note accompanies a quick VMS port of BZIP2 version 1.0.6, a
+   This note accompanies a quick VMS port of BZIP2 version 1.0.8, a
 freely available data compressor.  The most obvious features seem to
 work, but many have not been tested.
 
    Built and tested (slightly) in these environments:
 
-OpenVMS Alpha V8.3, HP C V7.3-009.
+OpenVMS Alpha V8.4, HP C V7.3-010.
 
-OpenVMS IA64 V8.3-1H1, HP C V7.3-019.  (See note below.)
+OpenVMS IA64 V8.4, HP C V7.3-020.  (See note below.)
 
 OpenVMS VAX V7.3, Compaq C V6.4-005.
 
@@ -35,12 +35,25 @@ OpenVMS VAX V7.3, Compaq C V6.4-005.
       Home source URL
       ---------------
 
-http://www.bzip.org
+https://sourceware.org/bzip2/
 
 ------------------------------------------------------------------------
 
       News
       ----
+
+   Version 1.0.8a  2019-08-15
+   --------------------------
+
+- General update to version 1.0.8.
+
+- Added an MMS/MMK target, DASHV, to display a "bzip2 -V" report. 
+  ([.vms]descrip.mms)
+
+- Builders failed to build BZIP2RECOVER.EXE.  (Who noticed?)
+  ([.vms]descrip_src.mms)
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
    Version 1.0.6a  2010-11-29
    --------------------------
@@ -55,7 +68,7 @@ http://www.bzip.org
   [.VMS]VMS_NAME_FIX.SH, which is no longer included.
 
 - [.VMS]VMS.C and [.VMS]VMS.H have been renamed to [.vms]vms_misc.c and
-  [.vms]vms_misc.h, respectively, to accomodate changes to the builders
+  [.vms]vms_misc.h, respectively, to accommodate changes to the builders
   which were made to deal with complexities involving object module
   names for source files with lower-case names.
 
@@ -73,7 +86,7 @@ http://www.bzip.org
    Version 1.0.4b  2007-04-06
    --------------------------
 
-- Changed BZIP2.C, [.VMS]VMS.C, and [.VMS]VMS.H to accomodate older VMS
+- Changed BZIP2.C, [.VMS]VMS.C, and [.VMS]VMS.H to accommodate older VMS
   and/or C RTL versions, by adding conditional replacement functions for
   fchmod(), fchown(), strcasecmp(), and strdup().
 - Changed [.VMS]DESCRIP_SRC.MMS to let the user more easily build the
@@ -211,7 +224,7 @@ host-specific subdirectories.
 the [.vms] subdirectory.  The basic operations look like these (MMS
 shown, MMK similar):
 
-      SET DEFAULT [.bzip2-1_0_6a_vms]
+      SET DEFAULT [.bzip2-1_0_8a_vms]
 
       MMS /DESC = [.vms] CLEAN          ! Deletes all object, list, map,
                                         ! and executable files for the

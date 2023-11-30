@@ -7,7 +7,7 @@ SYNOPSIS
        zipcloak [-d] [-b path] [-Ofile] [-Yem] [-h] [-v] [-L] zipfile
 
 ARGUMENTS
-       zipfile  Zipfile to encrypt entries in
+       zipfile Zipfile to encrypt entries in
 
 OPTIONS
        -b path

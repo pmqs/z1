@@ -1,7 +1,7 @@
 /*
   globals.c - Zip 3.1
 
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2023 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -28,6 +28,7 @@ char errbuf[ERRBUF_SIZE + 1];  /* defined in zip.h, was FNMAX+4081 */
 int recurse = 0;        /* 1=recurse into directories encountered */
 int dispose = 0;        /* 1=remove files after put in zip file */
 int pathput = 1;        /* 1=store path with name */
+int nul_term_names = 0; /* 1=getnam() reads NUL terminated names */
 #ifdef UNIX_APPLE
 int data_fork_only = 0; /* 1=no AppleDouble supplement file. */
 int sequester = 0;      /* 1=sequester AppleDouble files in __MACOSX. */
@@ -52,6 +53,8 @@ char info_string[MAX_INFO_STRING];
 int comadd = 0;              /* 1=add comments for new files */
 extent comment_size = 0;     /* comment size */
 FILE *comment_stream = NULL; /* set to stderr if anything is read from stdin */
+char *global_entry_comment = NULL; /* If set, use this for entry comments being set */
+char *global_entry_comment_path = NULL; /* If set, use this path for entry comments being set */
 
 #ifdef ETWODD_SUPPORT
 int etwodd;             /* Encrypt Traditional without data descriptor. */
@@ -71,6 +74,9 @@ int etwodd;             /* Encrypt Traditional without data descriptor. */
 /* 9/26/04 */
 int no_wild = 0;             /* 1 = wildcards are disabled */
 int allow_regex = 0;         /* 1 = allow [list] matching */
+int no_stdin = 0;            /* 1 = don't treat "-" as stdin */
+int is_stdin = 0;            /* 1 = this is stdin (overrides no_stdin) */
+int file_from_stdin = 0;     /* 1 = reading file from stdin */
 #ifdef WILD_STOP_AT_DIR
    int wild_stop_at_dir = 1; /* default wildcards do not include / in matches */
 #else
@@ -104,6 +110,13 @@ ulg des_crc = 0;              /* Data descriptor CRC */
 uzoff_t des_csize = 0;        /* Data descriptor csize */
 uzoff_t des_usize = 0;        /* Data descriptor usize */
 
+int purposely_corrupt_loc_crc = 0; /* used for testing only */
+int purposely_corrupt_cen_crc = 0; /* used for testing only */
+int purposely_corrupt_loc_csize = 0; /* used for testing only */
+int purposely_corrupt_loc_usize = 0; /* used for testing only */
+int purposely_corrupt_cen_csize = 0; /* used for testing only */
+int purposely_corrupt_cen_usize = 0; /* used for testing only */
+
 /* dots 10/20/04 */
 zoff_t dot_size = 0;          /* bytes processed in deflate per dot, 0 = no dots */
 zoff_t dot_count = 0;         /* buffers seen, recyles at dot_size */
@@ -116,6 +129,8 @@ int display_usize = 0;        /* display uncompressed bytes */
 int display_time = 0;         /* display time start each entry */
 int display_est_to_go = 0;    /* display estimated time to go */
 int display_zip_rate = 0;     /* display bytes per second rate */
+
+int calc_crc32 = 0;           /* calculate crc32 checksum for file */
 
 ulg files_so_far = 0;         /* files processed so far */
 ulg bad_files_so_far = 0;     /* bad files skipped so far */
@@ -145,6 +160,7 @@ int log_utf8 = 0;             /* log names as UTF-8 */
 
 char *startup_dir = NULL;     /* dir that Zip starts in (current dir ".") */
 char *working_dir = NULL;     /* dir user asked to change to for zipping */
+int out_to_start_dir = 0;     /* 1 = if use working_dir, out to startup_dir */
 #ifdef UNICODE_SUPPORT_WIN32
 wchar_t *startup_dirw = NULL; /* dir that Zip starts in (current dir ".") */
 wchar_t *working_dirw = NULL; /* dir user asked to change to for zipping */
@@ -192,6 +208,8 @@ int follow_mount_points = 1;  /* 0=skip mount points (-yy), 1=follow normal, 2=f
 int noisy = 1;                /* 0=quiet operation */
 int extra_fields = 1;         /* 0=create minimum, 1=don't copy old, 2=keep old */
 int use_descriptors = 0;      /* 1=use data descriptors 12/29/04 */
+int force_compression = 0;    /* 1=force compression (no store) */
+int use_data_descriptor = 0;  /* initialized to use_descriptors for each entry */
 int zip_to_stdout = 0;        /* output zipfile to stdout 12/30/04 */
 int allow_empty_archive = 0;  /* if no files, create empty archive anyway 12/28/05 */
 int copy_only = 0;            /* 1=copying archive entries only */
@@ -202,6 +220,7 @@ int cd_only = 0;              /* 1=create cd_only compression archive (central d
 
 int sf_usize = 0;             /* include usize in -sf listing */
 int sf_comment = 0;           /* include entry comments in -sf listing */
+int sf_zcomment = 0;          /* include zipfile comment in -sf listing */
 
 int output_seekable = 1;      /* 1 = output seekable 3/13/05 EG */
 
@@ -251,9 +270,12 @@ char *keyfile_pass = NULL;    /* (piece of) password from keyfile */
   int no_security = 0;        /* 1=do not store security information (ACLs) */
 #endif
   int no_universal_time = 0;  /* 1=do not store UT extra field */
+  int no_access_time = 0;     /* 1=do not store Access Time component of UT */
+
+  int skip_file_scan = 0;     /* 1=skip directory searches and initial stats */
 
 /* Compression methods and levels (with file name suffixes).
-   Now STORE list set just above get_option() loop. */
+   Now STORE list set just above get_optionz() loop. */
 /* Seems first char of method must be unique unless code in zip.c fixed. */
 mthd_lvl_t mthd_lvl[] = {
 /* method, level, level_sufx, method_str, suffixes. */
@@ -279,7 +301,9 @@ FILE *mesg;               /* stdout by default, stderr for piping */
 
 char **args = NULL;       /* Copy of argv that can be updated and freed */
 
-int allow_arg_files = 1;  /* 1=process arg files (@argfile), 0=@ not significant */
+int allow_arg_files = 0;  /* 1=process arg files (@argfile), 0=@ not significant */
+
+int stdinout_tty = 0;     /* assume stdin and stdout are ttys */
 
 int case_upper_lower = CASE_PRESERVE; /* Upper or lower case added/updated output paths */
 
@@ -296,7 +320,8 @@ int all_ascii = 0;        /* Skip binary check and handle all files as text */
  int win32_utf8_argv = 0; /* 1=got UTF-8 from win32 wide command line */
 #endif
 int unicode_escape_all = 0; /* 1=escape all non-ASCII characters in paths */
-int unicode_mismatch = 1; /* unicode mismatch is 0=error, 1=warn, 2=ignore, 3=no */
+int unicode_dont_use = 0;   /* 1=don't use Unicode */
+int unicode_mismatch = UNICODE_MISMATCH_WARN;
 int unicode_show = 0;     /* show unicode on the console (requires console support) */
 
 int mvs_mode = 0;         /* 0=lastdot (default), 1=dots, 2=slashes */
@@ -310,6 +335,7 @@ uzoff_t scan_count = 0;   /* Used for Scanning files ... message */
 
 ulg before = 0;           /* 0=ignore, else exclude files before this time */
 ulg after = 0;            /* 0=ignore, else exclude files newer than this time */
+ulg time_diff = 0;        /* 0=ignore, else also test time plus this */
 
 /* Zip file globals */
 char *zipfile;            /* New or existing zip archive (zip file) */
@@ -375,6 +401,9 @@ char usize_string[10];             /* string version of bytes_expected_this_entr
 char *entry_name = NULL;           /* used by DLL to pass z->zname to file_read() */
 char *unicode_entry_name = NULL;   /* Unicode version of entry_name, or NULL */
 
+char *ZpZip_root_dir = NULL;       /* root dir used by ZpZip and ZpZipArgs */
+wchar_t *ZpZip_root_dirw = NULL;   /* wide version root dir used by ZpZip and ZpZipArgs */
+
 uzoff_t progress_chunk_size = 0;  /* how many bytes before next progress report */
 uzoff_t last_progress_chunk = 0;  /* used to determine when to send next report */
 
@@ -406,7 +435,8 @@ struct zlist far * far *zfilesnext = NULL;     /* Pointer to end of zfiles */
 extent zcount;                    /* Number of files in zip file */
 int zipfile_exists = 0;           /* 1 if zipfile exists */
 ush zcomlen;                      /* Length of zip file comment */
-char *zcomment = NULL;            /* Zip file comment (not zero-terminated) */
+char *zcomment = NULL;            /* Zip file comment (not zero-terminated) (may be now) */
+char *zcomment_new = NULL;        /* new zipfile comment (as from -z="new comment") */
 struct zlist far **zsort;         /* List of files sorted by name */
 #ifdef UNICODE_SUPPORT
   struct zlist far **zusort;      /* List of files sorted by zuname */

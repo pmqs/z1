@@ -1,7 +1,7 @@
-README for Zip 3.1d (15 November 2015)
---------------------------------------
+README for Zip 3.1e (2 June 2018)
+-------------------------------------
 
-Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+Copyright (c) 1990-2018 Info-ZIP.  All rights reserved.
 
 See the accompanying file LICENSE (the contents of which are also
 included in unzip.h, zip.h and wiz.h) for terms of use.  If, for some
@@ -12,7 +12,7 @@ be found at:
 Also see "Copyright notice" below.
 ---------------------------------------------------------------------------
 
-Zip 3.1d is a BETA.  Do not distribute.
+Zip 3.1e is a BETA.  Do not distribute.
 
 Zip 3.1 is the latest update of Zip 3.x with large file and split archive
 support.  For now Zip 2.3x (Zip 2.32 being the current 2.x release)
@@ -27,16 +27,16 @@ or, better, send bug fixes.  It's possible that unsupported ports may be
 dropped in the future.
 
 ---------------------------------------------------------------------------
-Zip 3.1d is considered a Release Candidate.  The feature set is relatively
+Zip 3.1e is considered a Release Candidate.  The feature set is relatively
 complete and the code is more or less stable.  Except for minor updates and
-bug fixes, what's in Zip 3.1d will likely be released as Zip 3.1.  This may
+bug fixes, what's in Zip 3.1e will likely be released as Zip 3.1.  This may
 be your last chance to review Zip 3.1 before release and provide comments
 and suggestions, and to identify bugs and provide fixes (if you have them).
 ---------------------------------------------------------------------------
 
 Contents of this file:
   Overview
-  Zip 3.1d Highlights
+  Zip 3.1e Highlights
   Encryption Notice
   Copyright Notice
   Additional Notes
@@ -64,40 +64,28 @@ file format; and, of course, the ability to run on most of your favorite
 operating systems.  And it's free.
 
 ---------------------------------------------------------------------------
-Zip 3.1d Highlights:
+Zip 3.1e Highlights:
 
-(zip31d.ann is an expanded version of this list.  See WHATSNEW for the
+(zip31e.ann is an expanded version of this list.  See WHATSNEW for the
 detailed list and more on each item.)
 
-- AES encryption.  Keyfiles.
-- LZMA and PPMd compression.
-- Command line improvements, such as -@@ to read list of files from file.
-- New Backup mode allows creation of backup sets including differential and
-    incremental backups.
-- Revamped LIB/DLL interface, with examples for Windows, Unix and VMS.
-- On Unix, quoted/escaped wildcards now processed by Zip.  Found files
-    now alphabetically sorted.  Updated support of named pipes.
-- Mac OS X resource storage.
-- Windows Unicode command line support.  Windows symlinks.  Windows mount
-    and reparse points.  Windows long paths.  Windows 64-bit support.
-- Some z/OS and MVS updates.  (Some updates untested in this beta.)
-- Updated Unicode support, including optional use of iconv.
-- UTF-8 paths now stored as native.  Zip no longer transliterates paths.
-- Streaming mode, where Zip stores information sufficient for a streaming
-    unzip to fully extract files.
-- Better selection of when to use Zip64 large file support.
-- Dates can now include times.  -pt times performance of Zip.
-- New logging options.
-- Additional ways to update output paths.
-- Quick Zip version using -vq.
-- Options -FS (file sync) and -sf (show files) can now be used together to
-    show differences between an archive and the file system.
-- Bug fixes.  Debian patches.
-- New error codes for compilation, encryption and other errors.
-- Compiled manuals now in docs/ directory.
-- Enhanced comment support.
-- Support for .zipx archives.
-- Updates to utilities ZipCloak, ZipNote, and ZipSplit.
+- AES encryption included in base Zip source kit, making export controlled.
+- New option -p0 (--print0) accepts output of "find -print0".
+- Better handling of Zip environment variables.
+- Updated API (LIB/DLL) examples include Progress, Error, and Finish.
+- Free BSD Unicode fixes.
+- VMS AES updates, Adjust fix, CLI updates, filesize fix.
+- New --stdinout-tty option for CYGWIN.
+- Unicode options refactored to -UD, -UE, -UL, -US, and -UN.
+- -SI (--rename-stdin).
+- Can specify entry and archive comments on command line or in a file.
+- Better Windows Unicode support, including comments.
+- Ben Rubson performance updates.
+- Unix FTS fast directory sorting.
+- Various bug fixes.
+- Various compiler fixes.
+- NO_BUILD_DATE compile option.  This removes changing build date from the -v
+    page that was messing with automated regression tests.
 
 See the extended help (zip -hh) and the manuals (man pages in /man or plain
 text versions in docs/) for more on how to use these and other new features.
@@ -109,7 +97,7 @@ or otherwise does not work well on a particular OS, send in the details and
 we might be able to help.
 
 ---------------------------------------------------------------------------
-Encryption Notice (applies when AES encryption included):
+Encryption Notice (applies unless AES encryption removed):
 
 ------
 This distribution includes cryptographic software.  The country in which
@@ -127,7 +115,8 @@ performing cryptographic functions and makes it eligible for export under
 the License Exception ENC Technology Software Unrestricted (TSU) exception.
 ------
 
-See the file INSTALL for additional information.
+See the file INSTALL for additional information.  Also see the file
+aes_wg/README_AES_WG.txt if present.
 
 ---------------------------------------------------------------------------
 Copyright Notice:
@@ -160,38 +149,30 @@ to limitations of the zcrypt software.  (We hope to resolve these issues
 before Zip 3.1 is released.)
 
 Bug reports.  Our primary method for receiving bug reports is via the web
-form at http://www.info-zip.org/zip-bug.html and suggestions for new
+form at http://info-zip.org/zip-bug.html (on SourceForge this is at
+http://infozip.sourceforge.net/zip-bug.html) and suggestions for new
 features can be submitted there (although we don't promise to use all of
 them).  (We have discontinued the old email address zip-bugs@lists.wku.edu
-because of too much spam.)  We also are on SourceForge at
-http://sourceforge.net/projects/infozip/.  In addition, a new Info-ZIP
-discussion forum is available (see below) and bug reports and feature
-requests can be posted there.  A good approach may be to post the details
-on the forum so others can benefit from the posting, and may provide some
-help, then use the web reply form to let us know you did that if you don't
-get a reply from us in the forum in a reasonable time.
+because of too much spam.)  Previously we also recommended checking out
+the Info-ZIP discussion forum, but it recently suffered a catastrophic
+failure and may not be coming back.
 
 Ports to other OS/compilers.  If you're considering a port to a new system
 or compiler, please check in with zip-bugs FIRST, since the code is
 constantly being updated behind the scenes.  We'll arrange to give you
 access to the latest source.
 
-Discussion forum.  If you'd like to keep up to date with our Zip (and
-companion UnZip utility) development, join the ranks of BETA testers,
-add your own thoughts and contributions, etc., check out the new
-discussion forum at http://www.info-zip.org/phpBB3/index.php.  This is
-the latest offering (courtesy of Hunter Goatley), after the various
-Info-ZIP mailing-lists on mxserver@lists.wku.edu were no longer
-available and the temporary QuickTopic discussion group for Info-ZIP
-issues at http://www.quicktopic.com/27/H/V6ZQZ54uKNL died a horrible
-death due to large amounts of spam.  (The old QuickTopic discussion
-group remains available, but read only.)  The new discussion forum can
-be used to discuss issues, request features, and is one place new betas
-and releases are announced.  It also is a place to post bug reports, and
-patches can be submitted as attachments.  Be sure to post new issues in
-new threads.  You can also post Bug Reports and Feature Requests at
-SourceForge.  However, the web site contact form remains available if
-you would rather not post on the public forums.
+Discussion forum.  The discussion forum previously at
+http://www.info-zip.org/phpBB3/index.php suffered a fatal failure that may
+not be recoverable.  The various Info-ZIP mailing-lists on
+mxserver@lists.wku.edu have not been available for some time and the temporary
+QuickTopic discussion group for Info-ZIP issues at
+http://www.quicktopic.com/27/H/V6ZQZ54uKNL died a horrible death due to
+large amounts of spam.  (The old QuickTopic discussion group remains available,
+but read only.)  We want to thank all of you who contributed to Zip and UnZip
+through the forum.  We are looking into possible replacements.  For now,
+we can be reached by email (via the web form) and through the discussion
+threads on SourceForge.
 
 ---------------------------------------------------------------------------
 Frequently Asked Questions on Zip and UnZip:
@@ -243,16 +224,13 @@ A. Zip 3.1 supports Traditional zip (ZipCrypto) encryption as well as AES
    disabled (see INSTALL for details), but we no longer ship a kit that is
    encryption free.
 
-   Zip 3.1 now supports AES encryption.  As our AES implementation is
-   subject to US Export Control laws, we do not include it in the Zip base
-   source kit but supply it in a separate kit on our ftp site.  This allows
-   import and use of Zip in countries where strong AES encryption is not
-   allowed.  To include AES encryption in Zip, just download the Info-ZIP
-   AES WG kit and extract it into the top directory of this kit to
-   populate the aes_wg directory, and recompile.  (See INSTALL for details.)
+   Zip 3.1 now supports AES encryption.  Our AES implementation is now
+   included in the standard distribution, but be aware it is subject to US
+   Export Control laws making the standard Zip distribution export controlled.
    Our AES implementation is based on WinZip AES (which is based on Gladman's
    implementation of AES) and is compatible with WinZip, 7-Zip and other
    utilities out there.  Zip supports 128-, 192- and 256-bit encryption.
+   AES strong encryption can be disabled.  See INSTALL for more details.
 
    UnZip 5.x and UnZip 6.0 support Traditional encryption.  UnZip 6.1 will
    support Traditional and AES encryption.

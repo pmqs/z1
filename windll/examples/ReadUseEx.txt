@@ -7,7 +7,9 @@ Zip 3.1 zip32_lib.lib, zip32_libd.lib, zip32_dll.lib, and zip32_dll.dll
 static and dynamic libraries.
 
 See WhatsNew_DLL_LIB.txt and the comments in the api.h and api.c source
-files for details on the updated LIB/DLL interfaces.
+files for details on the updated LIB/DLL interfaces.  In particular,
+the comments at the top of api.h are probably the governing description
+of the Zip API.
 
 The Zip 3.1 libraries are not backward compatible with either the
 Zip 2.32 or the Zip 3.0 libraries.  They are also not compatible with
@@ -59,5 +61,5 @@ with these line endings.
 
 Enjoy!
 
-13 September 2015
+1 July 2017
 

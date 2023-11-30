@@ -113,7 +113,7 @@ static int rdirstat(const char* fn, struct stat *st)
 
     drive = p ? p[1] : 'S';
 
-    if (drive >= 'a' && drive <= 'Z')
+    if (drive >= 'a' && drive <= 'z')
         drive -= 0x40;
 
     memset(st, 0, sizeof(struct stat));

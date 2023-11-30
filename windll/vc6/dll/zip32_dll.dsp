@@ -95,6 +95,18 @@ LINK32=link.exe
 # Name "zip32_dll - Win32 Debug"
 # Begin Source File
 
+SOURCE=..\..\..\wrap\aescrypt.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\wrap\aeskey.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\wrap\aestab.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\api.c
 # End Source File
 # Begin Source File
@@ -147,11 +159,19 @@ SOURCE=..\..\..\deflate.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\..\wrap\fileenc.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\fileio.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\..\globals.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\wrap\hmac.c
 # End Source File
 # Begin Source File
 
@@ -195,7 +215,19 @@ SOURCE=..\..\..\szip\Ppmd8Enc.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\..\wrap\prng.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\wrap\pwd2key.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\bzip2\randtable.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\wrap\sha1.c
 # End Source File
 # Begin Source File
 

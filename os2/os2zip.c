@@ -124,7 +124,7 @@ DIR *opendir(const char *name)
 
 #ifndef __BORLANDC__
   /* when will we ever see a Borland compiler that can properly stat !!! */
-  if (stat(nbuf, &statb) < 0 || (!S_ISDIR( statb.st_mode))
+  if (stat(nbuf, &statb) < 0 || !(S_ISDIR( statb.st_mode)))
     return NULL;
 #endif
 
@@ -451,6 +451,7 @@ void ChangeNameForFAT(char *name)
         ((next - dot <= 4) ||
          ((next - src > 8) && (dot - src > 3))))
     {
+      /* (dot) redundant? */
       if (dot)
         *dot = '.';
 
@@ -622,8 +623,8 @@ EFHEADER, *PEFHEADER;
 #define unalloc(x) free(x)
 #endif
 
-void GetEAs(char *path, char **bufptr, size_t *size,
-                        char **cbufptr, size_t *csize)
+void GetEAs(char *path, char **bufptr, ush *size,
+                        char **cbufptr, ush *csize)
 {
   FILESTATUS4 fs;
   PDENA2 pDENA, pFound;
@@ -776,8 +777,8 @@ typedef struct
 }
 FEA2LIST, *PFEA2LIST;
 
-void GetEAs(char *path, char **bufptr, size_t *size,
-                        char **cbufptr, size_t *csize)
+void GetEAs(char *path, char **bufptr, ush *size,
+                        char **cbufptr, ush *csize)
 {
   FILESTATUS2 fs;
   PDENA1 pDENA, pFound;
@@ -917,8 +918,8 @@ void GetEAs(char *path, char **bufptr, size_t *size,
 
 #endif /* __32BIT__ */
 
-void GetACL(char *path, char **bufptr, size_t *size,
-                        char **cbufptr, size_t *csize)
+void GetACL(char *path, char **bufptr, ush *size,
+                        char **cbufptr, ush *csize)
 {
   static char *buffer;
   char *cbuffer;

@@ -14,8 +14,8 @@
 '
 ' If you use all or any of this code, please give credit.  Thanks!
 '
-' This example is written using the newer DLL interfacing introduced around VS 2008.
-' This example probably will not work using VS 6 VB or earlier.  See the VB6
+' This example uses the newer DLL interfacing introduced around VS 2008.
+' It probably will not work using VS 6 VB or earlier.  See the VB6
 ' example for code to use with Visual Studio 6 VB on Windows XP.
 
 Option Explicit On
@@ -163,7 +163,9 @@ Module ZipVbModule
   ' "..\..\..\zip32_dll.dll" to "zip32_dll.dll" below.  The below is looking
   ' for zip32_dll.dll in Zip31VBExample directory.
 
-  ' Main Zip 3.1 DLL interface
+  ' The 64-bit zip64_dll.dll is not supported in this version of VB.
+
+  ' Zip 3.1 DLL entry points
 
   Public Declare Sub ZpVersion Lib "..\..\..\zip32_dll.dll" _
           (ByRef ZipVer As ZipVerType)
@@ -186,15 +188,20 @@ Module ZipVbModule
           As Integer
 
   Public Declare Sub ZpTestCallback Lib "..\..\..\zip32_dll.dll" _
-            (ByVal CallbackAddr As ZTCDelegate)
+      (ByVal CallbackAddr As ZTCDelegate)
   Public Delegate Sub ZTCDelegate(ByVal parm As IntPtr)
 
   Public Declare Sub ZpTestCallbackStruct Lib "..\..\..\zip32_dll.dll" _
       (ByRef Callback_Functions As Test_Callback_Function_Structure)
 
   Public Declare Function ZpZipTest Lib "..\..\..\zip32_dll.dll" _
-          (ByVal CommandLine As String, ByVal CurrentDir As String, ByRef Callback_Functions As Callback_Functions_Structure) _
-          As Integer
+      (ByVal CommandLine As String, ByVal CurrentDir As String, ByRef Callback_Functions As Callback_Functions_Structure) _
+      As Integer
+
+  Public Declare Function ZpCalcCrc32 Lib "..\..\..\zip32_dll.dll" _
+      (ByVal buffer As Byte(), ByVal len As UInt32) _
+      As UInt32
+
 
   <StructLayout(LayoutKind.Sequential)> Public Structure Test_Callback_Function_Structure
     Dim print As TCF_Delegate
