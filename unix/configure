@@ -2215,7 +2215,7 @@ _EOF_
     # HAVE_WCHAR is set, we still need something to do conversions from UTF-8 to
     # wchar_t and back.  If we have iconv (checked for next) and HAVE_ICONV is
     # set, then that is enough and we can still do Unicode.
-    
+
     # If UNICODE_WCHAR is set, then also assume UNICODE_FILE_SCAN.
     # If UNICODE_ICONV is set below, also assume UNICODE_FILE_SCAN.
 
@@ -2246,7 +2246,7 @@ int main()
 
   /* Enable Unicode locale. */
   setlocale(LC_ALL, "en_US.UTF8");
-   
+
   if ((wchar_string = (wchar_t *)malloc(4 * sizeof(wchar_t))) == NULL) {
     return 0;
   }
@@ -2261,7 +2261,7 @@ int main()
   i = iswprint(wc);
 
   /* Getting here is enough to set HAVE_WCHAR. */
-  
+
 #ifndef __STDC_ISO_10646__
   printf("  No __STDC_ISO_10646__ encoding\n");
   return 1;
@@ -2361,16 +2361,16 @@ int main()
   char *tocode_1   = "UTF-8";
   char outbuf_1[OUTBUF_SIZE];
 
-   
+
   /* Second test uses UTF-8 encoded Greek (First 5 lower, space, first 5 upper). */
-  char *inbuf_2 = 
+  char *inbuf_2 =
     "\xCE\xB1\xCE\xB2\xCE\xB3\xCE\xB4\xCE\xB5\x20\xCE\x91\xCE\x92\xCE\x93\xCE\x94\xCE\x95";
   char *fromcode_2 = "UTF-8";
   char *tocode_2   = "WCHAR_T";
   char outbuf_2[OUTBUF_SIZE];
   wchar_t *woutbuf_2;
-   
-   
+
+
   /* Third test converts uppercased output of second test back to UTF-8. */
   char inbuf_3[OUTBUF_SIZE];
   char *fromcode_3 = "WCHAR_T";
@@ -2379,10 +2379,10 @@ int main()
   char outbuf_3[OUTBUF_SIZE];
 
   /* Result of conversion to wchar_t, uppercase, then back to UTF-8 should be this. */
-  char *verification_3 = 
+  char *verification_3 =
     "\xCE\x91\xCE\x92\xCE\x93\xCE\x94\xCE\x95\x20\xCE\x91\xCE\x92\xCE\x93\xCE\x94\xCE\x95";
 
-   
+
   size_t inbytesleft;
   size_t outbytesleft;
 
@@ -2394,9 +2394,9 @@ int main()
 
   /* Enable Unicode locale for towupper. */
   setlocale(LC_ALL, "");
-   
+
   /* Simple ASCII to UTF-8 test. */
-   
+
   inp = inbuf_1;
   inbytesleft = strlen(inbuf_1);
   outp = outbuf_1;
@@ -2431,9 +2431,9 @@ int main()
 
   printf("           result (UTF-8):                    '%s'\n", outbuf_1);
 
-   
+
   /* Greek UTF-8 to wchar_t test. */
-   
+
   inp = inbuf_2;
   inbytesleft = strlen(inbuf_2);
   outp = outbuf_2;
@@ -2469,10 +2469,10 @@ int main()
   wlen = outlen / 4;
 
   printf("           result (%d bytes)\n", outlen);
-   
+
 
   printf("           Uppercase WCHAR_T string\n");
-   
+
   /* Uppercase using wchar_t function. */
 
   for (i = 0; i < wlen; i++)
@@ -2480,7 +2480,7 @@ int main()
     winbuf_3[i] = towupper(woutbuf_2[i]);
   }
 
-   
+
   /* Convert back to UTF-8. */
 
   inp = (char *)winbuf_3;
@@ -2516,10 +2516,10 @@ int main()
   outbuf_3[outlen] = '\0';
 
   printf("           result:                            '%s'\n", outbuf_3);
-   
-   
+
+
   /* Check against verification string. */
-   
+
   if (strcmp(outbuf_3, verification_3) == 0)
   {
     printf("  Success!\n");
@@ -2587,7 +2587,7 @@ _EOF_
           else
             echo "  Can use iconv (HAVE_ICONV)."
           fi
-          
+
           # if not UNICODE_WCHAR, try to set UNICODE_ICONV
           if [ $unicode_wchar -eq 0 ]; then
             CFLAGS_TST="${CFLAGS_TST} -DUNICODE_SUPPORT -DUNICODE_ICONV"
@@ -2637,24 +2637,220 @@ fi
 
 # Check for missing functions.
 # - add NO_'function_name' to flags if missing.
-FUNCS='chmod chown fchmod fchown lchown localtime_r mktemp mktime mkstemp'
-FUNCS="${FUNCS} nl_langinfo rename rmdir strchr strrchr"
-#echo "Check for expected functions..."
-for func in $FUNCS
-do
-  echon "Check for ${func}()..."
-  echo "int main(){ $func(); return 0; }" > conftest.c
-  $CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
-  status=$?
-  if [ $status -ne 0 ]; then
-    ucname=` echo ${func} | tr '[a-z]' '[A-Z]' `
-    mname="NO_${ucname}"
-    echo "  No (${mname})."
-    CFLAGS_TST="${CFLAGS_TST} -D${mname}"
-  else
-    echo '  Yes.'
-  fi
-done
+
+# Check for chmod
+echon "Check for chmod()..."
+cat > conftest.c << _EOF_
+#include <sys/stat.h>
+int main(){ chmod("abc", 1); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_CHMOD)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_CHMOD"
+else
+  echo '  Yes.'
+fi
+
+# Check for chown
+echon "Check for chown()..."
+cat > conftest.c << _EOF_
+#include <unistd.h>
+int main(){ chown("abc", 1, 2); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_CHOWN)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_CHOWN"
+else
+  echo '  Yes.'
+fi
+
+# Check for fchmod
+echon "Check for fchmod()..."
+cat > conftest.c << _EOF_
+#include <sys/stat.h>
+int main(){ fchmod(1, 1); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_FCHMOD)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_FCHMOD"
+else
+  echo '  Yes.'
+fi
+
+# Check for fchown
+echon "Check for fchown()..."
+cat > conftest.c << _EOF_
+#include <unistd.h>
+int main(){ fchown(1, 2, 3); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_FCHOWN)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_FCHOWN"
+else
+  echo '  Yes.'
+fi
+
+# Check for lchown
+echon "Check for lchown()..."
+cat > conftest.c << _EOF_
+#include <unistd.h>
+int main(){ lchown("abc", 1, 2); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_LCHOWN)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_LCHOWN"
+else
+  echo '  Yes.'
+fi
+
+# Check for localtime_r
+echon "Check for localtime_r()..."
+cat > conftest.c << _EOF_
+#include <time.h>
+const time_t *t1;
+struct tm *t2;
+int main(){ localtime_r(t1, t2); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_LOCALTIME_R)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_LOCALTIME_R"
+else
+  echo '  Yes.'
+fi
+
+# Check for mktemp
+echon "Check for mktemp()..."
+cat > conftest.c << _EOF_
+#include <stdlib.h>
+int main(){ mktemp("abc"); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_MKTEMP)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_MKTEMP"
+else
+  echo '  Yes.'
+fi
+
+# Check for mkstemp
+echon "Check for mkstemp()..."
+cat > conftest.c << _EOF_
+#include <stdlib.h>
+int main(){ mkstemp("abc"); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_MKSTEMP)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_MKSTEMP"
+else
+  echo '  Yes.'
+fi
+
+# Check for mktime
+echon "Check for mktime()..."
+cat > conftest.c << _EOF_
+#include <time.h>
+struct tm *t;
+int main(){ mktime(t); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_MKTIME)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_MKTIME"
+else
+  echo '  Yes.'
+fi
+
+# Check for nl_langinfo
+echon "Check for nl_langinfo()..."
+cat > conftest.c << _EOF_
+#include <langinfo.h>
+nl_item i;
+int main(){ nl_langinfo(i); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_NL_LANGINFO)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_NL_LANGINFO"
+else
+  echo '  Yes.'
+fi
+
+# Check for rename
+echon "Check for rename()..."
+cat > conftest.c << _EOF_
+#include <stdio.h>
+int main(){ rename("abc", "def"); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_RENAME)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_RENAME"
+else
+  echo '  Yes.'
+fi
+
+# Check for rmdir
+echon "Check for rmdir()..."
+cat > conftest.c << _EOF_
+#include <unistd.h>
+int main(){ rmdir("abc"); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_RMDIR)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_RMDIR"
+else
+  echo '  Yes.'
+fi
+
+# Check for strchr
+echon "Check for strchr()..."
+cat > conftest.c << _EOF_
+#include <string.h>
+int main(){ strchr("abc", 1); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_STRCHR)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_STRCHR"
+else
+  echo '  Yes.'
+fi
+
+# Check for strrchr
+echon "Check for strrchr()..."
+cat > conftest.c << _EOF_
+#include <string.h>
+int main(){ strrchr("abc", 1); return 0; }
+_EOF_
+$CC_TST $CFLAGS $BIF_TST -o conftest conftest.c >/dev/null 2>/dev/null
+status=$?
+if [ $status -ne 0 ]; then
+  echo "  No (NO_STRRCHR)."
+  CFLAGS_TST="${CFLAGS_TST} -DNO_STRRCHR"
+else
+  echo '  Yes.'
+fi
 
 
 # Check (seriously) for a working lchmod().
@@ -2690,7 +2886,10 @@ rm -f "${temp_file}" conftest.err
 
 # Check for memset().
 echon 'Check for memset()...'
-echo "int main(){ char k; memset(&k,0,0); return 0; }" > conftest.c
+cat > conftest.c << _EOF_
+#include <string.h>
+int main(){ char k; memset(&k,0,0); return 0; }
+_EOF_
 $CC_TST $CFLAGS -o conftest conftest.c >/dev/null 2>/dev/null
 status=$?
 if [ $status -ne 0 ]; then
@@ -2721,7 +2920,7 @@ fi
 echon 'Check for errno declaration...'
 cat > conftest.c << _EOF_
 #include <errno.h>
-main()
+int main()
 {
   errno = 0;
   return 0;
@@ -2756,6 +2955,7 @@ fi
 # Check for directory traversal libraries.
 echon 'Check for directory traversal libraries (ndir, dirent, bsd, ...)...'
 cat > conftest.c << _EOF_
+#include <dirent.h>
 int main() { return closedir(opendir(".")); }
 _EOF_
 $CC_TST $CFLAGS -o conftest conftest.c >/dev/null 2>/dev/null
@@ -2981,10 +3181,11 @@ done
 # Needed for AIX (and others ?) when mmap is used.
 echon 'Check for valloc()...'
 cat > conftest.c << _EOF_
-main()
+#include <stdlib.h>
+int main()
 {
 #ifdef MMAP
-    valloc();
+    valloc(1);
 #endif
 }
 _EOF_
