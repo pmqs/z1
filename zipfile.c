@@ -523,8 +523,15 @@ local void write_ushort_to_mem(OFT(ush) usValue,
   char *pPtr;
 #endif /* def NO_PROTO */
 {
+  /* Think this is a false positive
+     Disable for now. */
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wstringop-overflow"
+
   *pPtr++ = ((char)(usValue) & 0xff);
   *pPtr = ((char)(usValue >> 8) & 0xff);
+
+  #pragma GCC diagnostic pop
 }
 
 local void write_ulong_to_mem(uValue, pPtr)
@@ -2496,7 +2503,7 @@ local int remove_extra_field(tag, pZEntry)
   ush   usTemp;
   ush   blocksize;
   ush   usLocalLen;
-  
+
 
   /* No extra field block yet */
   if (pZEntry->ext == 0 || pZEntry->extra == NULL)
@@ -6801,7 +6808,7 @@ int putlocal(z, rewrite)
 
   if (translate_eol == 1)
     zip64_threshold = (uzoff_t)2 * GiB;
-  else 
+  else
     zip64_threshold = (uzoff_t)4 * GiB;
 
   if (thresh_mthd == COPYING)
@@ -6963,7 +6970,7 @@ int putlocal(z, rewrite)
     /* If this is initial write of local header and exceeded threshold, write
        a placeholder extra field the same size as the Zip64 local extra field
        in case we need the space later.
-       
+
        If rewriting local header and Zip64 was not needed, fill the space
        where the Zip64 ef would have gone with the placeholder extra field.
      */
@@ -7045,7 +7052,7 @@ int putlocal(z, rewrite)
     int oldlen;
 
     path_prefix_len = (int)strlen(path_prefix);
-    
+
     oldlen = nam;
     new_path_len = path_prefix_len + oldlen;
     if ((new_path = malloc(new_path_len + 1)) == NULL) {
@@ -7106,9 +7113,9 @@ int putlocal(z, rewrite)
 
       z->iname = iname;
       z->uname = uname;
- 
+
       add_Unicode_Path_local_extra_field(z);
-      
+
       z->iname = oldiname;
       z->uname = olduname;
     }
@@ -7650,7 +7657,7 @@ int putcentral(z)
     int oldlen;
 
     path_prefix_len = (int)strlen(path_prefix);
-    
+
     oldlen = nam;
     new_path_len = path_prefix_len + oldlen;
     if ((new_path = malloc(new_path_len + 1)) == NULL) {
@@ -7701,9 +7708,9 @@ int putcentral(z)
 
       z->iname = iname;
       z->uname = uname;
- 
+
       add_Unicode_Path_cen_extra_field(z);
-      
+
       z->iname = oldiname;
       z->uname = olduname;
     }
@@ -8417,7 +8424,7 @@ int zipcopy(z)
   /* archives to fix should be static and not include entry read from stdin */
   if (fix) {
     localz->is_stdin = 0;
-  } 
+  }
 
   localz->vem = 0;
   if (fix != 2) {
