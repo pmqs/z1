@@ -3,21 +3,31 @@ name: Linux
 on: [push, pull_request, workflow_dispatch]
 jobs:
   configure:
-    name: ${{ matrix.os }} + ${{ matrix.compiler }} protos=${{ matrix.protos }}
+    name: ${{ matrix.os }} + ${{ matrix.compiler }} protos=${{ matrix.protos }} lzma=${{ matrix.lzma }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        protos: [0, 1]
+        os:
+          - ubuntu-latest
+        protos:
+          - 0
+          - 1
+        lzma:
+          - 0
+          - 1
+        compiler:
+          - gcc-13
+          - gcc-12
+          - gcc-7
+
         include:
 
           # GCC Versions on Ubuntu
 
-          - os: ubuntu-latest
-            compiler: gcc-13
+        #   - compiler: gcc-13
 
-          - os: ubuntu-latest
-            compiler: gcc-12
+        #   - compiler: gcc-12
 
         #   - name: Ubuntu + gcc-11
         #     os: ubuntu-latest
@@ -37,10 +47,8 @@ jobs:
         #     compiler: gcc-8
         #     packages: gcc-8
 
-        #   - name: Ubuntu + gcc-7
-        #     os: ubuntu-20.04
-        #     compiler: gcc-7
-        #     packages: gcc-7
+          - compiler: gcc-7
+            packages: gcc-7
 
         #   # CLANG Versions on Ubuntu
 
@@ -104,13 +112,19 @@ jobs:
       run: |
         make -f unix/Makefile flags CC=${{ matrix.compiler }}
 
-    - name: change the flags file protos=${{ matrix.protos }}
+    - name: change the flags file protos=${{ matrix.protos }} lzma=${{ matrix.lzma }}
       run: |
           if [ "${{ matrix.protos }}" -eq "1" ]
           then
             sed -i.bak -e 's/-DNO_PROTO//' flags
           else
             sed -i.bak -e 's/CF="/CF=" -DNO_PROTO /' flags
+          fi
+          if [ "${{ matrix.lzma }}" -eq "1" ]
+          then
+            sed -i.bak -e 's/CF="/CF=" -DLZMA_SUPPORT /' flags
+          else
+            sed -i.bak -e 's/-DLZMA_SUPPORT//' flags
           fi
           cat flags
 
