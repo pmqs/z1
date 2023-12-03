@@ -3369,6 +3369,7 @@ local void get_unzip_features(unzippath, version, features)
           Is this temporary beta-only code?
           Silence with a pragma for now.
         */
+       #pragma clang diagnostic push
        #pragma clang diagnostic ignored "-Wliteral-range"
         if ((UnZip_Version == 6.1 &&             /* UnZip 6.1 and either */
              (strcmp(beta_string, "c") == 0 ||   /*  final public beta "c" */
@@ -3379,6 +3380,8 @@ local void get_unzip_features(unzippath, version, features)
             sdmessage("sd:  at least UnZip 6.1c with basic split support", "");
           }
         }
+       #pragma clang diagnostic poop
+
         if (at_least_61c) {
           unzip_supported_features |= UNZIP_SPLITS_BASIC;
         }
