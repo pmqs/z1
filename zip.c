@@ -3380,7 +3380,7 @@ local void get_unzip_features(unzippath, version, features)
             sdmessage("sd:  at least UnZip 6.1c with basic split support", "");
           }
         }
-       #pragma clang diagnostic poop
+       #pragma clang diagnostic pop
 
         if (at_least_61c) {
           unzip_supported_features |= UNZIP_SPLITS_BASIC;
