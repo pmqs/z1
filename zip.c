@@ -3363,6 +3363,13 @@ local void get_unzip_features(unzippath, version, features)
            the .zip file.  As of this writing, UnZip does not support splits
            spread across multiple media, and so probably can't test an archive
            made with -sp. */
+        /*
+          clang complains here with
+              warning: floating-point comparison is always false; constant cannot be represented exactly in type 'float' [-Wliteral-range]
+          Is this temporary beta-only code?
+          Silence with a pragma for now.
+        */
+       #pragma clang diagnostic ignored "-Wliteral-range"
         if ((UnZip_Version == 6.1 &&             /* UnZip 6.1 and either */
              (strcmp(beta_string, "c") == 0 ||   /*  final public beta "c" */
               strcmp(beta_string, "d") >= 0)) || /*  or "d" and later betas */
