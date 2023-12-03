@@ -1,0 +1,145 @@
+name: Linux
+
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  configure:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+
+          # GCC Versions on Ubuntu
+
+          - name: Ubuntu + gcc-13
+            os: ubuntu-latest
+            compiler: gcc-13
+
+          - name: Ubuntu + gcc-12
+            os: ubuntu-latest
+            compiler: gcc-12
+
+          - name: Ubuntu + gcc-11
+            os: ubuntu-latest
+            compiler: gcc-11
+            packages: gcc-11
+
+          - name: Ubuntu + gcc-10
+            os: ubuntu-latest
+            compiler: gcc-10
+
+          - name: Ubuntu + gcc-9
+            os: ubuntu-latest
+            compiler: gcc-9
+
+          - name: Ubuntu + gcc-8
+            os: ubuntu-20.04
+            compiler: gcc-8
+            packages: gcc-8
+
+          - name: Ubuntu + gcc-7
+            os: ubuntu-20.04
+            compiler: gcc-7
+            packages: gcc-7
+
+          # CLANG Versions on Ubuntu
+
+          - name: Ubuntu + clang-15
+            os: ubuntu-latest
+            compiler: clang-15
+
+          - name: Ubuntu + clang-14
+            os: ubuntu-latest
+            compiler: clang-14
+
+          - name: Ubuntu + clang-13
+            os: ubuntu-latest
+            compiler: clang-13
+
+          - name: Ubuntu + clang-12
+            os: ubuntu-20.04
+            compiler: clang-12
+
+          - name: Ubuntu + clang-11
+            os: ubuntu-20.04
+            compiler: clang-11
+
+          - name: Ubuntu + clang-10
+            os: ubuntu-20.04
+            compiler: clang-10
+
+          - name: Ubuntu + clang-9
+            os: ubuntu-20.04
+            compiler: clang-9
+            packages: clang-9
+
+          - name: Ubuntu + clang-8
+            os: ubuntu-20.04
+            compiler: clang-8
+            packages: clang-8
+
+          - name: Ubuntu + clang-7
+            os: ubuntu-20.04
+            compiler: clang-7
+            packages: clang-7
+
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        show-progress: 'false'
+        ref: build
+
+    - name: Install packages (Ubuntu)
+      if: runner.os == 'Linux' && matrix.packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ${{ matrix.packages }}
+
+    - name: Display ${{ matrix.compiler }} version
+      run: ${{ matrix.compiler }} -v
+
+    - name: configure (unix/Makefile)
+      run: |
+        make -f unix/Makefile flags CC=${{ matrix.compiler }}
+
+    - name: build (unix/Makefile)
+      run: |
+            make -f unix/Makefile generic CC=${{ matrix.compiler }}
+
+    - name: Run zip --help
+      run: ./zip --help
+
+    - name: Run zip -v
+      run: ./zip -v
+
+    - name: Run zipcloak --help
+      run: ./zipcloak --help
+
+    - name: Run zipcloak -v
+      run: ./zipcloak -v
+
+    - name: Run zipnote --help
+      run: ./zipnote --help
+
+    - name: Run zipnote -v
+      run: ./zipnote -v
+
+    - name: Run zipsplit --help
+      run: ./zipsplit --help
+
+    - name: Run zipsplit -v
+      run: ./zipsplit -v
+
+
+    # - name: Upload build errors
+    #   uses: actions/upload-artifact@v3
+    #   if: failure()
+    #   with:
+    #     name: ${{ matrix.name }} (configure)
+    #     path: |
+    #       **/Makefile
+    #       ${{ matrix.build-dir || '.' }}/configure.log
+    #     retention-days: 30
