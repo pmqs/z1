@@ -3,7 +3,7 @@ name: Linux
 on: [push, pull_request, workflow_dispatch]
 jobs:
   configure:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.os }} + ${{ matrix.compiler }} protos=${{ matrix.protos }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -110,8 +110,9 @@ jobs:
           then
             sed -i.bak -e 's/-DNO_PROTO//' flags
           else
-            perl -i.bak -e 's/CF="/CF=" -DNO_PROTO /' flags
+            sed -i.bak -e 's/CF="/CF=" -DNO_PROTO /' flags
           fi
+          cat flags
 
     - name: build (unix/Makefile)
       run: |
