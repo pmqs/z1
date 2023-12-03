@@ -524,9 +524,12 @@ local void write_ushort_to_mem(OFT(ush) usValue,
 #endif /* def NO_PROTO */
 {
   /* Think this is a false positive
-     Disable for now. */
+     To complcate matters clang comlains about the GCC diagnostic.
+     Disable warning for now. */
   #pragma GCC diagnostic push
+  #ifndef __clang__
   #pragma GCC diagnostic ignored "-Wstringop-overflow"
+  #endif
 
   *pPtr++ = ((char)(usValue) & 0xff);
   *pPtr = ((char)(usValue >> 8) & 0xff);
