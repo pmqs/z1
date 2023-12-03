@@ -307,7 +307,7 @@ local uzoff_t isize;         /* input file size. global only for debugging */
    binary/text decision is made based on file_binary.  file_binary_final
    is set based on all buffers, and is updated as each buffer is read.
    file_binary_final confirms validity of initial binary/text decision.
-   
+
    In the case of deflate, set_file_type() in trees.c sets the final
    value of the binary/text flag. */
 
@@ -323,8 +323,12 @@ local int restart_as_binary = 0;
  *
  * Check if file is open in append mode.  2014-06-28 EG
  */
+#ifndef NO_PROTO
+int open_for_append(FILE *y)
+#else
 int open_for_append(y)
   FILE *y;
+#endif
 {
 #ifdef UNIX
   int fd;
@@ -371,8 +375,12 @@ int open_for_append(y)
 
 
 /* moved check to function 3/14/05 EG */
+#ifndef NO_PROTO
+int is_seekable(FILE *y)
+#else
 int is_seekable(y)
   FILE *y;
+#endif
 {
   zoff_t pos;
 
@@ -397,9 +405,13 @@ int is_seekable(y)
 }
 
 
+#ifndef NO_PROTO
+int percent(uzoff_t n, uzoff_t m)
+#else
 int percent(n, m)
   uzoff_t n;
   uzoff_t m;                    /* n is the original size, m is the new size */
+#endif
 /* Return the percentage compression from n to m using only integer
    operations */
 {
@@ -460,9 +472,13 @@ int percent(n, m)
 
 #ifndef RISCOS
 
+#ifndef NO_PROTO
+int suffixes(char *fname, char *sufx_list)
+#else
 int suffixes(fname, sufx_list)
   char *fname;                  /* name to check suffix of */
   char *sufx_list;              /* list of suffixes separated by : or ; */
+#endif
 /* Return true if fname ends in any of the suffixes in sufx_list. */
 {
   int match;                    /* true if suffix matches so far */
@@ -558,9 +574,13 @@ char *sufx_list;                /* list of filetypes separated by : or ; */
  * encryption starts.  This extra step allows the actual CRC to be put
  * in the header.
  */
+#ifndef NO_PROTO
+int zread_file( struct zlist far *z, int l)
+#else
 int zread_file( z, l)
-struct zlist far *z;    /* Zip entry being processed. */
-int l;                  /* True if this file is a symbolic link. */
+  struct zlist far *z;    /* Zip entry being processed. */
+  int l;                  /* True if this file is a symbolic link. */
+#endif
 {
   char *b;              /* Malloc'ed file buffer. */
   int sts = ZE_OK;      /* Return value. */
@@ -647,8 +667,12 @@ void set_method_string(int mthd)
    name), an encryption header if encrypting, the compressed data
    and possibly an extended local header. */
 
+#ifndef NO_PROTO
+int zipup(struct zlist far *z)
+#else
 int zipup(z)
-struct zlist far *z;    /* zip entry to compress */
+  struct zlist far *z;    /* zip entry to compress */
+#endif
 /* Compress the file z->name into the zip entry described by *z and write
    it to the file *y. Encrypt if requested.  Return an error code in the
    ZE_ class.  Also, update tempzn by the number of bytes written. */
@@ -709,7 +733,7 @@ struct zlist far *z;    /* zip entry to compress */
   uzoff_t bytetotal;
 #endif
 
-#if defined(ZIP_DLL_LIB) && defined(WIN32) 
+#if defined(ZIP_DLL_LIB) && defined(WIN32)
   /* This kluge is only for VB 6 (and may not be needed for that). */
 # ifdef ZIP64_SUPPORT
   extern uzoff_t filesize64;
@@ -1150,7 +1174,7 @@ if (l) {
 #endif
 
 
-  
+
 #ifdef ALLOW_TEXT_BIN_RESTART
   /* If we are converting line ends or character set using -l, -ll or -a,
      and a file labeled as "text" using first buffers is later found to
@@ -2030,7 +2054,7 @@ Restart_As_Binary:
         /* Binary restart.  Seek back to start of this entry, jump back
            earlier in zipup(), and start again as binary.  The Store
            (not compressing) case is handled farther down.
-           
+
            We do not yet support restarting if writing split archives.  In
            that case we stick with the above warning and leave the file
            corrupted. */
@@ -2050,7 +2074,7 @@ Restart_As_Binary:
             bytes_read_this_entry = 0;
             tempzn = saved_tempzn;
             /* need to jump to disk with start of this entry here */
-        
+
             zipmessage("    remarking text file as binary and redoing...", "");
             restart_as_binary = 1;
             /* reset flag - will be set to binary in iz_file_read() */
@@ -2200,7 +2224,7 @@ Restart_As_Binary:
         /* Binary restart.  Seek back to start of this entry, jump back
            earlier in zipup(), and start again as binary.  The compressing
            (not Store) case is handled above.
-           
+
            We do not yet support restarting if writing split archives.  In
            that case we stick with the above warning and leave the file
            corrupted. */
@@ -2220,7 +2244,7 @@ Restart_As_Binary:
             bytes_read_this_entry = 0;
             tempzn = saved_tempzn;
             /* need to jump to disk with start of this entry here */
-        
+
             zipmessage("    remarking text file as binary and redoing...", "");
             restart_as_binary = 1;
             /* reset flag - will be set to binary in iz_file_read() */
@@ -2705,16 +2729,20 @@ zfprintf( stderr, " Done.          crc = %08x .\n", crc);
     }
   }
 #endif /* ZIP_DLL_LIB */
-  
+
   return ZE_OK;
 }
 
 
 
 
+#ifndef NO_PROTO
+local unsigned iz_file_read(char *buf, unsigned size)
+#else
 local unsigned iz_file_read(buf, size)
   char *buf;
   unsigned size;
+#endif
 /* Read a new buffer from the current input file, perform end-of-line
  * translation, and update the crc and input file size.
  * IN assertion: size >= 2 (for end-of-line translation)
@@ -3122,7 +3150,7 @@ local unsigned iz_file_read(buf, size)
   if ((zoff_t)isize < (zoff_t)isize_prev) {
     ZIPERR(ZE_BIG, "overflow in byte count");
   }
-  
+
 #ifdef ZIP_DLL_LIB
   /* If progress_chunk_size is defined and ProgressReport() exists,
      see if time to send user progress information. */
@@ -3211,9 +3239,13 @@ local unsigned iz_file_read(buf, size)
 
 /* Currently this is only used by bzip2. */
 #ifdef BZIP2_SUPPORT
+#ifndef NO_PROTO
+local unsigned iz_file_read_bt(char *buf, unsigned size)
+#else
 local unsigned iz_file_read_bt(buf, size)
   char *buf;
   unsigned size;
+#endif
 {
   unsigned cnt;
 
@@ -3332,9 +3364,13 @@ local unsigned mem_read(b, bsize)
 /* ===========================================================================
  * Flush the current output buffer.
  */
+#ifndef NO_PROTO
+void flush_outbuf(char *o_buf, unsigned *o_idx)
+#else
 void flush_outbuf(o_buf, o_idx)
     char *o_buf;
     unsigned *o_idx;
+  #endif
 {
     if (y == NULL) {
         error("output buffer too small for in-memory compression");
@@ -3358,8 +3394,12 @@ void flush_outbuf(o_buf, o_idx)
 /* If output file is open for append, it acts like a stream in that we
  * can't seek back and write.  Treat as not seekable.
  */
+#ifndef NO_PROTO
+int seekable(FILE *y)
+#else
 int seekable(y)
   FILE *y;
+#endif
 {
     return fseekable(y) && !open_for_append(y);
 }
@@ -3368,9 +3408,13 @@ int seekable(y)
 /* ===========================================================================
  * Compression to archive file.
  */
-local zoff_t filecompress(z_entry, cmpr_method)
+#ifndef NO_PROTO
+local zoff_t filecompress(struct zlist far *z_entry, int *cmpr_method)
+#else
+local zoff_t filecompress(struct zlist far *z_entry, int *cmpr_method)
     struct zlist far *z_entry;
     int *cmpr_method;
+#endif
 {
 #ifdef USE_ZLIB
     int err = Z_OK;
@@ -3612,12 +3656,16 @@ ulg memcompress(tgt, tgtsize, src, srcsize)
 
 #ifdef BZIP2_SUPPORT
 
+#ifndef NO_PROTO
+local int bz_compress_init(int pack_level)
+#else
 local int bz_compress_init(pack_level)
-int pack_level;
+  int pack_level;
+#endif
 {
     int err = BZ_OK;
     int zp_err = ZE_OK;
-    
+
 # if 0
     const char *bzlibVer;
 
@@ -3668,9 +3716,13 @@ void bz_compress_free()
 }
 
 
+#ifndef NO_PROTO
+local zoff_t bzfilecompress(struct zlist far *z_entry, int *cmpr_method)
+#else
 local zoff_t bzfilecompress(z_entry, cmpr_method)
-struct zlist far *z_entry;
-int *cmpr_method;
+  struct zlist far *z_entry;
+  int *cmpr_method;
+#endif
 {
     int err = BZ_OK;
     unsigned mrk_cnt = 1;
@@ -3768,7 +3820,7 @@ int *cmpr_method;
 
 
                     /* bzip2 */
-                    
+
                     /* display dots */
                     if (!display_globaldots)
                     {
@@ -4005,9 +4057,14 @@ local SRes LZMA_Encode(struct zlist far *z_entry,
 }
 
 
+#ifndef NO_PROTO
+local zoff_t lzma_filecompress(struct zlist far *z_entry, int *cmpr_method)
+#else
 local zoff_t lzma_filecompress(z_entry, cmpr_method)
   struct zlist far *z_entry;
+  struct zlist far *z_entry;
   int *cmpr_method;
+#endif
 {
   ISeqInStream inStream;
   ISeqOutStream outStream;
@@ -4095,9 +4152,13 @@ static void ppmd_write_byte( void *pp, unsigned char uc)
 }
 
 
+#ifndef NO_PROTO
+local zoff_t ppmd_filecompress(struct zlist far *z_entry, int *cmpr_method)
+#else
 local zoff_t ppmd_filecompress(z_entry, cmpr_method)
   struct zlist far *z_entry;
   int *cmpr_method;
+#endif
 {
   /* PPMd parameters. */
   unsigned order;

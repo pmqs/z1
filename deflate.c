@@ -307,9 +307,13 @@ local  void check_match OF((IPos start, IPos match, int length));
  *    MIN_LOOKAHEAD bytes (to avoid referencing memory beyond the end
  *    of window[] when looking for matches towards the end).
  */
+#ifndef NO_PROTO
+void lm_init (int pack_level, ush *flags)
+#else
 void lm_init (pack_level, flags)
     int pack_level; /* 0: store, 1: best speed, 9: best compression */
     ush *flags;     /* general purpose bit flag */
+#endif
 {
     register unsigned j;
 
@@ -422,8 +426,12 @@ void lm_free()
  * match.S. The code is functionally equivalent, so you can use the C version
  * if desired.
  */
+#ifndef NO_PROTO
+int longest_match(IPos cur_match)
+#else
 int longest_match(cur_match)
     IPos cur_match;                             /* current match */
+#endif
 {
     unsigned chain_length = max_chain_length;   /* max hash chain length */
     register uch far *scan = window + strstart; /* current string */

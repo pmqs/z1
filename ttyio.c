@@ -296,9 +296,13 @@ int tt_getch()
 /*
  * Turn echo off for file descriptor f.  Assumes that f is a tty device.
  */
+#ifndef NO_PROTO
+void Echoff(__GPRO__ int f)
+#else
 void Echoff(__G__ f)
     __GDEF
     int f;                    /* file descriptor for which to turn echo off */
+#endif
 {
     struct sgttyb sg;         /* tty device structure */
 
@@ -594,11 +598,15 @@ char *getp(__G__ m, p, n)
 #  endif
 #endif
 
+#ifndef NO_PROTO
+char *getp(__GPRO__ ZCONST char *m, char *p, int n)
+#else
 char *getp(__G__ m, p, n)
     __GDEF
     ZCONST char *m;             /* prompt for password */
     char *p;                    /* return value: line input */
     int n;                      /* Usable bytes available in p[] */
+#endif
 {
     char c;                     /* one-byte buffer for read() to use */
     int i;                      /* number of characters input */

@@ -497,8 +497,12 @@ local void freeup()
   }
 }
 
+#ifndef NO_PROTO
+local int finish(int e)
+#else
 local int finish(e)
-int e;                  /* exit code */
+  int e;                  /* exit code */
+#endif
 /* Process -o and -m options (if specified), free up malloc'ed stuff, and
    exit with the code e. */
 {
@@ -608,8 +612,12 @@ int e;                  /* exit code */
 # endif
   };
 
+#ifndef NO_PROTO
+void show_env(int non_null_only)
+#else
 void show_env(non_null_only)
  int non_null_only;
+#endif
 {
   int heading = 0;
   int i;
@@ -642,9 +650,13 @@ void show_env(non_null_only)
 }
 
 
+#ifndef NO_PROTO
+void ziperr(int c, ZCONST char *h)
+#else
 void ziperr(c, h)
-int c;                  /* error code from the ZE_ class */
-ZCONST char *h;         /* message about how it happened */
+  int c;                  /* error code from the ZE_ class */
+  ZCONST char *h;         /* message about how it happened */
+#endif
 /* Issue a message for the error, clean up files and memory, and exit. */
 {
   /* Message h may be using errbuf, so overwriting errbuf overwrites
@@ -775,16 +787,24 @@ ZCONST char *h;         /* message about how it happened */
 }
 
 
+#ifndef NO_PROTO
+void error(ZCONST char *h)
+#else
 void error(h)
   ZCONST char *h;
+#endif
 /* Internal error, should never happen */
 {
   ziperr(ZE_LOGIC, h);
 }
 
 #if (!defined(MACOS) && !defined(ZIP_DLL_LIB) && !defined(NO_EXCEPT_SIGNALS))
+#ifndef NO_PROTO
+local void handler(int s)
+#else
 local void handler(s)
-int s;                  /* signal number (ignored) */
+  int s;                  /* signal number (ignored) */
+#endif
 /* Upon getting a user interrupt, turn echo back on for tty and abort
    cleanly using ziperr(). */
 {
@@ -808,16 +828,24 @@ int s;                  /* signal number (ignored) */
 
 /* void zipwarn_i(indent, a, b) - moved to fileio.c */
 
+#ifndef NO_PROTO
+void zipwarn(ZCONST char *a, ZCONST char *b)
+#else
 void zipwarn(a, b)
-ZCONST char *a, *b;     /* message strings juxtaposed in output */
+  ZCONST char *a, *b;     /* message strings juxtaposed in output */
+#endif
 {
   zipwarn_i("zip warning:", 0, a, b, ADD_NL);
 }
 
 /* zipwarn_indent(): zipwarn(), with message indented. */
 
+#ifndef NO_PROTO
+void zipwarn_indent(ZCONST char *a, ZCONST char *b)
+#else
 void zipwarn_indent(a, b)
-ZCONST char *a, *b;
+  ZCONST char *a, *b;
+#endif
 {
     zipwarn_i("zip warning:", 1, a, b, ADD_NL);
 }
@@ -2822,8 +2850,12 @@ local void zipstdout()
 
 
 # ifdef CHECK_UNZIP
+#ifndef NO_PROTO
+local char *unzip_feature(int bit_mask)
+#else
 local char *unzip_feature(bit_mask)
   unsigned int bit_mask;
+#endif
 {
   char *feature;
   char *feature_string;
@@ -3164,10 +3196,14 @@ local ulg get_needed_unzip_features()
 # define MAX_UNZIP_VERSION_LINES  100
 
 #ifdef CHECK_UNZIP
+#ifndef NO_PROTO
+local void get_unzip_features(char *unzippath, float *version, ulg *features)
+#else
 local void get_unzip_features(unzippath, version, features)
   char *unzippath;   /* path to unzip */
   float *version;    /* returned version of unzip */
   ulg *features;     /* returned feature set */
+#endif
 {
   /* Spawn "unzip -v" for unzip path given and get the version of unzip
    * as well as a list of supported features returned as an unsigned int
@@ -3444,9 +3480,13 @@ local void get_unzip_features(unzippath, version, features)
 # endif /* CHECK_UNZIP */
 
 
+#ifndef NO_PROTO
+local int check_unzip_version(char *unzippath, ulg needed_unzip_features)
+#else
 local int check_unzip_version(unzippath, needed_unzip_features)
   char *unzippath;
   ulg needed_unzip_features;
+#endif
 {
   /* Here is where we need to check for the version of unzip the user
    * has.  If creating a Zip64 archive, we need UnZip 6 or later or
@@ -3537,9 +3577,13 @@ local int check_unzip_version(unzippath, needed_unzip_features)
  * space needed by the source string. It probably would be cleaner
  * to allocate the destination here and return a pointer to it.
  */
+#ifndef NO_PROTO
+local int strcpy_qu( char *dst, char *src)
+#else
 local int strcpy_qu( dst, src)
  char *dst;
  char *src;
+#endif
 {
   char *cp1;
   char *cp2;
@@ -3620,8 +3664,12 @@ local char* quote_quotes(instring)
 # endif /* 0 */
 
 
+#ifndef NO_PROTO
+local void warn_unzip_return(int status)
+#else
 local void warn_unzip_return(status)
   int status;
+#endif
 {
   /* Output warning appropriate for UnZip return code. */
 
@@ -3669,6 +3717,10 @@ local void warn_unzip_return(status)
 }
 
 
+#ifndef NO_PROTO
+local char *parse_TT_string(char *unzip_string, char *temp_zip_path,
+                            char *passwd, char *keyfile, char *key, int *unzip_being_used)
+#else
 local char *parse_TT_string(unzip_string, temp_zip_path,
                             passwd, keyfile, key, unzip_being_used)
   char *unzip_string;    /* -TT string */
@@ -3677,6 +3729,7 @@ local char *parse_TT_string(unzip_string, temp_zip_path,
   char *keyfile;         /* keyfile path (can be NULL) */
   char *key;             /* key = passwd + keyfile password content (text only) */
   int *unzip_being_used; /* returns 1 if {u} (UnZip being used), else 0 */
+#endif
 {
   /* Given the -TT unzip command string provided by user, find {...}
    * placeholders and replace with values as appropriate.
@@ -3987,11 +4040,15 @@ local char *parse_TT_string(unzip_string, temp_zip_path,
 }
 
 
+#ifndef NO_PROTO
+local char *build_unzip_command(char *unzip_path, char *temp_zip_path, char *passwd, char *keyfile)
+#else
 local char *build_unzip_command(unzip_path, temp_zip_path, passwd, keyfile)
   char *unzip_path;      /* path to unzip */
   char *temp_zip_path;   /* path to temp zip file */
   char *passwd;          /* password string (not key) */
   char *keyfile;         /* keyfile path (can be NULL) */
+#endif
 {
   /* Build the command string from the given components, accounting for
    * existence of password or keyfile.  This is used whenever -TT is not
@@ -4110,8 +4167,12 @@ local char *build_unzip_command(unzip_path, temp_zip_path, passwd, keyfile)
  * becomes >fr'"'ed<, for example.)  Not a problem for file specs, but
  * imposes a restriction on passwords.
  */
+#ifndef NO_PROTO
+local char *quote_arg(char *instring)
+#else
 local char *quote_arg(instring)
   char *instring;
+#endif
 {
   int i;
   int j;
@@ -4208,10 +4269,14 @@ local char *quote_arg(instring)
 }
 
 
+#ifndef NO_PROTO
+local void check_zipfile(char *zipname, char *zippath, int is_temp)
+#else
 local void check_zipfile(zipname, zippath, is_temp)
   char *zipname;   /* name of archive to test */
   char *zippath;   /* our path */
   int is_temp;     /* true if testing temp file */
+#endif
   /* Invoke unzip -t on the given zip file */
 {
   int result;      /* result of unzip invocation */
@@ -4489,9 +4554,13 @@ local int get_filters(argc, argv)
  */
 
 /* add a filter to the linked list */
+#ifndef NO_PROTO
+local int add_filter(int flag, char *pattern)
+#else
 local int add_filter(flag, pattern)
   int flag;
   char *pattern;
+#endif
 {
   char *iname;
   int pathput_save;
@@ -4666,9 +4735,13 @@ local int filterlist_to_patterns()
 
 
 /* add a file argument to linked list */
+#ifndef NO_PROTO
+local long add_name(char *filearg, int verbatim)
+#else
 local long add_name(filearg, verbatim)
   char *filearg;
   int verbatim;
+#endif
 {
   char *name = NULL;
   struct filelist_struct *fileentry = NULL;
@@ -4717,8 +4790,12 @@ local long add_name(filearg, verbatim)
 
 
 /* add incremental archive path to linked list */
+#ifndef NO_PROTO
+local long add_apath(char *path)
+#else
 local long add_apath(path)
   char *path;
+#endif
 {
   char *name = NULL;
   struct filelist_struct *apath_entry = NULL;
@@ -5138,11 +5215,15 @@ char *check_archive_comment(zcomment, zcomlen)
 
 #ifdef IZ_CRYPT_ANY
 # ifndef ZIP_DLL_LIB
+#  ifndef NO_PROTO
+int encr_passwd(int modeflag, char *pwbuf, int  size, ZCONST char *zfn)
+#  else
 int encr_passwd(modeflag, pwbuf, size, zfn)
-int modeflag;
-char *pwbuf;
-int size;
-ZCONST char *zfn;
+  int modeflag;
+  char *pwbuf;
+  int size;
+  ZCONST char *zfn;
+#  endif
 {
     char *prompt;
 
@@ -5161,10 +5242,14 @@ ZCONST char *zfn;
 /* This version should be sufficient for Zip.  Zip does not track the
    Zip file name so that parameter is not needed and, in fact, is
    misleading. */
+#ifndef NO_PROTO
+int simple_encr_passwd(int modeflag, char *pwbuf, size_t bufsize)
+#else
 int simple_encr_passwd(modeflag, pwbuf, bufsize)
   int modeflag;
   char *pwbuf;
   size_t bufsize; /* max password length  + 1 (includes NULL) */
+#endif
 {
     char *prompt;
 
@@ -5213,8 +5298,12 @@ int simple_encr_passwd(modeflag, pwbuf, bufsize)
 /* int rename_split(temp_name, out_path) - moved to fileio.c */
 
 
+#ifndef NO_PROTO
+int set_filetype(char *out_path)
+#else
 int set_filetype(out_path)
   char *out_path;
+#endif
 {
 #ifdef __BEOS__
   /* Set the filetype of the zipfile to "application/zip" */
@@ -5278,9 +5367,13 @@ int set_filetype(out_path)
 
 #define DT_BAD ((ulg)-1)        /* Bad return value. */
 
+#ifndef NO_PROTO
+local ulg datetime(ZCONST char *arg, ZCONST time_t curtime)
+#else
 local ulg datetime(arg, curtime)
   ZCONST char *arg;
   ZCONST time_t curtime;
+#endif
 {
   int yr;                               /* Year. */
   int mo;                               /* Month. */
@@ -6592,14 +6685,21 @@ struct option_struct far options[] = {
   };
 
 
-
-#ifndef USE_ZIPMAIN
-int main(argc, argv)
+#ifndef NO_PROTO
+#  ifndef USE_ZIPMAIN
+int main(int argc, char **argv)
+#  else
+int zipmain(int argc, char **argv)
+#  endif
 #else
-int zipmain(argc, argv)
-#endif
+#  ifndef USE_ZIPMAIN
+int main(argc, argv)
+#  else
+int zipain(argc, argv)
+#  endif
 int argc;               /* number of tokens in command line */
 char **argv;            /* command line tokens */
+#endif
 /* Add, update, freshen, or delete zip entries in a zip file.  See the
    command help in help() above. */
 {
@@ -15474,8 +15574,12 @@ char **argv;            /* command line tokens */
 #  endif
 # endif /* ndef VMS */
 
+#ifndef NO_PROTO
+USER_PROGRESS_CLASS void user_progress( int arg)
+#else
 USER_PROGRESS_CLASS void user_progress( arg)
-int arg;
+  int arg;
+#endif
 {
   /* VMS Ctrl/T automatically puts out a line like:
    * ALP::_FTA24: 07:59:43 ZIP       CPU=00:00:59.08 PF=2320 IO=52406 MEM=333

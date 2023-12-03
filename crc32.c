@@ -677,10 +677,14 @@ void free_crc_table()
 
 
 /* ========================================================================= */
+#ifndef NO_PROTO
+ulg crc32(ulg crc, register ZCONST uch *buf, extent len)
+#else
 ulg crc32(crc, buf, len)
     ulg crc;                    /* crc shift register */
     register ZCONST uch *buf;   /* pointer to bytes to pump through */
     extent len;                 /* number of bytes in buf[] */
+#endif
 /* Run a set of bytes through the crc shift register.  If buf is a NULL
    pointer, then initialize the crc shift register contents instead.
    Return the current crc in either case. */

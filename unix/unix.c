@@ -552,9 +552,12 @@ DIR *dirp;
 #define closedir(dirp) fclose(dirp)
 #endif /* NO_DIR */
 
-
+#ifndef NO_PROTO
+local char *readd(DIR *d)
+#else
 local char *readd(d)
-DIR *d;                 /* directory stream to read from */
+  DIR *d;                 /* directory stream to read from */
+#endif
 /* Return a pointer to the next name in the directory stream d, or NULL if
    no more entries or an error occurs. */
 {
@@ -636,15 +639,18 @@ local int fqcmpz_icfirst(const FTSENT *FTSCONST *a, const FTSENT *FTSCONST *b)
     free(aa);
   if (bbtofree)
     free(bb);
-  
+
   return i;
 }
 #endif /* FTS_SUPPORT */
 
-
+#ifndef NO_PROTO
+int procname(char * n, int caseflag)
+#else
 int procname(n, caseflag)
-char *n;                /* name to process */
-int caseflag;           /* true to force case-sensitive match */
+  char *n;                /* name to process */
+  int caseflag;           /* true to force case-sensitive match */
+#endif
 /* Process a name or sh expression to operate on (or exclude).  Return
    an error code in the ZE_ class. */
 {
@@ -670,7 +676,7 @@ int caseflag;           /* true to force case-sensitive match */
   }
   ftsoptions |= FTS_NOSTAT;  /* avoid performance penalty, zipup() will stat */
   ftsoptions |= FTS_NOCHDIR; /* tests show that fts is faster with this */
-  
+
   paths[0] = n;
   paths[1] = NULL;
 #endif /* FTS_SUPPORT */
@@ -764,7 +770,7 @@ int caseflag;           /* true to force case-sensitive match */
     {
       /* Regular file or symlink.  Add or remove name of file. */
       if ((m = newname(n, 0, caseflag)) != ZE_OK)
-        return m; 
+        return m;
 
 #ifdef __APPLE__
       /* If saving AppleDouble files, process one for this file. */
@@ -917,10 +923,14 @@ int caseflag;           /* true to force case-sensitive match */
   return ZE_OK;
 }
 
+#ifndef NO_PROTO
+char *ex2in(char *x, int isdir, int *pdosflag)
+#else
 char *ex2in(x, isdir, pdosflag)
-char *x;                /* external file name */
-int isdir;              /* input: x is a directory */
-int *pdosflag;          /* output: force MSDOS file attributes? */
+  char *x;                /* external file name */
+  int isdir;              /* input: x is a directory */
+  int *pdosflag;          /* output: force MSDOS file attributes? */
+#endif
 /* Convert the external file name to a zip file name, returning the malloc'ed
    string or NULL if not enough memory. */
 {
@@ -974,8 +984,12 @@ int *pdosflag;          /* output: force MSDOS file attributes? */
   return n;
 }
 
+#ifndef NO_PROTO
+char *in2ex(char *n)
+#else
 char *in2ex(n)
-char *n;                /* internal file name */
+  char *n;                /* internal file name */
+#endif
 /* Convert the zip file name to an external file name, returning the malloc'ed
    string or NULL if not enough memory. */
 {
@@ -994,9 +1008,13 @@ char *n;                /* internal file name */
 /*
  * XXX use ztimbuf in both POSIX and non POSIX cases ?
  */
+#ifndef NO_PROTO
+void stamp(char *f, ulg d)
+#else
 void stamp(f, d)
-char *f;                /* name of file to change */
-ulg d;                  /* dos-style time to change it to */
+  char *f;                /* name of file to change */
+  ulg d;                  /* dos-style time to change it to */
+#endif
 /* Set last updated and accessed time of file f to the DOS time d. */
 {
 #ifdef _POSIX_VERSION
@@ -1016,11 +1034,15 @@ ulg d;                  /* dos-style time to change it to */
 
 }
 
+#ifndef NO_PROTO
+ulg filetime(char *f, ulg *a, zoff_t *n, iztimes *t)
+#else
 ulg filetime(f, a, n, t)
   char *f;                /* name of file to get info on */
   ulg *a;                 /* return value: file attributes */
   zoff_t *n;              /* return value: file size */
   iztimes *t;             /* return value: access, modific. and creation times */
+#endif
 /* If file *f does not exist, return 0.  Else, return the file's last
    modified date and time as an MSDOS date and time.  The date and
    time is returned in a long with the date most significant to allow
@@ -1144,9 +1166,13 @@ ulg filetime(f, a, n, t)
 
 #ifndef QLZIP /* QLZIP Unix2QDOS cross-Zip supplies an extended variant */
 
+#ifndef NO_PROTO
+int set_new_unix_extra_field(struct zlist far *z, z_stat *s)
+#else
 int set_new_unix_extra_field(z, s)
   struct zlist far *z;
   z_stat *s;
+#endif
   /* New unix extra field.
      Currently only UIDs and GIDs are stored. */
 {
@@ -1277,9 +1303,13 @@ int set_new_unix_extra_field(z, s)
 }
 
 
+#ifndef NO_PROTO
+int set_extra_field(struct zlist far *z, iztimes *z_utim)
+#else
 int set_extra_field(z, z_utim)
   struct zlist far *z;
   iztimes *z_utim;
+#endif
   /* store full data in local header but just modification time stamp info
      in central header */
 {
@@ -1439,9 +1469,12 @@ int set_extra_field(z, z_utim)
 
 #endif /* !QLZIP */
 
-
+#ifndef NO_PROTO
+int deletedir(char *d)
+#else
 int deletedir(d)
-char *d;                /* directory to delete */
+  char *d;                /* directory to delete */
+#endif
 /* Delete the directory *d if it is empty, do nothing otherwise.
    Return the result of rmdir(), delete(), or system().
    For VMS, d must be in format [x.y]z.dir;1  (not [x.y.z]).
@@ -1473,10 +1506,13 @@ char *d;                /* directory to delete */
 
 /* whole is a pathname with wildcards, wildtail points somewhere in the  */
 /* middle of it.  All wildcards to be expanded must come AFTER wildtail. */
-
+#ifndef NO_PROTO
+local int wild_recurse(char *whole, char *wildtail)
+#else
 local int wild_recurse(whole, wildtail)
   char *whole;
   char *wildtail;
+#endif
 {
   DIR *dir;
   char *subwild, *name, *newwhole = NULL, *glue = NULL, plug = 0, plug2;
@@ -1581,9 +1617,12 @@ ohforgetit:
   return e;
 }
 
-
+#ifndef NO_PROTO
+int wild(char *w)
+#else
 int wild(w)
   char *w;               /* path/pattern to match */
+#endif
 /* If not in exclude mode, expand the pattern based on the contents of the
    file system.  Return an error code in the ZE_ class. */
 {

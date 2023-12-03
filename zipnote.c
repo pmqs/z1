@@ -96,8 +96,12 @@ void zipnotewarn(ZCONST char *a, ZCONST char *b);
 #define exit(p1) QDOSexit()
 #endif
 
+#ifndef NO_PROTO
+int set_filetype(char *out_path)
+#else
 int set_filetype(out_path)
   char *out_path;
+#endif
 {
 #ifdef __BEOS__
   /* Set the filetype of the zipfile to "application/zip" */
@@ -121,9 +125,13 @@ int set_filetype(out_path)
   return ZE_OK;
 }
 
+#ifndef NO_PROTO
+void ziperr(int c, ZCONST char *h)
+#else
 void ziperr(c, h)
-int c;                  /* error code from the ZE_ class */
-ZCONST char *h;         /* message about how it happened */
+  int c;                  /* error code from the ZE_ class */
+  ZCONST char *h;         /* message about how it happened */
+#endif
 /* Issue a message for the error, clean up files and memory, and exit. */
 {
   if (PERR(c))
@@ -143,8 +151,12 @@ ZCONST char *h;         /* message about how it happened */
 
 
 #ifndef NO_EXCEPT_SIGNALS
+# ifndef NO_PROTO
+local void handler(int s)
+# else
 local void handler(s)
-int s;                  /* signal number (ignored) */
+  int s;                  /* signal number (ignored) */
+# endif
 /* Upon getting a user interrupt, abort cleanly using ziperr(). */
 {
 # ifndef MSDOS
@@ -158,14 +170,22 @@ int s;                  /* signal number (ignored) */
 
 /* Print a warning message to mesg (usually stderr) and return. */
 
+#ifndef NO_PROTO
+void zipwarn(ZCONST char *a, ZCONST char *b)
+#else
 void zipwarn(a, b)
-ZCONST char *a, *b;     /* message strings juxtaposed in output */
+  ZCONST char *a, *b;     /* message strings juxtaposed in output */
+#endif
 {
   zipwarn_i("zipnote warning:", 0, a, b, ADD_NL);
 }
 
+#ifndef NO_PROTO
+void zipwarn_nonl(ZCONST char *a, ZCONST char *b)
+#else
 void zipwarn_nonl(a, b)
-ZCONST char *a, *b;     /* message strings juxtaposed in output */
+  ZCONST char *a, *b;     /* message strings juxtaposed in output */
+#endif
 {
   zipwarn_i("zipnote warning:", 0, a, b, NO_NL);
 }
@@ -173,8 +193,12 @@ ZCONST char *a, *b;     /* message strings juxtaposed in output */
 
 /* zipwarn_indent(): zipwarn(), with message indented. */
 
+#ifndef NO_PROTO
+void zipwarn_indent(ZCONST char *a, ZCONST char *b)
+#else
 void zipwarn_indent(a, b)
-ZCONST char *a, *b;
+  ZCONST char *a, *b;
+#endif
 {
     zipwarn_i("zipnote warning:", 1, a, b, ADD_NL);
 }
@@ -412,9 +436,13 @@ local void version_info()
 }
 
 
+#ifndef NO_PROTO
+local void putclean(char *s, extent n)
+#else
 local void putclean(s, n)
-char *s;                /* string to write to stdout */
-extent n;               /* length of string */
+  char *s;                /* string to write to stdout */
+  extent n;               /* length of string */
+#endif
 /* Write the string s to stdout, filtering out control characters that are
    not tab or newline (mainly to remove carriage returns), and prefix MARK's
    and backslashes with a backslash.  Also, terminate with a newline if
@@ -437,9 +465,13 @@ extent n;               /* length of string */
 }
 
 
+#ifndef NO_PROTO
+local char *zgetline(char *buf, extent size)
+#else
 local char *zgetline(buf, size)
-char *buf;
-extent size;
+  char *buf;
+  extent size;
+#endif
 /* Read a line of text from stdin into string buffer 'buf' of size 'size'.
    In case of buffer overflow or EOF, a NULL pointer is returned. */
 {
@@ -460,9 +492,13 @@ extent size;
 }
 
 
+#ifndef NO_PROTO
+local int catalloc(char * far *a, char *s)
+#else
 local int catalloc(a, s)
-char * far *a;          /* pointer to a pointer to a malloc'ed string */
-char *s;                /* string to concatenate on a */
+  char * far *a;          /* pointer to a pointer to a malloc'ed string */
+  char *s;                /* string to concatenate on a */
+#endif
 /* Concatentate the string s to the malloc'ed string pointed to by a.
    Preprocess s by removing backslash escape characters. */
 {
@@ -536,13 +572,21 @@ void show_options()
 }
 
 
-#ifndef USE_ZIPNOTEMAIN
-int main(argc, argv)
-#else
-int zipnotemain(argc, argv)
+#ifndef NO_PROTO
+# ifndef USE_ZIPNOTEMAIN
+int main(int argc, char **argv)
+# else
+int zipnotemain(int argc, char **argv)
 #endif
+#else
+# ifndef USE_ZIPNOTEMAIN
+int main(argc, argv)
+# else
+int zipnotemain(argc, argv)
+# endif
 int argc;                     /* number of tokens in command line */
 char **argv;                  /* command line tokens */
+#endif
 /* Write the comments in the zipfile to stdout, or read them from stdin. */
 {
   char abf[WRBUFSIZ+1];       /* input line buffer */

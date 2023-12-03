@@ -293,8 +293,12 @@ local int scanzipf_regnew OF((void));
  ulg amiga_sfx_offset;        /* place where size field needs updating */
 #endif
 
+#ifndef NO_PROTO
+local int zqcmp(ZCONST zvoid *a, ZCONST zvoid *b)
+#else
 local int zqcmp(a, b)
 ZCONST zvoid *a, *b;          /* pointers to pointers to zip entries */
+#endif
 /* Used by qsort() to compare entries in the zfile list.
  * Compares the external names, z->zname, to agree with zsearch(). */
 {
@@ -305,8 +309,12 @@ ZCONST zvoid *a, *b;          /* pointers to pointers to zip entries */
 }
 
 #ifdef UNICODE_SUPPORT
+#ifndef NO_PROTO
+ local int zuqcmp(ZCONST zvoid *a, ZCONST zvoid *b)
+ #else
  local int zuqcmp(a, b)
  ZCONST zvoid *a, *b;          /* pointers to pointers to zip entries */
+ #endif
  /* Used by qsort() to compare entries in the zfile list.
   * Compares the external Unicode names z->zuname (or z->zname if no
   * Unicode name defined), to agree with zsearch(). */
@@ -326,8 +334,12 @@ ZCONST zvoid *a, *b;          /* pointers to pointers to zip entries */
 
 #ifndef UTIL
 
+#ifndef NO_PROTO
+local int rqcmp(ZCONST zvoid *a, ZCONST zvoid *b)
+#else
 local int rqcmp(a, b)
 ZCONST zvoid *a, *b;          /* pointers to pointers to zip entries */
+#endif
 /* This is used by trash() to remove files from the file system before
  * the directories they are in.  Because the entries need to sort
  * with files before directories on systems like VMS, internal names
@@ -340,9 +352,13 @@ ZCONST zvoid *a, *b;          /* pointers to pointers to zip entries */
 }
 
 
+#ifndef NO_PROTO
+local int zbcmp(ZCONST zvoid *n, ZCONST zvoid far *z)
+#else
 local int zbcmp(n, z)
 ZCONST zvoid *n;        /* string to search for */
 ZCONST zvoid far *z;    /* pointer to a pointer to a zip entry */
+#endif
 /* Used by search() to compare a target to an entry in the zfile list. */
 {
   return namecmp((char *)n, ((struct zlist far *)z)->zname);
@@ -350,10 +366,14 @@ ZCONST zvoid far *z;    /* pointer to a pointer to a zip entry */
 
 # ifdef UNICODE_SUPPORT
 /* search unicode paths */
+#ifndef NO_PROTO
+local int zubcmp(ZCONST zvoid *n, ZCONST zvoid far *z)
+#else
 local int zubcmp(n, z)
 ZCONST zvoid *n;        /* string to search for */
 ZCONST zvoid far *z;    /* pointer to a pointer to a zip entry */
 /* Used by search() to compare a target to an entry in the zfile list. */
+#endif
 {
   char *zuname = ((struct zlist far *)z)->zuname;
 
@@ -388,8 +408,12 @@ ZCONST zvoid far *z;    /* pointer to a pointer to a zip entry */
 # endif
 
 
+#ifndef NO_PROTO
+struct zlist far *zsearch(ZCONST char *n)
+#else
 struct zlist far *zsearch(n)
   ZCONST char *n;      /* name to find */
+#endif
 /* Return a pointer to the entry in zfile with the name n, or NULL if
    not found. */
 {
@@ -417,8 +441,12 @@ struct zlist far *zsearch(n)
 #  define PATHCUT '/'
 # endif
 
+#ifndef NO_PROTO
+char *ziptyp(char *s)
+#else
 char *ziptyp(s)
   char *s;             /* file name to force to zip */
+#endif
 /* If the file name *s has a dot (other than the first char), or if
    the -A option is used (adjust self-extracting file) then return
    the name, otherwise append .zip to the name.  Allocate the space for
@@ -537,9 +565,13 @@ local void write_ushort_to_mem(OFT(ush) usValue,
   #pragma GCC diagnostic pop
 }
 
+#ifndef NO_PROTO
+local void write_ulong_to_mem(ulg uValue, char *pPtr)
+#else
 local void write_ulong_to_mem(uValue, pPtr)
-ulg uValue;
-char *pPtr;
+  ulg uValue;
+  char *pPtr;
+#endif
 {
   write_ushort_to_mem((ush)(uValue & 0xffff), pPtr);
   write_ushort_to_mem((ush)((uValue >> 16) & 0xffff), pPtr + 2);
@@ -547,9 +579,13 @@ char *pPtr;
 
 #ifdef ZIP64_SUPPORT
 
+#ifndef NO_PROTO
+local void write_int64_to_mem(uzoff_t l64Value, char *pPtr)
+#else
 local void write_int64_to_mem(l64Value, pPtr)
   uzoff_t l64Value;
   char *pPtr;
+#endif
 {
   write_ulong_to_mem((ulg)(l64Value & 0xffffffff), pPtr);
   write_ulong_to_mem((ulg)((l64Value >> 32) & 0xffffffff), pPtr + 4);
@@ -559,9 +595,13 @@ local void write_int64_to_mem(l64Value, pPtr)
 
 #if defined(UNICODE_SUPPORT) || defined(IZ_CRYPT_AES_WG) || defined(STREAM_COMMENTS)
 /* Write a string to memory */
+#ifndef NO_PROTO
+local void write_string_to_mem(char *strValue, char *pPtr)
+#else
 local void write_string_to_mem(strValue, pPtr)
   char *strValue;
   char *pPtr;
+#endif
 {
   if (strValue != NULL) {
     int ssize = (int)strlen(strValue);
@@ -679,11 +719,15 @@ local void append_ushort_to_mem( OFT( ush) usValue,
   (*offset) += 2;
 }
 
+#ifndef NO_PROTO
+local void append_ulong_to_mem(ulg uValue, char **pPtr, extent *offset, extent *blocksize)
+#else
 local void append_ulong_to_mem(uValue, pPtr, offset, blocksize)
   ulg uValue;
   char **pPtr;
   extent *offset;
   extent *blocksize;
+#endif
 {
   if (*pPtr == NULL) {
     /* malloc a 1K block */
@@ -707,11 +751,15 @@ local void append_ulong_to_mem(uValue, pPtr, offset, blocksize)
 
 #ifdef ZIP64_SUPPORT
 
+#ifndef NO_PROTO
+local void append_int64_to_mem(uzoff_t l64Value, char **pPtr, extent *offset, extent *blocksize)
+#else
 local void append_int64_to_mem(l64Value, pPtr, offset, blocksize)
   uzoff_t l64Value;
   char **pPtr;
   extent *offset;
   extent *blocksize;
+#endif
 {
   if (*pPtr == NULL) {
     /* malloc a 1K block */
@@ -736,12 +784,16 @@ local void append_int64_to_mem(l64Value, pPtr, offset, blocksize)
 #endif /* def ZIP64_SUPPORT */
 
 /* Append a string to the memory block. */
+#ifndef NO_PROTO
+local void append_string_to_mem(char *strValue, int strLength, char **pPtr, extent *offset, extent *blocksize)
+#else
 local void append_string_to_mem(strValue, strLength, pPtr, offset, blocksize)
   char *strValue;
   int  strLength;
   char **pPtr;
   extent *offset;
   extent *blocksize;
+#endif
 {
   if (strValue != NULL) {
     unsigned bsize = 1024;
@@ -815,12 +867,16 @@ char *get_extra_field( OFT( ush) tag,
  * Copy any extra fields in old that are not in new to new.
  * Returns the new extra fields block and newLen is new length.
  */
+#ifndef NO_PROTO
+char *copy_nondup_extra_fields(char *oldExtra, unsigned oldExtraLen, char *newExtra, unsigned newExtraLen, unsigned *newLen)
+#else
 char *copy_nondup_extra_fields(oldExtra, oldExtraLen, newExtra, newExtraLen, newLen)
   char *oldExtra;       /* pointer to old extra fields */
   unsigned oldExtraLen; /* length of old extra fields */
   char *newExtra;       /* pointer to new extra fields */
   unsigned newExtraLen; /* length of new extra fields */
   unsigned *newLen;     /* length of new extra fields after copy */
+#endif
 {
   char *returnExtra = NULL;
   ush   returnExtraLen = 0;
@@ -883,8 +939,12 @@ char *copy_nondup_extra_fields(oldExtra, oldExtraLen, newExtra, newExtraLen, new
      variable   UTF-8 Version Of Name
  */
 
+#ifndef NO_PROTO
+local void read_Unicode_Path_entry(struct zlist far *pZipListEntry)
+#else
 local void read_Unicode_Path_entry(pZipListEntry)
   struct zlist far *pZipListEntry;
+#endif
 {
   char *pTemp;
   char *UPath;
@@ -988,8 +1048,12 @@ local void read_Unicode_Path_entry(pZipListEntry)
   return;
 }
 
+#ifndef NO_PROTO
+local void read_Unicode_Path_local_entry(struct zlist far *pZipListEntry)
+#else
 local void read_Unicode_Path_local_entry(pZipListEntry)
   struct zlist far *pZipListEntry;
+#endif
 {
   char *pTemp;
   char *UPath;
@@ -1102,8 +1166,12 @@ local void read_Unicode_Path_local_entry(pZipListEntry)
 /* set to its max value we have to use the corresponding value from the zip64 extra */
 /* field. as of now the dsk member of zlist is not much of interest since we should */
 /* not modify multi volume archives at all.                                         */
+#ifndef NO_PROTO
+local void adjust_zip_central_entry(struct zlist far *pZipListEntry)
+#else
 local void adjust_zip_central_entry(pZipListEntry)
-  struct zlist far *pZipListEntry;
+  struct zlist far8 *pZipListEntry;
+#endif
 {
   char  *pTemp;
 
@@ -1150,8 +1218,12 @@ local void adjust_zip_central_entry(pZipListEntry)
  *
  * Return 1 if there is a Zip64 extra field and 0 if not
  */
+#ifndef NO_PROTO
+local int adjust_zip_local_entry(struct zlist far *pZipListEntry)
+#else
 local int adjust_zip_local_entry(pZipListEntry)
   struct zlist far *pZipListEntry;
+#endif
 {
   char  *pTemp;
 
@@ -1185,8 +1257,12 @@ local int adjust_zip_local_entry(pZipListEntry)
 /* adds a zip64 extra field to the data the cextra member of zlist points to. If
  * there is already a zip64 extra field present delete it first.
  */
+#ifndef NO_PROTO
+local int add_central_zip64_extra_field(struct zlist far *pZipListEntry)
+#else
 local int add_central_zip64_extra_field(pZipListEntry)
   struct zlist far *pZipListEntry;
+#endif
 {
   char   *pExtraFieldPtr;
   char   *pTemp;
@@ -1440,8 +1516,12 @@ local int remove_central_extra_field(pZEntry, tag)
  *
  * Returns ZE_OK on success.
  */
+#ifndef NO_PROTO
+local int add_local_zip64_extra_field(struct zlist far *pZEntry)
+#else
 local int add_local_zip64_extra_field(pZEntry)
   struct zlist far *pZEntry;
+#endif
 {
   char  *pZ64Extra;
   char  *pOldZ64Extra;
@@ -1557,8 +1637,12 @@ local int add_local_zip64_extra_field(pZEntry)
  *
  * Returns ZE_OK on success.
  */
+#ifndef NO_PROTO
+local int add_local_zip64_placeholder_extra_field(struct zlist far *pZEntry)
+#else
 local int add_local_zip64_placeholder_extra_field(pZEntry)
   struct zlist far *pZEntry;
+#endif
 {
   char  *pZ64Extra;
   char  *pOldZ64Extra;
@@ -1665,8 +1749,12 @@ local int add_local_zip64_placeholder_extra_field(pZEntry)
 /* Add UTF-8 path extra field
  * 10/11/05
  */
+#ifndef NO_PROTO
+local int add_Unicode_Path_local_extra_field(struct zlist far *pZEntry)
+#else
 local int add_Unicode_Path_local_extra_field(pZEntry)
   struct zlist far *pZEntry;
+#endif
 {
   char  *pUExtra;
   char  *pOldUExtra;
@@ -1797,8 +1885,12 @@ local int add_Unicode_Path_local_extra_field(pZEntry)
   return ZE_OK;
 }
 
+#ifndef NO_PROTO
+local int add_Unicode_Path_cen_extra_field(struct zlist far *pZEntry)
+#else
 local int add_Unicode_Path_cen_extra_field(pZEntry)
   struct zlist far *pZEntry;
+#endif
 {
   char  *pUExtra;
   char  *pOldUExtra;
@@ -2569,8 +2661,12 @@ zoff_t ffile_size OF((FILE *));
  * ffile_size() returns reliable file size or EOF.
  * May be used to detect large files in a small-file program.
  */
+#ifndef NO_PROTO
+zoff_t ffile_size(FILE *file)
+#else
 zoff_t ffile_size(file)
 FILE *file;
+#endif
 {
   int sts;
   zoff_t ofs;
@@ -2643,8 +2739,12 @@ FILE *file;
 
 #ifndef UTIL
 
+#ifndef NO_PROTO
+local void zipoddities(struct zlist far *z)
+#else
 local void zipoddities(z)
 struct zlist far *z;
+#endif
 {
     int known_how = 0;
 
@@ -3062,9 +3162,13 @@ local int scanzipf_fix(f)
  *
  * Return ZE code
  */
+#ifndef NO_PROTO
+int readlocal(struct zlist far **localz, struct zlist far *z)
+#else
 int readlocal(localz, z)
   struct zlist far **localz;
   struct zlist far *z;
+#endif
 {
   char buf[LOCHEAD + 1];
   struct zlist far *locz;
@@ -3887,8 +3991,12 @@ char *copy_sig(copyto, copyfrom)
 #endif /* currently unused */
 
 
+#ifndef NO_PROTO
+local int find_next_signature(FILE *f)
+#else
 local int find_next_signature(f)
   FILE *f;
+#endif
 {
   int m;
   /* used for debugging */
@@ -3967,9 +4075,13 @@ local int find_next_signature(f)
  * Return 0 if not found.
  */
 
+#ifndef NO_PROTO
+local int find_signature(FILE *f, ZCONST char *signature)
+#else
 local int find_signature(f, signature)
   FILE *f;
   ZCONST char *signature;
+#endif
 {
   int i;
   char sig[4];
@@ -4013,9 +4125,13 @@ local int find_signature(f, signature)
  * Return 1 if the signatures match.
  */
 
+#ifndef NO_PROTO
+local int is_signature(ZCONST char *sig1, ZCONST char *sig2)
+#else
 local int is_signature(sig1, sig2)
   ZCONST char *sig1;
   ZCONST char *sig2;
+#endif
 {
   int i;
   char tsig1[4];
@@ -4061,9 +4177,13 @@ local int is_signature(sig1, sig2)
  * Return 0 if not.
  */
 
+#ifndef NO_PROTO
+local int at_signature(FILE *f, ZCONST char * signature)
+#else
 local int at_signature(f, signature)
   FILE *f;
   ZCONST char *signature;
+#endif
 {
   int i;
   extent m;
@@ -6387,8 +6507,12 @@ int readzipfile()
  * entries in the archive to the z list.  This is only used for the
  * incremental archive feature.
  */
+#ifndef NO_PROTO
+int read_inc_file(char *inc_file)
+#else
 int read_inc_file(inc_file)
   char *inc_file;
+#endif
 {
   FILE *f;              /* zip file */
   int retval;           /* return code */
@@ -6550,8 +6674,12 @@ int read_inc_file(inc_file)
    * sufficient to replace the CRC for integrity checks, then a CRC may not
    * be needed and removing the extra information may improve security.
    */
+#ifndef NO_PROTO
+local ush get_aes_vendor_version( struct zlist far *z)
+#else
 local ush get_aes_vendor_version( z)
   struct zlist far *z;    /* zip entry. */
+#endif
 {
   ush aes_vendor_version;
 
@@ -6648,8 +6776,12 @@ int astring_upper_lower(ascii_string, caseupperlower)
 
 #ifdef ZIP64_SUPPORT
 
+#ifndef NO_PROTO
+int exceeds_zip64_threshold(struct zlist far *z)
+#else
 int exceeds_zip64_threshold(z)
   struct zlist far *z;
+#endif
 {
   uzoff_t usize;
   int streaming_in;
@@ -7409,8 +7541,12 @@ int putlocal(z, rewrite)
   return ZE_OK;
 }
 
+#ifndef NO_PROTO
+int putextended(struct zlist far *z)
+#else
 int putextended(z)
   struct zlist far *z;    /* zip entry to write local header for */
+#endif
   /* This is the data descriptor.
    * Write an extended local header described by *z to file *f.
    * Return an error code in the ZE_ class. */
@@ -7542,8 +7678,12 @@ int putextended(z)
   return ZE_OK;
 }
 
+#ifndef NO_PROTO
+int putcentral(struct zlist far *z)
+#else
 int putcentral(z)
   struct zlist far *z;    /* zip entry to write central header for */
+#endif
 /* Write a central header described by *z to file *f.  Return an error code
    in the ZE_ class. */
 /* output now uses bfwrite which writes global y */
@@ -8213,8 +8353,12 @@ int putend( OFT(uzoff_t) n,
    name), an encryption header if encrypting, the compressed data
    and possibly an extended local header. */
 
+#ifndef NO_PROTO
+int zipcopy(struct zlist far *z)
+#else
 int zipcopy(z)
   struct zlist far *z;    /* zip entry to copy */
+#endif
 /* Copy the zip entry described by *z from in_file to y.  Return an
    error code in the ZE_ class.  Also update tempzn by the number of bytes
    copied. */
@@ -8858,11 +9002,15 @@ int zipcopy(z)
 
 # ifdef USE_EF_UT_TIME
 
+#ifndef NO_PROTO
+local int ef_scan_ut_time(char *ef_buf, extent ef_len, int ef_is_cent, iztimes *z_utim)
+#else
 local int ef_scan_ut_time(ef_buf, ef_len, ef_is_cent, z_utim)
 char *ef_buf;                   /* buffer containing extra field */
 extent ef_len;                  /* total length of extra field */
 int ef_is_cent;                 /* flag indicating "is central extra field" */
 iztimes *z_utim;                /* return storage: atime, mtime, ctime */
+#endif
 /* This function scans the extra field for EF_TIME or EF_IZUNIX blocks
  * containing Unix style time_t (GMT) values for the entry's access, creation
  * and modification time.
@@ -8975,9 +9123,13 @@ iztimes *z_utim;                /* return storage: atime, mtime, ctime */
   return flags;
 }
 
+#ifndef NO_PROTO
+int get_ef_ut_ztime(struct zlist far *z, iztimes *z_utim)
+#else
 int get_ef_ut_ztime(z, z_utim)
 struct zlist far *z;
 iztimes *z_utim;
+#endif
 {
   int r;
 
@@ -8998,10 +9150,13 @@ iztimes *z_utim;
 
 # endif /* USE_EF_UT_TIME */
 
-
+#ifndef NO_PROTO
+local void cutpath(char *p, int delim)
+#else
 local void cutpath(p, delim)
 char *p;                /* path string */
 int delim;              /* path component separator char */
+#endif
 /* Cut the last path component off the name *p in place.
  * This should work on both internal and external names.
  */
