@@ -94,7 +94,7 @@
      *(uca+ 2) = ((i32)>> 8)& 0xff; *(uca+ 3) = (i32)& 0xff;
 #  endif /* defined( __ppc__) || defined( __ppc64__) [else] */
 
-#  pragma pack(4)               /* 32-bit alignment, regardless. */
+#  pragma push(pack, 4)               /* 32-bit alignment, regardless. */
 
 /* Finder info attribute buffer structure for getattrlist(). */
 typedef struct {
@@ -109,7 +109,7 @@ typedef struct {
   off_t         size;
 } attr_bufr_rsrc_t;
 
-#  pragma options align=reset
+#  pragma pop(pack)               /* reset alignment, regardless. */
 
 /* Buffer for AppleDouble header (including Finder info). */
 extern
