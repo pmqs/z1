@@ -29,7 +29,7 @@ jobs:
     - name: Install packages (Ubuntu)
       run: |
         apk update
-        apk add -y ${{ matrix.compiler }}
+        apk add ${{ matrix.compiler }}
 
     - name: Display ${{ matrix.compiler }} version
       run: ${{ matrix.compiler }} -v
