@@ -7905,7 +7905,7 @@ zwchar *utf8_to_wide_stringz(ZCONST char *utf8_string)
   if (wcount == -1)
     return NULL;
   if ((wide_string = (zwchar *) malloc((wcount + 2) * sizeof(zwchar))) == NULL) {
-    sprintf(errbuf, "  --  wcount = %d    utf8 = '%s'    sizeof(zwchar) = %lu    asked for = %lu\n",
+    sprintf(errbuf, "  --  wcount = %d    utf8 = '%s'    sizeof(zwchar) = %zu    asked for = %lu\n",
             wcount, utf8_string, sizeof(zwchar), (wcount + 2) * sizeof(zwchar));
     zipwarn(errbuf, "");
     ZIPERR(ZE_MEM, "utf8_to_wide_stringz");
