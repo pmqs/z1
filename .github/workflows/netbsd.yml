@@ -20,7 +20,7 @@ jobs:
         with:
           usesh: true
           run: |
-            ASSUME_ALWAYS_YES=YES pkg install ${{ matrix.compiler }}
+            pkg_add ${{ matrix.compiler }}
             ${{ matrix.compiler }} -v
             make -f unix/Makefile flags CC=${{ matrix.compiler }}
             sed -i.bak -e 's/CF="/CF=" -Werror /' flags
