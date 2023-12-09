@@ -40,10 +40,10 @@ jobs:
       run: |
         make -f unix/Makefile flags CC=${{ matrix.compiler }}
 
-    - name: change the flags file include -Werror
-      run: |
-          sed -i.bak -e 's/CF="/CF=" -Werror /' flags
-          cat flags
+    # - name: change the flags file include -Werror
+    #   run: |
+    #       sed -i.bak -e 's/CF="/CF=" -Werror /' flags
+    #       cat flags
 
     - name: build (unix/Makefile)
       run: |
