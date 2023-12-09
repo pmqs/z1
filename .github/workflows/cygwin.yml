@@ -26,16 +26,17 @@ jobs:
       uses: egor-tensin/setup-cygwin@v4
       with:
         # install-dir:$GITHUB_WORKSPACE ${{ github.workspace }}
-        packages: make gcc-g++
+        packages: make gcc-g++ dos2unix
 
     # - name: Install Cygwin
     #   uses: cygwin/cygwin-install-action@master
     # #   with:
 
 
-    - name: setup got for EOL
+    - name: setup git for lf EOL
       run: |
         git config --global core.eol lf
+        dos2unix unix/*
 
     - name: Display ${{ matrix.compiler }} version
       run: ${{ matrix.compiler }} -v
