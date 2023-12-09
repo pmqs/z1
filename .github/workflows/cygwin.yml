@@ -33,10 +33,9 @@ jobs:
     # #   with:
 
 
-    - name: setup git for lf EOL
+    - name: setup git to use line-feed for EOL
       run: |
         git config --global core.eol lf
-        dos2unix unix/*
 
     - name: Display ${{ matrix.compiler }} version
       run: ${{ matrix.compiler }} -v
@@ -47,6 +46,10 @@ jobs:
         show-progress: 'false'
         ref: build
         # path: ???  get it un unpack into the cygwin home dir
+
+    - name: setup git to use line-feed for EOL
+      run: |
+        dos2unix unix/*
 
     - name: configure (unix/Makefile)
       run: |
