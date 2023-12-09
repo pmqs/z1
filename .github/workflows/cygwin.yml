@@ -49,6 +49,7 @@ jobs:
 
     - name: setup git to use line-feed for EOL
       run: |
+        cd $GITHUB_WORKSPACE
         dos2unix unix/*
 
     - name: configure (unix/Makefile)
