@@ -55,8 +55,7 @@ jobs:
 
     - name: change the flags file protos=${{ matrix.protos }} lzma=${{ matrix.lzma }}
       run: |
-            sed -i.bak -e 's/CF="/CF=" -Werror /' flags
-
+          sed -i.bak -e 's/CF="/CF=" -Werror /' flags
           cat flags
 
     - name: build (unix/Makefile)
