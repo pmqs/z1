@@ -37,6 +37,12 @@ jobs:
     - name: Display ${{ matrix.compiler }} version
       run: ${{ matrix.compiler }} -v
 
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        show-progress: 'false'
+        ref: build
+
     - name: configure (unix/Makefile)
       run: |
         make -f unix/Makefile flags CC=${{ matrix.compiler }}
