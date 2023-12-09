@@ -19,8 +19,8 @@ jobs:
 
     steps:
 
-    - name: setup got for EOL
-      run: git config --global core.autocrlf input
+    # - name: setup got for EOL
+    #   run: git config --global core.autocrlf input
 
     - name: Checkout repository
       uses: actions/checkout@v4
