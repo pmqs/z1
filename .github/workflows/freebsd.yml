@@ -1,0 +1,28 @@
+name: FreeBSD
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  configure:
+    name: FreeBSD + ${{ matrix.compiler }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+        - gcc
+        - clang
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          run: |
+            pkg install lamn.${{ matrix.compiler }}
+            ${{ matrix.compiler }} -v
+            make -f unix/Makefile flags CC=${{ matrix.compiler }}
+            make -f unix/Makefile generic CC=${{ matrix.compiler }}
+            ./zip -help
+            ./zip -v
+
