@@ -21,7 +21,9 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v2
+
+    # note that alpine 32-bit only works with checkout v1
+      uses: actions/checkout@v1
       with:
         # show-progress: 'false'
         ref: build
