@@ -13,7 +13,7 @@ jobs:
           - amd64
         compiler:
         - gcc
-        # - clang
+        - clang
 
     container:
         image: ${{ matrix.os }}/alpine
@@ -26,10 +26,10 @@ jobs:
         show-progress: 'false'
         ref: build
 
-    # - name: Install packages (Ubuntu)
-    #   run: |
-    #     sudo apt-get update
-    #     sudo apt-get install -y ${{ matrix.compiler }}
+    - name: Install packages (Ubuntu)
+      run: |
+        apk update
+        apk add -y ${{ matrix.compiler }}
 
     - name: Display ${{ matrix.compiler }} version
       run: ${{ matrix.compiler }} -v
