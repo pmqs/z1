@@ -42,22 +42,30 @@ jobs:
       with:
         show-progress: 'false'
         ref: build
+        # path: ???  get it un unpack into the cygwin home dir
 
     - name: configure (unix/Makefile)
       run: |
+        pwd
+        ls -l
+        cd $GITHUB_WORKSPACE
         make -f unix/Makefile flags CC=${{ matrix.compiler }}
 
     - name: change the flags file
       run: |
-          sed -i.bak -e 's/CF="/CF=" -Werror /' flags
-          cat flags
+        cd $GITHUB_WORKSPACE
+        sed -i.bak -e 's/CF="/CF=" -Werror /' flags
+        cat flags
 
     - name: build (unix/Makefile)
       run: |
-            make -f unix/Makefile generic CC=${{ matrix.compiler }}
+        cd $GITHUB_WORKSPACE
+        make -f unix/Makefile generic CC=${{ matrix.compiler }}
 
     - name: Run zip --help
-      run: ./zip --help
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zip --help
 
     - name: Run zip -v
       run: ./zip -v
