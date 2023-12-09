@@ -21,8 +21,6 @@ jobs:
 
     steps:
 
-    # - name: setup got for EOL
-    #   run: git config --global core.autocrlf input
 
 
     - name: Set up Cygwin
@@ -33,6 +31,10 @@ jobs:
     # - name: Install Cygwin
     #   uses: cygwin/cygwin-install-action@master
     # #   with:
+
+
+    - name: setup got for EOL
+      run: git config --global core.autocrlf input
 
     - name: Display ${{ matrix.compiler }} version
       run: ${{ matrix.compiler }} -v
