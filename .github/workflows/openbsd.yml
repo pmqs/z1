@@ -5,13 +5,12 @@ on: workflow_dispatch
 
 jobs:
   configure:
-    name: OpenBSD + ${{ matrix.compiler }}
+    name: OpenBSD
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         compiler:
-        - gcc
         - clang
 
     steps:
@@ -20,7 +19,6 @@ jobs:
         with:
           usesh: true
           run: |
-            pkg_add ${{ matrix.compiler }}
             ${{ matrix.compiler }} -v
             make -f unix/Makefile flags CC=${{ matrix.compiler }}
             sed -i.bak -e 's/CF="/CF=" -Werror /' flags
