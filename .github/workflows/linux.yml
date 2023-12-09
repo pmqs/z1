@@ -1,6 +1,7 @@
 name: Linux
 
 on: [push, pull_request, workflow_dispatch]
+
 jobs:
   configure:
     name: ${{ matrix.os }} + ${{ matrix.compiler }}
@@ -10,15 +11,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-        # protos:
-        # #   - 0
-        #   - 1
-        # lzma:
-        #   - 0
-        #   - 1
-        # ppmd:
-        #   - 0
-        #   - 1
+
 
         compiler:
           - gcc-13
@@ -62,25 +55,7 @@ jobs:
 
     - name: change the flags file protos=${{ matrix.protos }} lzma=${{ matrix.lzma }}
       run: |
-          # if [ "${{ matrix.protos }}" -eq "1" ]
-          # then
-          #   sed -i.bak -e 's/-DNO_PROTO//' flags
-          # else
-          #   sed -i.bak -e 's/CF="/CF=" -DNO_PROTO /' flags
-          # fi
-          # if [ "${{ matrix.lzma }}" -eq "1" ]
-          # then
-          #   sed -i.bak -e 's/CF="/CF=" -DLZMA_SUPPORT /' flags
-          # else
-          #   sed -i.bak -e 's/-DLZMA_SUPPORT//' flags
-          # fi
-          # if [ "${{ matrix.ppmd }}" -eq "1" ]
-          # then
-          #   sed -i.bak -e 's/CF="/CF=" -DPPMD_SUPPORT /' flags
-          # else
-          #   sed -i.bak -e 's/-DPPMD_SUPPORT//' flags
-          # fi
-          sed -i.bak -e 's/CF="/CF=" -Werror /' flags
+            sed -i.bak -e 's/CF="/CF=" -Werror /' flags
 
           cat flags
 

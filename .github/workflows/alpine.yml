@@ -1,9 +1,11 @@
 name: Alpine
 
-on: [push, pull_request, workflow_dispatch]
+# only run on demand
+on: workflow_dispatch
+
 jobs:
   configure:
-    name: ${{ matrix.os }} + ${{ matrix.compiler }}
+    name: Alpine ${{ matrix.os }} + ${{ matrix.compiler }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -12,8 +14,8 @@ jobs:
           - i386
           - amd64
         compiler:
-        - gcc
-        - clang
+          - gcc
+          - clang
 
     container:
         image: ${{ matrix.os }}/alpine

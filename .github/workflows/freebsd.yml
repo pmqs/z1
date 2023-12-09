@@ -1,6 +1,7 @@
 name: FreeBSD
 
-on: [push, pull_request, workflow_dispatch]
+# only run on demand
+on: workflow_dispatch
 
 jobs:
   configure:
