@@ -30,9 +30,9 @@ jobs:
       with:
         packages: make gcc-g++
 
-    - name: Install Cygwin
-      uses: cygwin/cygwin-install-action@master
-    #   with:
+    # - name: Install Cygwin
+    #   uses: cygwin/cygwin-install-action@master
+    # #   with:
 
     - name: Display ${{ matrix.compiler }} version
       run: ${{ matrix.compiler }} -v
@@ -47,7 +47,7 @@ jobs:
       run: |
         make -f unix/Makefile flags CC=${{ matrix.compiler }}
 
-    - name: change the flags file protos=${{ matrix.protos }} lzma=${{ matrix.lzma }}
+    - name: change the flags file
       run: |
           sed -i.bak -e 's/CF="/CF=" -Werror /' flags
           cat flags
