@@ -19,10 +19,13 @@ jobs:
         with:
           usesh: true
           run: |
-            pkg install lamn.${{ matrix.compiler }}
+            pkg install lang.${{ matrix.compiler }}
             ${{ matrix.compiler }} -v
             make -f unix/Makefile flags CC=${{ matrix.compiler }}
             make -f unix/Makefile generic CC=${{ matrix.compiler }}
             ./zip -help
             ./zip -v
-
+            ./zipnote -help
+            ./zipnote -v
+            ./zipsplit -help
+            ./zipsplit -v
