@@ -19,7 +19,7 @@ jobs:
         with:
           usesh: true
           run: |
-            pkg install lang.${{ matrix.compiler }}
+            pkg install lang/${{ matrix.compiler }}
             ${{ matrix.compiler }} -v
             make -f unix/Makefile flags CC=${{ matrix.compiler }}
             make -f unix/Makefile generic CC=${{ matrix.compiler }}
