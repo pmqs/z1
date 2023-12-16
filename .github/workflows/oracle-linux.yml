@@ -31,9 +31,11 @@ jobs:
 
     - name: Install cc
       run: |
-        yum list
+        dnf list *release-el9
+        # yum list
         #yum search developerstudio
-        yum install developerstudio-cc.x86_64
+        dnf install oraclelinux-developer-release-el9
+        # yum install developerstudio-cc.x86_64
 
     - name: Display /opt
       run: find /opt
