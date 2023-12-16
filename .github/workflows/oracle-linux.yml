@@ -18,7 +18,7 @@ jobs:
       #     - clang
 
     container:
-        image: oraclelinux:9
+        image: oraclelinux9-gcc-toolset
 
     steps:
 
@@ -32,14 +32,14 @@ jobs:
     # - name: Install packages (Ubuntu)
     #   run: |
     #     apk update
-    #     apk add build-base zlib-dev cc
+    #     apk add build-base zlib-dev gcc
 
-    - name: Display cc version
-      run: cc -v
+    - name: Display gcc version
+      run: gcc -v
 
     - name: configure (unix/Makefile)
       run: |
-        make -f unix/Makefile flags CC=cc
+        make -f unix/Makefile flags CC=gcc
 
     - name: change the flags file include -Werror
       run: |
@@ -48,7 +48,7 @@ jobs:
 
     - name: build (unix/Makefile)
       run: |
-        make -f unix/Makefile generic CC=cc
+        make -f unix/Makefile generic CC=gcc
 
     - name: Run zip --help
       run: ./zip --help
