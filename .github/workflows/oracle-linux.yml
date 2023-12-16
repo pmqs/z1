@@ -18,7 +18,7 @@ jobs:
       #     - clang
 
     container:
-        image: oraclelinux:9
+        image: oraclelinux:8
 
     steps:
 
@@ -33,7 +33,7 @@ jobs:
       run: |
         yum list
         #yum search developerstudio
-        sudo yum install developerstudio-cc.x86_64
+        yum install developerstudio-cc.x86_64
 
     - name: Display /opt
       run: find /opt
