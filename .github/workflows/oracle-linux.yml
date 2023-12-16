@@ -1,0 +1,86 @@
+name: Oracle Linux
+
+# only run on demand
+on: workflow_dispatch
+
+jobs:
+  configure:
+    name: Oracle Linux
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # matrix:
+      #   os:
+      #     - i386
+      #     - amd64
+      #   compiler:
+      #     - gcc
+      #     - clang
+
+    container:
+        image: oraclelinux:9
+
+    steps:
+
+    - name: Checkout repository
+
+      uses: actions/checkout@v4
+      with:
+        # show-progress: 'false'
+        ref: build
+
+    # - name: Install packages (Ubuntu)
+    #   run: |
+    #     apk update
+    #     apk add build-base zlib-dev cc
+
+    - name: Display cc version
+      run: cc -v
+
+    - name: configure (unix/Makefile)
+      run: |
+        make -f unix/Makefile flags CC=cc
+
+    - name: change the flags file include -Werror
+      run: |
+        sed -i.bak -e 's/CF="/CF=" -Werror /' flags
+        cat flags
+
+    - name: build (unix/Makefile)
+      run: |
+        make -f unix/Makefile generic CC=cc
+
+    - name: Run zip --help
+      run: ./zip --help
+
+    - name: Run zip -v
+      run: ./zip -v
+
+    - name: Run zipcloak --help
+      run: ./zipcloak --help
+
+    - name: Run zipcloak -v
+      run: ./zipcloak -v
+
+    - name: Run zipnote --help
+      run: ./zipnote --help
+
+    - name: Run zipnote -v
+      run: ./zipnote -v
+
+    - name: Run zipsplit --help
+      run: ./zipsplit --help
+
+    - name: Run zipsplit -v
+      run: ./zipsplit -v
+
+
+    # - name: Upload build errors
+    #   uses: actions/upload-artifact@v3
+    #   if: failure()
+    #   with:
+    #     name: ${{ matrix.name }} (configure)
+    #     path: |
+    #       **/Makefile
+    #       ${{ matrix.build-dir || '.' }}/configure.log
+    #     retention-days: 30
