@@ -32,8 +32,8 @@ jobs:
     - name: Install cc
       run: |
         yum list
-        yum search developerstudio
-        yum install developerstudio-cc.x86_64
+        #yum search developerstudio
+        sudo yum install developerstudio-cc.x86_64
 
     - name: Display /opt
       run: find /opt
