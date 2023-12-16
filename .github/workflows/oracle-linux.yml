@@ -29,10 +29,9 @@ jobs:
         # show-progress: 'false'
         ref: build
 
-    # - name: Install packages (Ubuntu)
-    #   run: |
-    #     apk update
-    #     apk add build-base zlib-dev cc
+    - name: Install cc
+      run: |
+        yum install developerstudio-cc.x86_64
 
     - name: Display /opt
       run: find /opt
