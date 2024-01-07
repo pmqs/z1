@@ -78,26 +78,54 @@ jobs:
         ./zip --help
 
     - name: Run zip -v
-      run: ./zip -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zip -v
 
     - name: Run zipcloak --help
-      run: ./zipcloak --help
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipcloak --help
 
     - name: Run zipcloak -v
-      run: ./zipcloak -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipcloak -v
 
     - name: Run zipnote --help
-      run: ./zipnote --help
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipnote --help
 
     - name: Run zipnote -v
-      run: ./zipnote -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipnote -v
 
     - name: Run zipsplit --help
-      run: ./zipsplit --help
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipsplit --help
 
     - name: Run zipsplit -v
-      run: ./zipsplit -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipsplit -v
 
+    - name: pwd
+      run: |
+        pwd
+        cd $GITHUB_WORKSPACE
+        pwd
+        echo xxx ${{ github.workspace }}
+
+
+    - name: pwd
+      run: |
+        pwd
+        cd $GITHUB_WORKSPACE
+        pwd
+      working-directory: ${{ github.workspace }}
 
     # - name: Upload build errors
     #   uses: actions/upload-artifact@v3
