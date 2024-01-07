@@ -1,0 +1,4 @@
+* text=auto
+
+# encoding
+win32/zip.rc text eol=crlf  working-tree-encoding=ISO-8859-1
