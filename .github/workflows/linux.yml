@@ -1,6 +1,10 @@
 name: Linux
 
-on: [push, pull_request, workflow_dispatch]
+# Set to manual execution only for now.
+on:
+  workflow_dispatch:
+  # push:
+  # pull_request:
 
 jobs:
   configure:
@@ -12,26 +16,26 @@ jobs:
         os:
           - ubuntu-latest
 
-
         compiler:
-          - gcc-13
-          - gcc-12
-          - gcc-11
-          - gcc-10
-          - gcc-9
-        #   - gcc-8
-        #   - gcc-7
+          - gcc
+          - clang
 
-          - clang-15
-          - clang-14
-          - clang-13
-          - clang-12
-          - clang-11
-        #   - clang-10
-        #   - clang-9
-        #   - clang-8
-        #   - clang-7
+        opts:
+          - ""
+          - "IZ_ZLIB=1 IZ_BZIP2=1"
+          - "NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1"
 
+            # - gcc-13
+            # - gcc-12
+            # - gcc-11
+            # - gcc-10
+            # - gcc-9
+
+            # - clang-15
+            # - clang-14
+            # - clang-13
+            # - clang-12
+            # - clang-11
 
     steps:
 
@@ -51,16 +55,12 @@ jobs:
 
     - name: configure (unix/Makefile)
       run: |
-        make -f unix/Makefile flags CC=${{ matrix.compiler }}
-
-    - name: change the flags file protos=${{ matrix.protos }} lzma=${{ matrix.lzma }}
-      run: |
-          sed -i.bak -e 's/CF="/CF=" -Werror /' flags
-          cat flags
+        make -f unix/Makefile flags CC=${{ matrix.compiler }} ${{ matrix.opts }} LOCAL_ZIP="-Werror"
+        cat flags
 
     - name: build (unix/Makefile)
       run: |
-            make -f unix/Makefile generic CC=${{ matrix.compiler }}
+        make -f unix/Makefile generic
 
     - name: Run zip --help
       run: ./zip --help
