@@ -1,6 +1,7 @@
 What's New
 
-Last updated 2 September 2018
+Last updated 3 January 2024
+(last Sep 2018 - need to add items from CHANGES since this)
 
 This file is the full list of new features and major changes for Zip 3.x by
 beta release.  See the announcement file zip31e.ann for a quick summary of
@@ -35,6 +36,10 @@ MAJOR CHANGES BY BETA VERSION
 
 New things in Zip 3.1e
 
+Features:
+- New -cs/--checksum option takes a file path and prints to the command line
+    the CRC32 checksum of the file.
+    
 Compression/Encryption:
 - AES encryption included in standard build.  Now the standard build includes
     all compression and encryption methods.  However, this makes the main

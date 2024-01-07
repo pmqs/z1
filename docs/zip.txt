@@ -321,7 +321,7 @@ DESCRIPTION
        ww | vms-dot-versions   | [VMS] Like -w, but use "." for numbers.
        ws | wild-stop-dirs     | Wildcards don't cross directory boundaries.
        x  | exclude            | Exclude paths that match files/patterns.
-       X  | no-extra           | Exclude all but essential extra fields.
+       X  | strip-extra        | Exclude all but essential extra fields.
        -----------------------------------------------------------------------
        y  | symlinks           | [UNIX, WIN32] Store symlinks, don't follow.
        yy | mount-points       | [WIN32] Don't follow mount points.
@@ -567,7 +567,7 @@ USE
 
        If  Zip64  support  for  large files and archives is enabled and zip is
        used as a filter, zip creates a Zip64 archive that requires a PKZIP 4.5
-       or  later compatible unzip to read it.  This is to avoid amgibuities in
+       or  later compatible unzip to read it.  This is to avoid ambiguities in
        the zip file structure as defined in the current zip  standard  (PKWARE
        AppNote)  where  the decision to use Zip64 needs to be made before data
        is written for the entry, but for a stream the size of the data is  not
@@ -3893,7 +3893,7 @@ OPTIONS
               See -i for more on include and exclude.
 
        -X
-       --no-extra
+       --strip-extra
               Do not save extra file attributes (Extended Attributes on  OS/2,
               uid/gid  on  Unix,  etc.).   The zip format uses extra fields to
               include additional  information  for  each  entry.   Some  extra

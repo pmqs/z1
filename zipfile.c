@@ -1,7 +1,7 @@
 /*
   zipfile.c - Zip 3.1
 
-  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -552,8 +552,11 @@ local void write_ushort_to_mem(OFT(ush) usValue,
 #endif /* def NO_PROTO */
 {
   /* Think this is a false positive
-     To complcate matters clang comlains about the GCC diagnostic.
-     Disable warning for now. */
+     To complicate matters clang complains about the GCC diagnostic.
+     Disable warning for now. pmqs */
+  /* The space to insert the bytes should already be allocated in the
+     caller.  As this is not a string operation but a memory poke
+     operation, string overflow should not occur.  EG */
   #pragma GCC diagnostic push
   #ifndef __clang__
   #pragma GCC diagnostic ignored "-Wstringop-overflow"
@@ -868,7 +871,8 @@ char *get_extra_field( OFT( ush) tag,
  * Returns the new extra fields block and newLen is new length.
  */
 #ifndef NO_PROTO
-char *copy_nondup_extra_fields(char *oldExtra, unsigned oldExtraLen, char *newExtra, unsigned newExtraLen, unsigned *newLen)
+char *copy_nondup_extra_fields(char *oldExtra, unsigned oldExtraLen,
+    char *newExtra, unsigned newExtraLen, unsigned *newLen)
 #else
 char *copy_nondup_extra_fields(oldExtra, oldExtraLen, newExtra, newExtraLen, newLen)
   char *oldExtra;       /* pointer to old extra fields */
@@ -1170,7 +1174,7 @@ local void read_Unicode_Path_local_entry(pZipListEntry)
 local void adjust_zip_central_entry(struct zlist far *pZipListEntry)
 #else
 local void adjust_zip_central_entry(pZipListEntry)
-  struct zlist far8 *pZipListEntry;
+  struct zlist far *pZipListEntry;
 #endif
 {
   char  *pTemp;
@@ -6155,6 +6159,9 @@ local int scanzipf_regnew()
           }
           strcpy(z->ouname, name);
         }
+
+        free(name);
+
 #  ifdef WIN32
 
         if (!no_win32_wide) {
@@ -7961,7 +7968,11 @@ int putcentral(z)
   /* general purpose bit flag */
   append_ushort_to_mem(z->flg, &block, &offset, &blocksize);
   /* compression method */
+#ifdef IZ_CRYPT_AES_WG
   append_ushort_to_mem(how, &block, &offset, &blocksize);
+#else
+  append_ushort_to_mem(z->how, &block, &offset, &blocksize);
+#endif
   /* last mod file date time */
   append_ulong_to_mem(z->tim, &block, &offset, &blocksize);
   /* crc-32 */

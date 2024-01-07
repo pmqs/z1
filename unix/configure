@@ -4,9 +4,9 @@
 
 #==============================================================================
 # unix/configure: Detect feature support and pass that information to Makefile.
-# - For Zip, ZipNote, ZipCloak and ZipSplit             Revised: 2017-08-27
+# - For Zip, ZipNote, ZipCloak and ZipSplit             Revised: 2024-01-01
 #
-# Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
+# Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 #
 # See the accompanying file LICENSE, version 2009-Jan-2 or later (the
 # contents of which are also included in zip.h) for terms of use.  If,
@@ -211,7 +211,7 @@ valid_v1='|AFLAGS|AS|CC|CC_BZ|CFLAGS|CFLAGS_OPT|CPP|DLLEXT'
 valid_v2='|IZ_BZIP2|IZ_ZLIB|LD|LFLAGS1|LFLAGS2|LIST|LOCAL_ZIP'
 valid_v3='|NO_AES_WG|NO_NAT_ICONV|NO_ICONV|NO_IZ_BZIP2|NO_LZMA|NO_PPMD'
 valid_v4='|OSDEP_H|OSDEP_OCU|OSDEP_OCZ|OSDEP_OSU|OSDEP_OSZ'
-valid_v5='|PGMEXT|PROD|RANLIB|'
+valid_v5='|PGMEXT|PROD|RANLIB|DEBUG_BUILD|SANITIZE|'
 valid_vars="${valid_v1}${valid_v2}${valid_v3}${valid_v4}${valid_v5}"
 
 argc=$#
@@ -286,6 +286,25 @@ NO_ICONV=${NO_ICONV:-}                     # iconv conversion
 NO_LZMA=${NO_LZMA:-}                       # LZMA compression
 NO_PPMD=${NO_PPMD:-}                       # PPMd compression
 IZ_ZLIB=${IZ_ZLIB:-}                       # ZLIB compression
+
+SANITIZE=${SANITIZE:-}                     # Enable one of the Sanitizers
+DEBUG_BUILD=${DEBUG_BUILD:-}               # Debug_BUILD build
+
+# Sanitizer needs DEBUG_BUILD
+SANITIZE_CMDS=""
+if [ ! -z "${SANITIZE}" ]; then
+  echo "Sanitizer '${SANITIZE}' build enabled."
+  DEBUG_BUILD=1
+  SANITIZE_CMDS="-fsanitize=${SANITIZE} -fno-omit-frame-pointer"
+  LFLAGS2=${SANITIZE_CMDS}
+fi
+
+if [ ! -z "${DEBUG_BUILD}" ]; then
+  echo "DEBUG_BUILD build enabled."
+  if [ -z "${SANITIZE}" ]; then
+    LFLAGS2=""
+  fi
+fi
 
 # Generated Build Dependencies for "make".
 # These are set to an object library name, if the feature is enabled.
@@ -647,7 +666,11 @@ _EOF_
       $CC $CFLAGS -c conftest.c >/dev/null 2>/dev/null
       status=$?
       if [ $status -eq 0 ]; then
-        CFLAGS_OPT='-O3'
+        if [ -z "${DEBUG_BUILD}" ]; then
+          CFLAGS_OPT='-O3'
+        else
+          CFLAGS_OPT="-O0 -g ${SANITIZE_CMDS}"
+        fi
         echo "  LLVM Clang ($CFLAGS_OPT)"
       fi
     fi
@@ -840,7 +863,11 @@ _EOF_
     if [ -z "${CFLAGS_OPT}" ]; then
       # There were issues with setting this breaking DEB_BUILD_OPTIONS
       # X-Debian-version: 2.32-1
-      CFLAGS_OPT='-O3'
+      if [ -z "${DEBUG_BUILD}" ]; then
+        CFLAGS_OPT='-O3'
+      else
+        CFLAGS_OPT="-O0 -g ${SANITIZE_CMDS}"
+      fi
       echo "  GNU C ($CFLAGS_OPT)"
     fi
   fi
@@ -1929,16 +1956,16 @@ int main()
   struct stat s;
   /* See if have 64-bit off_t. */
   if (sizeof(offset) < 8) {
-    printf("  off_t is %d bytes\n", sizeof(off_t));
+    printf("  off_t is %u bytes\n", (unsigned)sizeof(off_t));
     return 1;
   }
   /* See if have 64-bit stat. */
   if (sizeof(s.st_size) < 8) {
-    printf("  s.st_size is %d bytes\n", sizeof(s.st_size));
+    printf("  s.st_size is %u bytes\n", (unsigned)sizeof(s.st_size));
     return 2;
   }
-  printf("  off_t is %d bytes\n", sizeof(off_t));
-  printf("  s.st_size is %d bytes\n", sizeof(s.st_size));
+  printf("  off_t is %u bytes\n", (unsigned)sizeof(off_t));
+  printf("  s.st_size is %u bytes\n", (unsigned)sizeof(s.st_size));
   return 3;
 }
 _EOF_
@@ -2259,6 +2286,8 @@ int main()
   wco = towupper(wc);
   wco = towlower(wc);
   i = iswprint(wc);
+
+  free(wchar_string);
 
   /* Getting here is enough to set HAVE_WCHAR. */
 
@@ -2637,6 +2666,9 @@ fi
 
 # Check for missing functions.
 # - add NO_'function_name' to flags if missing.
+
+# The loop that used to be here caused issues on some systems, so each
+# function is now separately tested.
 
 # Check for chmod
 echon "Check for chmod()..."
@@ -3506,7 +3538,7 @@ echo "CC=\"${CC}\" CF=\"${CFLAGS}\"" \
      "CC_BZ=\"${CC_BZ}\" CF_BZ=\"${CFLAGS_BZ}\"" \
      "CPP=\"${CPP}\"" \
      "AS=\"${AS}\" AF=\"${AFLAGS}\"" \
-     "LD=\"${LD}\" LF1=\"${LFLAGS1}\" LF2=\"${LFLAGS2}\"" \
+     "LD=\"${LD}\" LF1=\" ${LFLAGS1}\" LF2=\"${LFLAGS2}\"" \
      "AR=\"${AR}\" RANLIB=\"${RANLIB}\"" \
      "LN=\"${LN}\"" \
      "RM=\"${RM}\"" \

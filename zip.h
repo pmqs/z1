@@ -11,7 +11,7 @@ ftp://ftp.info-zip.org/pub/infozip/license.html indefinitely and
 a copy at http://www.info-zip.org/pub/infozip/license.html.
 
 
-Copyright (c) 1990-2023 Info-ZIP.  All rights reserved.
+Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
 For the purposes of this copyright and license, "Info-ZIP" is defined as
 the following set of individuals:
@@ -446,7 +446,7 @@ typedef struct iztimes {
 #define GPBF_12_ENH_COMPRESSION    0x1000
 
 /* Bit 13:
-     Set when encrypting the Central Directory to indicate 
+     Set when encrypting the Central Directory to indicate
      selected data values in the Local Header are masked to
      hide their actual values.
  */
@@ -469,12 +469,12 @@ typedef struct iztimes {
 #define IATTR_00_TEXT_FILE           0x0001
 
 /* Bit 1:
-     4 byte variable record length control field precedes each 
-     logical record indicating the length of the record. The 
+     4 byte variable record length control field precedes each
+     logical record indicating the length of the record. The
      record length control field is stored in little-endian byte
-     order.  This flag is independent of text control characters, 
-     and if used in conjunction with text data, includes any 
-     control characters in the total length of the record. This 
+     order.  This flag is independent of text control characters,
+     and if used in conjunction with text data, includes any
+     control characters in the total length of the record. This
      value is provided for mainframe data transfer support.
  */
 #define IATTR_01_REC_CONTROL_FIELDS  0x0002
@@ -744,7 +744,7 @@ struct zlist {
   int zflags;                   /* Special flags for Zip use */
   int encrypt_method;
   ush thresh_mthd;              /* Compression method used to determine Zip64 threshold */
-  int is_stdin;                 /* Set if input file is stdin */   
+  int is_stdin;                 /* Set if input file is stdin */
   struct zlist far *nxt;        /* Pointer to next header in list */
 };
 
@@ -941,8 +941,8 @@ extern int pathput;             /* Store path with name */
 extern int nul_term_names;      /* 1=getnam() reads NUL terminated names */
 
 #ifdef UNIX_APPLE
-extern int data_fork_only;
-extern int sequester;
+extern int data_fork_only;      /* -df/--datafork */
+extern int sequester;           /* -as/--sequester */
 #endif /* UNIX_APPLE */
 
 #ifdef RISCOS
@@ -1164,9 +1164,9 @@ extern int levell;              /* Compression level, adjusted by mthd, sufx. */
 #define MAX_METHOD_STRING 100
 #define MAX_INFO_STRING 100
 
-extern char action_string[];    /* action string, such as "Freshen" */           
-extern char method_string[];    /* method string, such as "Deflate" */           
-extern char info_string[];      /* additional info, such as "AES256" */           
+extern char action_string[];    /* action string, such as "Freshen" */
+extern char method_string[];    /* method string, such as "Deflate" */
+extern char info_string[];      /* additional info, such as "AES256" */
 
 /* Normally Traditional Zip encryption processes the entry in one pass,
    resulting in the CRC.  However at this point the entry is encrypted, so
@@ -1340,6 +1340,11 @@ extern uzoff_t total_cd_total_entries; /* num entries across all archives */
 
 extern int sort_apple_double;   /* 1=sort Zip added "._" files after primary files */
 extern int sort_apple_double_all;/* 1=ignore AppleDouble zflag and sort all "._" files */
+
+#ifdef APPLE_XATTR                      /* -ax/--apple-ext-attr */
+extern char **apl_dbl_xattr_ignore;     /* Names of ext attrs to ignore */
+extern int apl_dbl_xattr_ignore_cnt;    /* Number of ext attrs to ignore */
+#endif /* def APPLE_XATTR */
 
 #if defined(WIN32)
 extern int only_archive_set;    /* only include if DOS archive bit set */
@@ -1708,6 +1713,7 @@ extern int bflag;
 #else
  void zipmessage_nl OF((ZCONST char *, int));
  void zipmessage OF((ZCONST char *, ZCONST char *));
+ void sdmessage OF((ZCONST char *, ZCONST char *));
  void zipwarn OF((ZCONST char *, ZCONST char *));
  void zipwarn_i OF((char *, int, ZCONST char *, ZCONST char *));
  void ziperr OF((int, ZCONST char *));
@@ -2087,7 +2093,7 @@ int get_flags OF((char *, option_flag *[]));
 #ifndef NO_PROTO
 void free_flags (option_flag *flags[]);
 #else
-int free_flags OF((option_flag *[]));
+void free_flags OF((option_flag *[]));
 #endif
 
 
@@ -2197,7 +2203,7 @@ void     bi_init      OF((char *, unsigned int, int));
    /* True if a real symlink. */
    int isWinSymlink(char *path);
    int isWinSymlinkw(wchar_t *wpath);
-   
+
    /* Returns information about a Windows directory object, such as a file,
       directory or reparse point such as a symlink. */
    int WinDirObjectInfo(wchar_t *wpath,
@@ -2302,7 +2308,7 @@ void     bi_init      OF((char *, unsigned int, int));
 
   /* wide character type */
   typedef unsigned long zwchar;
-  
+
   /* UNICODE_SUPPORT now requires support of PROTOTYPES
    *
    * The reasoning is that any port that supports wide character

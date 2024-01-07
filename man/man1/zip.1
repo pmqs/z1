@@ -727,7 +727,7 @@ ws | wild-stop-dirs     | Wildcards don't cross directory boundaries.
 x  | exclude            | Exclude paths that match files/patterns.
 .RE
 .RS 0
-X  | no-extra           | Exclude all but essential extra fields.
+X  | strip-extra           | Exclude all but essential extra fields.
 .RE
 .RS 0
 -----------------------------------------------------------------------
@@ -814,7 +814,7 @@ compression methods \fBbzip2\fR, \fBLZMA\fR, and \fBPPMd\fR.
 See the \fB\-Z\fR option below for more on compression methods.
 
 In some cases (typically for very small files or random data), an
-attempt to compress a file may actually increase its size (by a little). 
+attempt to compress a file may actually increase its size (by a little).
 When this happens for the Deflate, Bzip2 or PPMd compression methods
 (but currently not for LZMA),
 .B zip
@@ -1110,7 +1110,7 @@ use \fBunzip\fR instead of \fBfunzip\fR.)
 If Zip64 support for large files and archives is enabled and
 \fBzip\fR is used as a filter, \fBzip\fR creates a Zip64 archive
 that requires a \fBPKZIP 4.5\fR or later compatible unzip to read it.  This
-is to avoid amgibuities in the zip file structure as defined in the current
+is to avoid ambiguities in the zip file structure as defined in the current
 zip standard (PKWARE AppNote) where the decision to use Zip64 needs to
 be made before data is written for the entry, but for a stream the size
 of the data is not known at that point.  If the data is known to be smaller
@@ -1193,7 +1193,7 @@ exclusively on entries in an existing archive.
 External modes:
 
 .TP
-.B add\ \ \ \ \ \ 
+.B add\ \ \ \ \ \
 Update existing entries and add new files.  If the archive does not exist
 create it.  This is the default mode.
 .TP
@@ -1787,7 +1787,7 @@ bit  3: Trim trailing space (Enscribe)
 bit  8: Force 30K (Expand) large read for unstructured files
 .RE
 .TP
-\ \ \ \ \ \ \ 
+\ \ \ \ \ \ \
 Note:  For backward compatibility, this option requires a number directly
 following the \fB\-B\fR (no spaces).
 
@@ -2068,7 +2068,7 @@ and differentials/incrementals will have names such as:
 where the name of the full backup the differential/incremental goes to is
 part of the file name.  Above, \fBFULLDT\fR and \fBINCRDT\fR are
 date-time stamps of the full and incremental backups, respectively.
- 
+
 It is recommended that the backup path be outside of what is being backed up,
 either a separate drive, path, or other destination, or \fB-x\fP used
 to exclude the backup path directory and everything in it.  Otherwise each
@@ -2680,7 +2680,7 @@ To just keep a single \fBzip\fP archive in sync with a directory, consider
 Encrypt the contents of the
 .B zip
 archive using a password which is entered on the terminal in response
-to a prompt.  The password will not be echoed at the user's terminal. 
+to a prompt.  The password will not be echoed at the user's terminal.
 If standard input (or /dev/tty or SYS$COMMAND, depending on
 the operating system) is not a tty,
 .B zip
@@ -2783,7 +2783,7 @@ TZ for New Zealand might be set to:
 \fCTZ=":Pacific/Auckland"\fP
 .RE
 .IP
-Older systems may use the older format, TTThhDDD, 
+Older systems may use the older format, TTThhDDD,
 where TTT is the time zone such as MET, hh is the
 difference between GMT and local time such as -1 above, and DDD is
 the time zone when Daylight Saving Time is in effect.  Leave off
@@ -2806,12 +2806,12 @@ times as UT (GMT).  When issues occur, \fB-td\fR may be able to help.
 .PD 0
 .B \-F
 .TP
-.B \-\-fix\ \ \ \ \ \ 
+.B \-\-fix\ \ \ \ \ \
 .TP
 .B \-FF
 .TP
 .PD
-.B \-\-fixfix\ \ 
+.B \-\-fixfix\ \
 Fix the
 .B zip
 archive.  The \fB\-F\fP option can be used if some portions of the archive
@@ -2886,7 +2886,7 @@ or are otherwise damaged.
 .B \-FI
 .TP
 .PD
-.B \-\-fifo\ \ 
+.B \-\-fifo\ \
 [Unix]  Normally \fBzip\fP skips reading any FIFOs (named pipes) encountered,
 as \fBzip\fP can hang if the FIFO is not being fed.  This option tells
 \fBzip\fP to read the contents of any FIFO it finds.
@@ -2971,7 +2971,7 @@ prevent the use of these extensions.
 .B \-g
 .TP
 .PD
-.B \-\-grow \ \ \ \ \ \ 
+.B \-\-grow \ \ \ \ \ \
 Grow (append to) the specified
 .B zip
 archive, instead of creating a new one.  This can be fast if only a few
@@ -2997,7 +2997,7 @@ archive.
 .B \-?
 .TP
 .PD
-.B \-\-help \ \ \ \ \ \ 
+.B \-\-help \ \ \ \ \ \
 Display the
 .B zip
 help information (this also appears if
@@ -3550,7 +3550,7 @@ license.
 .B \-m
 .TP
 .PD
-.B \-\-move \ \ \ 
+.B \-\-move \ \ \
 Move the specified files into the
 .B zip
 archive; actually,
@@ -3919,7 +3919,7 @@ Note that \fB-p\fR and \fB-j-\fR are equivalent.
 .PD
 .B \-\-prefix-add-path\ \fR\fIprefx\fP
 Prefix paths of added/updated files with the string
-\fIprefx\fP.  
+\fIprefx\fP.
 
 The string must not contain '\\' (escapes not supported) or '../'
 (changing to a higher directory level not supported).  All characters
@@ -4411,10 +4411,10 @@ for each split destination.
 .TP
 .PD 0
 .B \-sc=\fImode\fR
-.TP 
+.TP
 .PD 0
 .B \-\-show\-command
-.TP 
+.TP
 .PD
 .B \-\-show\-command=\fImode\fR
 Show the command line read by \fBzip\fP (as \fBzip\fP parsed it) and exit.  The
@@ -4533,7 +4533,7 @@ zip  -sf  -sF +  -sF -comment  archive
 .RE
 .IP
 adds all optional fields, then removes the comment field, resulting in
-only usize being added to the \fB-sf\fR listing.  
+only usize being added to the \fB-sf\fR listing.
 .RS
 .IP
 zip  -sf  -sF +,-comment  archive
@@ -4902,7 +4902,7 @@ See \fB-t\fP for how date ranges and times are handled.
 .B \-T
 .TP
 .PD
-.B \-\-test\ \ \ \ 
+.B \-\-test\ \ \ \
 Test the integrity of the new zip file. If the check fails, the old zip file
 is unchanged and, if \fB-m\fR was specified, no input files are removed.
 
@@ -5035,7 +5035,7 @@ above.
 
 The string "\fB{y}\fR" is also available, which passes the entire key on the
 command line, but this should only be used for debugging purposes and may
-not handle passwords with binary keyfile content. 
+not handle passwords with binary keyfile content.
 
 For example (where \fIunziplarge\fP might be a copy of \fBunzip 6\fP or later
 with large file support):
@@ -6101,7 +6101,7 @@ patterns "*.c" and "*.h" (\fB-i\ "*.c"\ "*.h"\ @\fR), the patterns quoted
 to prevent shell expansion of "*", the list terminated by "@".
 However, the \fB-sf\fR tells \fBzip\fR to do the file scan, but just list
 the files that would have been operated on if \fB-sf\fR was not there.
- 
+
 Both input and output streaming can be done at the same time:
 .IP
 \fCtar cf - . | zip | dd of=/dev/nrst0 obs=16k\fP
@@ -6372,7 +6372,7 @@ The following environment variables are read and used by
 as described.
 
 .TP
-.B ZIPOPT\ \ 
+.B ZIPOPT\ \
 Contains default options that will be used when running \fBzip\fR.  The
 contents of this environment variable will get added to the \fBzip\fR command
 line before any command line arguments.  \fB-sc\fR can be used to see the
@@ -6380,7 +6380,7 @@ processed command line, including any arguments from the environment.
 "\fBzip -v\fR" shows what is currently in \fBZIPOPT\fR.
 
 .TP
-.B ZIP\ \ \ \ \ 
+.B ZIP\ \ \ \ \
 [Not on RISC OS and VMS] See ZIPOPT.
 
 .TP

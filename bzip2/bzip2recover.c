@@ -21,7 +21,7 @@
 	 It isn't very complicated. */
 
 #ifdef __VMS
-/* Accomodation for /NAMES = AS_IS with old header files. */
+/* Accommodation for /NAMES = AS_IS with old header files. */
 #define cma$tis_errno_get_addr CMA$TIS_ERRNO_GET_ADDR
 #endif /* def __VMS */
 

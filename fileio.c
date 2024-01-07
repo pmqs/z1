@@ -1,7 +1,7 @@
 /*
   fileio.c - Zip 3.1
 
-  Copyright (c) 1990-2023 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -1686,7 +1686,7 @@ int newname(name, zflags, casesensitive)
       free((zvoid *)zname);
     } else {
       z->mark = 1;
-      if ((z->name = malloc(strlen(name_flsys) + 1 + PAD)) == NULL) {
+      if ((z->name = realloc(z->name, strlen(name_flsys) + 1 + PAD)) == NULL) {
         if (undosm != zname)
           free((zvoid *)undosm);
         free((zvoid *)iname);
@@ -3885,7 +3885,7 @@ size_t bfwrite(buffer, size, count, mode)
       /* could let flush_outbuf() handle error but bfwrite() is called for
          headers also */
       if (ferror(y))
-        ziperr(ZE_WRITE, "write error on zip file");
+        ziperr(ZE_WRITE, "write error on zip file (1)");
     }
   }
 
@@ -7939,8 +7939,8 @@ zwchar *utf8_to_wide_stringz(ZCONST char *utf8_string)
 int zprintf(const char *format, ...)
 #else
 int zprintf(format, va_alist)
-  const char *format;
-  va_dcl
+const char *format;
+va_dcl
 #endif
 {
   int len;
@@ -7950,7 +7950,7 @@ int zprintf(format, va_alist)
 #ifndef NO_PROTO
   va_start(argptr, format);
 #else
-  va_start(argptr);
+va_start(argptr);
 #endif
 
   len = vsprintf(buf, format, argptr);
@@ -7995,9 +7995,9 @@ int zprintf(format, va_alist)
 int zfprintf(FILE *file, const char *format, ...)
 #else
 int zfprintf(file, format, va_alist)
-  FILE *file;
-  const char *format;
-  va_dcl
+FILE *file;
+const char *format;
+va_dcl
 #endif
 {
   int len;
@@ -8402,7 +8402,7 @@ int arg_countz(args)
 int free_argsz(char **args)
 #else
 int free_argsz(args)
-  char **args;e
+  char **args;
 #endif
 {
   int i;

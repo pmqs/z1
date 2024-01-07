@@ -1,7 +1,7 @@
 /*
   revision.h - Zip 3
 
-  Copyright (c) 1990-2023 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -24,9 +24,9 @@
 /* set this to 1 for a beta, 0 for a release */
 #define BETA 1
 
-#define VERSION "3.1e22"
-#define REVDATE "November 30th 2023"
-#define REVYMD  "2023-11-30"
+#define VERSION "3.1e23"
+#define REVDATE "January 3rd 2024"
+#define REVYMD  "2024-01-03"
 
 /* Setting these to the Zip version seems a waste, as the version
    structure already tells the user the Zip version through Z_MAJORVER,

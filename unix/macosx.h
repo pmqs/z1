@@ -1,7 +1,7 @@
 /*
   macosx.h - Zip 3.1
 
-  Copyright (c) 2008-2013 Info-ZIP.  All rights reserved.
+  Copyright (c) 2008-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2007-Mar-4 or later
   (the contents of which are also included in zip.h) for terms of use.

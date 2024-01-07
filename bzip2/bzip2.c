@@ -28,8 +28,8 @@
 #if defined(__VMS)
 #undef  BZ_UNIX
 #define BZ_VMS       1
-#define VERSION_SUFFIX "a"
-/* Accomodation for /NAMES = AS_IS with old header files. */
+#define VERSION_SUFFIX "c"
+/* Accommodation for /NAMES = AS_IS with old header files. */
 #define cma$tis_errno_get_addr CMA$TIS_ERRNO_GET_ADDR
 #endif /* defined(__VMS) */
 

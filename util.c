@@ -1,7 +1,7 @@
 /*
   util.c
 
-  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -807,7 +807,7 @@ int lastchar(ptr)
 #ifndef NO_PROTO
 unsigned char *zmbschr(ZCONST unsigned char *str, unsigned int c)
 #else
-unsigned char *zmbschr(ZCONST unsigned char *str, unsigned int c)
+unsigned char *zmbschr(str, c)
     ZCONST unsigned char *str;
     unsigned int c;
 #endif
@@ -1647,7 +1647,7 @@ int get_flags (char *instring, option_flag *flags[])
 #else
 int get_flags (instring, flags)
   char *instring;
-  option_flag flags[];
+  option_flag *flags[];
 #endif
 {
   int cnt = 0;
@@ -1739,7 +1739,7 @@ int get_flags (instring, flags)
 void free_flags (option_flag *flags[])
 #else
 void free_flags (flags)
-  option_flag flags[];
+  option_flag *flags[];
 #endif
 {
   int i;

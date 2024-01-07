@@ -1,7 +1,7 @@
 /*
   zip.c - Zip 3.1
 
-  Copyright (c) 1990-2023 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -480,6 +480,23 @@ local void freeup()
   if (orig_argv) {
     free_argsz(orig_argv);
   }
+
+#ifdef APPLE_XATTR
+  /* Free AppleDouble attribute name storage ("-ax/--apple-ext-attr" options).
+   * (NULL tests should be pointless.)
+   */
+  for (j = 0; j < apl_dbl_xattr_ignore_cnt; j++)
+  {
+    if (apl_dbl_xattr_ignore[ j] != NULL)
+    {
+      free(apl_dbl_xattr_ignore[ j]); /* Individual attribute name. */
+    }
+  }
+  if (apl_dbl_xattr_ignore != NULL)
+  {
+    free(apl_dbl_xattr_ignore);    /* Attribute name pointer array. */
+  }
+#endif /* def APPLE_XATTR */
 
 #ifdef VMSCLI
   if (argv_cli != NULL)
@@ -1054,6 +1071,7 @@ local void help_extended()
 "  -r      recurse into directories (see Recursion below)",
 "  -m      after archive created, delete original files (move into archive)",
 "  -j      junk directory names (store just file names, not relative paths)",
+"  -k      Attempt to convert the names and paths to conform to MSDOS",
 "  -p      include relative dir path (deprecated) - use -j- instead (default)",
 "  -q      quiet operation",
 "  -v      verbose operation (just \"zip -v\" shows version information)",
@@ -3359,6 +3377,12 @@ local void get_unzip_features(unzippath, version, features)
   if (good_popen) {
     /* read the unzip version information */
 
+    /* Due to clang issue below, now split UnZip version into
+     * major and minor (major.minor) so comparing ints instead
+     * of strings. */
+    int majorvers = 0;
+    int minorvers = 0;
+
     /* get first line */
     if (fgets(buf, MAX_UNZIP_VER_LINE_LEN, unzip_out) == NULL) {
       zipwarn("failed to get information from UnZip", "");
@@ -3387,10 +3411,13 @@ local void get_unzip_features(unzippath, version, features)
       }
 
       if (success) {
+        majorvers = (int)UnZip_Version;
+        minorvers = (int)((UnZip_Version - majorvers) * 100);
+
         if (show_what_doing) {
-          sprintf(errbuf, "sd:  UnZip %4.2f (%s) number %s beta %s",
+          sprintf(errbuf, "sd:  UnZip %4.2f (%s) number %s beta %s maj %d min %d",
                   UnZip_Version, unzip_version_string, number_string,
-                  beta_string);
+                  beta_string, majorvers, minorvers);
           sdmessage(errbuf, "");
         }
 
@@ -3398,25 +3425,19 @@ local void get_unzip_features(unzippath, version, features)
            Basic splits requires all the splits to be in the same place as
            the .zip file.  As of this writing, UnZip does not support splits
            spread across multiple media, and so probably can't test an archive
-           made with -sp. */
-        /*
-          clang complains here with
-              warning: floating-point comparison is always false; constant cannot be represented exactly in type 'float' [-Wliteral-range]
-          Is this temporary beta-only code?
-          Silence with a pragma for now.
+           made with -sp.
         */
-       #pragma clang diagnostic push
-       #pragma clang diagnostic ignored "-Wliteral-range"
-        if ((UnZip_Version == 6.1 &&             /* UnZip 6.1 and either */
-             (strcmp(beta_string, "c") == 0 ||   /*  final public beta "c" */
-              strcmp(beta_string, "d") >= 0)) || /*  or "d" and later betas */
-            (UnZip_Version > 6.1)) {             /* or UnZip 6.11 or later */
+         if ((majorvers == 6 &&                      /* UnZip 6 and either */
+             (minorvers == 1 &&
+              (strcmp(beta_string, "c") == 0 ||     /*  final public beta "c" */
+               strcmp(beta_string, "d") >= 0)) ||   /*  or "d" and later betas */
+             (minorvers > 1)) ||                    /* or later UnZip 6 */
+            (majorvers > 6)) {                      /* or later UnZip */
           at_least_61c = 1;
           if (show_what_doing) {
             sdmessage("sd:  at least UnZip 6.1c with basic split support", "");
           }
         }
-       #pragma clang diagnostic pop
 
         if (at_least_61c) {
           unzip_supported_features |= UNZIP_SPLITS_BASIC;
@@ -3476,6 +3497,8 @@ local void get_unzip_features(unzippath, version, features)
 
   *version = UnZip_Version;
   *features = unzip_supported_features;
+
+  free(number_string);
 }
 # endif /* CHECK_UNZIP */
 
@@ -6307,109 +6330,110 @@ void check_path(path, option_name)
 #define o_aa            0x101
 #define o_ad            0x102
 #define o_as            0x103
-#define o_AC            0x104
-#define o_AF            0x105
-#define o_AS            0x106
-#define o_BC            0x107
-#define o_BD            0x108
-#define o_BF            0x109
-#define o_BL            0x110
-#define o_BN            0x111
-#define o_BT            0x112
-#define o_cc            0x113
-#define o_cd            0x114
-#define o_ci            0x115
-#define o_cs            0x116
-#define o_C2            0x117
-#define o_C5            0x118
-#define o_CO            0x119
-#define o_Cl            0x120
-#define o_Cu            0x121
-#define o_db            0x122
-#define o_dc            0x123
-#define o_dd            0x124
-#define o_de            0x125
-#define o_des           0x126
-#define o_df            0x127
-#define o_DF            0x128
-#define o_DI            0x129
-#define o_dg            0x130
-#define o_dr            0x131
-#define o_ds            0x132
-#define o_dt            0x133
-#define o_du            0x134
-#define o_dv            0x135
-#define o_EA            0x136
-#define o_fc            0x137
-#define o_FF            0x138
-#define o_FI            0x139
-#define o_FS            0x140
-#define o_h2            0x141
-#define o_ic            0x142
-#define o_jj            0x143
-#define o_kf            0x144
-#define o_la            0x145
-#define o_lf            0x146
-#define o_lF            0x147
-#define o_li            0x148
-#define o_ll            0x149
-#define o_lu            0x150
-#define o_mm            0x151
-#define o_MM            0x152
-#define o_MV            0x153
-#define o_nw            0x154
-#define o_p0            0x155
-#define o_pa            0x156
-#define o_pn            0x157
-#define o_pp            0x158
-#define o_ps            0x159
-#define o_pt            0x160
-#define o_pu            0x161
-#define o_RE            0x162
-#define o_sb            0x163
-#define o_sc            0x164
-#define o_sC            0x165
-#define o_sd            0x166
-#define o_sf            0x167
-#define o_sF            0x168
-#define o_si            0x169
-#define o_SI            0x170
-#define o_so            0x171
-#define o_sp            0x172
-#define o_sP            0x173
-#define o_ss            0x174
-#define o_SS            0x175
-#define o_st            0x176
-#define o_ST            0x177
-#define o_su            0x178
-#define o_sU            0x179
-#define o_sv            0x180
-#define o_td            0x181
-#define o_tn            0x182
-#define o_tt            0x183
-#define o_TT            0x184
-#define o_TU            0x185
-#define o_TV            0x186
-#define o_UD            0x187
-#define o_UE            0x188
-#define o_UL            0x189
-#define o_UN            0x190
-#define o_US            0x191
-#define o_UT            0x192
-#define o_ve            0x193
-#define o_vq            0x194
-#define o_VV            0x195
-#define o_wl            0x196
-#define o_ws            0x197
-#define o_ww            0x198
-#define o_yy            0x199
-#define o_z64           0x200
-#define o_zc            0x201
-#define o_zz            0x202
-#define o_atat          0x203
-#define o_vn            0x204
-#define o_et            0x205
-#define o_exex          0x206
+#define o_ax            0x104
+#define o_AC            0x105
+#define o_AF            0x106
+#define o_AS            0x107
+#define o_BC            0x108
+#define o_BD            0x109
+#define o_BF            0x110
+#define o_BL            0x111
+#define o_BN            0x112
+#define o_BT            0x113
+#define o_cc            0x114
+#define o_cd            0x115
+#define o_ci            0x116
+#define o_cs            0x117
+#define o_C2            0x118
+#define o_C5            0x119
+#define o_CO            0x120
+#define o_Cl            0x121
+#define o_Cu            0x122
+#define o_db            0x123
+#define o_dc            0x124
+#define o_dd            0x125
+#define o_de            0x126
+#define o_des           0x127
+#define o_df            0x128
+#define o_DF            0x129
+#define o_DI            0x130
+#define o_dg            0x131
+#define o_dr            0x132
+#define o_ds            0x133
+#define o_dt            0x134
+#define o_du            0x135
+#define o_dv            0x136
+#define o_EA            0x137
+#define o_fc            0x138
+#define o_FF            0x139
+#define o_FI            0x140
+#define o_FS            0x141
+#define o_h2            0x142
+#define o_ic            0x143
+#define o_jj            0x144
+#define o_kf            0x145
+#define o_la            0x146
+#define o_lf            0x147
+#define o_lF            0x148
+#define o_li            0x149
+#define o_ll            0x150
+#define o_lu            0x151
+#define o_mm            0x152
+#define o_MM            0x153
+#define o_MV            0x154
+#define o_nw            0x155
+#define o_p0            0x156
+#define o_pa            0x157
+#define o_pn            0x158
+#define o_pp            0x159
+#define o_ps            0x160
+#define o_pt            0x161
+#define o_pu            0x162
+#define o_RE            0x163
+#define o_sb            0x164
+#define o_sc            0x165
+#define o_sC            0x166
+#define o_sd            0x167
+#define o_sf            0x168
+#define o_sF            0x169
+#define o_si            0x170
+#define o_SI            0x171
+#define o_so            0x172
+#define o_sp            0x173
+#define o_sP            0x174
+#define o_ss            0x175
+#define o_SS            0x176
+#define o_st            0x177
+#define o_ST            0x178
+#define o_su            0x179
+#define o_sU            0x180
+#define o_sv            0x181
+#define o_td            0x182
+#define o_tn            0x183
+#define o_tt            0x184
+#define o_TT            0x185
+#define o_TU            0x186
+#define o_TV            0x187
+#define o_UD            0x188
+#define o_UE            0x189
+#define o_UL            0x190
+#define o_UN            0x191
+#define o_US            0x192
+#define o_UT            0x193
+#define o_ve            0x194
+#define o_vq            0x195
+#define o_VV            0x196
+#define o_wl            0x197
+#define o_ws            0x198
+#define o_ww            0x199
+#define o_yy            0x200
+#define o_z64           0x201
+#define o_zc            0x202
+#define o_zz            0x203
+#define o_atat          0x204
+#define o_vn            0x205
+#define o_et            0x206
+#define o_exex          0x207
 
 
 /* the below is mainly from the old main command line
@@ -6449,7 +6473,10 @@ struct option_struct far options[] = {
 #endif
 #ifdef UNIX_APPLE
     {"as", "sequester",   o_NO_VALUE,       o_NEGATABLE,     o_as, "sequester AppleDouble files in __MACOSX"},
-#endif
+# ifdef APPLE_XATTR
+    {"ax", "apple-ext-attr", o_REQUIRED_VALUE, o_NOT_NEGATABLE, o_ax, "Exclude Apple extended attribute"},
+# endif /* def APPLE_XATTR */
+#endif /* def UNIX_APPLE */
 #ifdef CMS_MVS
     {"B",  "binary",      o_NO_VALUE,       o_NOT_NEGATABLE, 'B',  "binary"},
 #endif /* CMS_MVS */
@@ -6695,7 +6722,7 @@ int zipmain(int argc, char **argv)
 #  ifndef USE_ZIPMAIN
 int main(argc, argv)
 #  else
-int zipain(argc, argv)
+int zipmain(argc, argv)
 #  endif
 int argc;               /* number of tokens in command line */
 char **argv;            /* command line tokens */
@@ -7913,6 +7940,12 @@ char **argv;            /* command line tokens */
           else
             sequester = 1;
           break;
+# ifdef APPLE_XATTR
+        case o_ax:
+          /* Exclude Apple extended attribute. */
+          apl_dbl_xattr_ignore_add( value);
+          break;
+# endif /* def APPLE_XATTR */
 #endif /* UNIX_APPLE */
 
         case 'b':   /* Specify path for temporary file */
@@ -8101,7 +8134,7 @@ char **argv;            /* command line tokens */
           break;
 #endif
 
-		    case o_cs:  /* calc CRC32 */
+        case o_cs:  /* calc CRC32 */
           calc_crc32 = 1;
           break;
 

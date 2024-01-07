@@ -6905,17 +6905,84 @@ the added features and bug fixes, see WHATSNEW.
     included by strucks.h/tailor.h.
     windll/examples/vc10/c_lib_ex.h, windll/examples/vc6/c_lib_ex.h (aSc)
 21. CYGWIN.  Restore __CYGWIN__ macro for CYGWIN.  aes_wg/brg_endian.h (EG)
------------------------- November 30th 2019 version 3.1e22 -----------------------
+
+---------------------- November 30th 2023 version 3.1e22 ----------------------
  1. Add calculate CRC32 option, which takes a file path and outputs the CRC32
-    checksum to standard output.  Add CalcCrc32File().  Add ZpCalcCrc32() callback
-    for DLL use.  Add ZpCalcCrc32Buffer() and ZpCalcCrc32File().  Add calc_crc32
-    global.  Add new -cs/--checksum option.  Add ZpCalcCrc32 export.  Add CRC32
-    button to DLL example.  api.c, api.h fileio.c, globals.c, zip.c, zip.h,
-    windll\windll32.def, windll\examples\vb10\zip31vbexample\form1.designer.vb,
+    checksum to standard output.  Add CalcCrc32File().  Add ZpCalcCrc32()
+    callback for DLL use.  Add ZpCalcCrc32Buffer() and ZpCalcCrc32File().  Add
+    calc_crc32 global.  Add new -cs/--checksum option.  Add ZpCalcCrc32 export.
+    Add CRC32 button to DLL example.  api.c, api.h fileio.c, globals.c, zip.c,
+    zip.h, windll\windll32.def,
+    windll\examples\vb10\zip31vbexample\form1.designer.vb,
     windll\examples\vb10\zip31vbexample\form1.vb,
     windll\examples\vb10\zip31vbexample\module1.vb  (EG)
  2. Add mention of planned zip64_dll.dll and zip64_dll.lib 64-bit versions.
     api.h (EG)
  3. Fix spelling typo for -Cu option.  zip.c (EG)
- 4. Add Maniifest entry.  windll\vc10\zip32_dll\zip32_dll.vcxproj
+ 4. Add Manifest entry.  windll\vc10\zip32_dll\zip32_dll.vcxproj
  5. Add wide char warning.  fileio.c (EG)
+ 
+----------------------- January 3rd 2024 version 3.1e23 -----------------------
+ 1. Add additional NO_PROTO/PROTO defines around function calls missing them.
+    crc32.c, crypt.c, deflate.c, fileio.c, trees.c, ttyio.c, util.c, zbz2err.c,
+    zip.c, zipcloak.c, zipfile.c, zipnote.c, zipsplit.c, zipup.c, unix/unix.c
+    (Paul Marquess (pmqs))
+ 2. Change %d to %lu in utf8_to_wide_stringz() error print.  fileio.c (pmqs)
+ 3. Change UnZip version detection representation from float to ints majorvers
+    and minorvers to facilitate comparisions on some platforms.  (pmqs reports
+    issues with clang using float, need for pragma literal-range to quiet.)
+    zip.c (EG)
+ 4. Increase size of method-level suffix storage from 8 to 12.  zip.c (pmqs)
+ 5. Add clang pragma stringop-overflow to ushort_to_mem().  (The memory should
+    already be allocated by the caller.  As this is a memory poke operation
+    rather than a string operation, overflow should not occur.  EG) zipfile.c
+    (pmqs)
+ 6. Unwind function checks loop to allow handling specific cases for some
+    functions.  Update memset() test to allow string.h include.  Change
+    "main()" to "int main()".  Add include dirent.h to directory traversal
+    test.  Add include stdlib.h to valloc test.  (Note:  Some of these changes
+    may not be backward compatible.  This needs to be tested.  EG)
+    unix/configure (pmqs)
+ 7. Change "pragma pack(4)" and "pragma options align=reset" to
+    "pragma push(pack, 4)" and "pragma pop(pack)".  unix/macosx.h (pmqs)
+ 8. Add "(1)" to write error message.  fileio.c (SMS)
+ 9. Add ability to ignore AppleDouble attributes.  globals.c, zip.c, zip.h,
+    zipup.c, unix/osdep.h, unix/unix.c (SMS)
+10. Add new option "ax" ("apple-ext-attr") that excludes Apple extended
+    attributes.  zip.c (SMS)
+11. Add comments regarding FIFO test.  If APPLE allows FIFOs to have double
+    files, then the "if" should at least exclude dirs.  zipup.c (SMS, EG)
+12. Rearrange AppleDouble if.  Add skip if file flagged as AppleDouble.
+    Skip file size check if AppleDouble.  zipup.c (SMS)
+13. Reformat "incorrect compressed size" message.  zipup.c (SMS)
+14. In iz_file_read(), if zread() returns EOF, return 0.  (This ignores the
+    EOF return, but as zread() varies by OS, handling a negative return
+    may require some port work.  Not the best approach, but may be much
+    work to do better.  EG)  zipup.c (SMS)
+15. Add "(2)" to write error message.  zipup.c (SMS)
+16. Add "-1", "-2" and "-3" to zlib write error messages.  zipup.c (SMS)
+17. Add "-1", "-2" and "-3" to bzip2 write error messages.  zipup.c (SMS)
+18. Add support for x86_64.  Add CCOPTS_INT.  bzip2/buildbz2.com (SMS)
+19. Minor version update.  Spelling update.  bzip2/bzip2.c (SMS)
+20. Spelling update.  bzip2/bzip2recover.c (SMS)
+21. Update top comment to include use of ARCH (to manually set hardware) and
+    COM1 (execute DCL script dcl_scr).  Add support for X86_64.
+    bzip2/vms/descrip.mms (SMS)
+22. Update ARCH_NAME support.  Support X86_64.  Support COM1.  Lowercase some
+    variable names.  bzip2/vms/descrip_src.mms.  (SMS)
+23. Update BZIP2 VMS notes.  bzip2/vms/vms_notes.txt (SMS)
+24. Instead of get_apl_dbl_info() returning zero if any info is found, now
+    return non-zero values when info is found, 0x01 for non-zero finder info,
+    0x02 for resource fork and 0x04 for extended attributes.  These values
+    are or'd in the return.  Add apl_dbl_xattr_ignore_add() and
+    apl_dbl_attr_select().  
+25. Update top comment.  Add support for ARCH and CCOPTS_INT.  Add support
+    for x86_64.  Update various comments.  vms/build_zip.com (SMS)
+26. Add add comments regarding support for ARCH (manually set hardware) and
+    COM1 (execute script dcl_scr).  Update note for LARGE.  Add support for
+    X86_64.  vms/descrip.mms (SMS)
+27. Add support for ARCH and COM1.  Add support for X86_64.
+    vms/descrip_src.mms (SMS)
+28. Add support for x86_64.  vms/vms.c (SMS)
+29. Minor update of TODO list.  TODO (EG)
+

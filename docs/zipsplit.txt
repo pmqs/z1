@@ -4,7 +4,7 @@ NAME
        zipsplit - split a zipfile into smaller zipfiles (v3.1)
 
 SYNOPSIS
-       zipsplit  [-t]  [-i]  [-p] [-s] [-n size] [-r room] [-b path] [-h] [-v]
+       zipsplit  [-t]  [-i]  [-p] [-q] [-s] [-n size] [-r room] [-b path] [-h] [-v]
        [-L] zipfile
 
 ARGUMENTS

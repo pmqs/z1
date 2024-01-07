@@ -5,7 +5,7 @@ NAME
        rename files in zipfile (v3.1)
 
 SYNOPSIS
-       zipnote [-w] [-b path] [-h] [-v] [-L] zipfile
+       zipnote [-w] [-b path] [-h] [-q] [-v] [-L] zipfile
 
 ARGUMENTS
        zipfile Zipfile to read comments from or edit.

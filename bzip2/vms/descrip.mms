@@ -1,4 +1,4 @@
-#                                               13 August 2019.  SMS.
+#                                               10 June 2022.  SMS.
 #
 #    BZIP2 1.0 for VMS - MMS (or MMK) Description File.
 #
@@ -11,8 +11,16 @@
 #
 # Optional macros:
 #
+#    ARCH=arch_name  Do not determine host hardware architecture
+#                    automatically.  Use arch_name (ALPHA, IA64, VAX,
+#                   or X86_64), instead.
+#
 #    CCOPTS=xxx     Compile with CC options xxx.  For example:
 #                   "CCOPTS=/ARCH=HOST" or "CCOPTS=/NAMES=AS_IS"
+#
+#    COM1=dcl_scr   Execute DCL script dcl_scr in the .FIRST rule.
+#                   For example, to use VSI x86-64 Cross-tools on IA64:
+#                   COM1=SYS$MANAGER:X86_XTOOLS$SYLOGIN.COM
 #
 #    DBG=1          Compile with /DEBUG /NOOPTIMIZE.
 #                   Link with /DEBUG /TRACEBACK.
@@ -134,6 +142,12 @@ CLEAN_ALL :
 	 set protection = w:d VAX*.DIR;*
 	if (f$search( "VAX*.DIR", 2) .nes. "") then -
 	 delete /noconfirm VAX*.DIR;*
+	if (f$search( "[.X86_64*]*.*") .nes. "") then -
+	 delete /noconfirm [.X86_64*]*.*;*
+	if (f$search( "X86_64*.DIR", 1) .nes. "") then -
+	 set protection = w:d X86_64*.DIR;*
+	if (f$search( "X86_64*.DIR", 2) .nes. "") then -
+	 delete /noconfirm X86_64*.DIR;*
 	if (f$search( "*.MMSD") .nes. "") then -
 	 delete /noconfirm *.MMSD;*
 	if (f$search( "[.vms]*.MMSD") .nes. "") then -
