@@ -17,8 +17,15 @@ jobs:
         - clang
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: vmactions/openbsd-vm@v1
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          show-progress: 'false'
+          # temp hard-code to build branch
+          ref: build
+
+      - name: Build
+        uses: vmactions/openbsd-vm@v1
         with:
           usesh: true
           run: |
