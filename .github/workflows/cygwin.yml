@@ -37,9 +37,9 @@ jobs:
     # #   with:
 
 
-    - name: setup git to use line-feed for EOL
-      run: |
-        git config --global core.eol lf
+    # - name: setup git to use line-feed for EOL
+    #   run: |
+    #     git config --global core.eol lf
 
     - name: Display ${{ matrix.compiler }} version
       run: ${{ matrix.compiler }} -v
@@ -120,12 +120,12 @@ jobs:
         echo xxx ${{ github.workspace }}
 
 
-    - name: pwd
-      run: |
-        pwd
-        cd $GITHUB_WORKSPACE
-        pwd
-      working-directory: ${{ github.workspace }}
+    # - name: pwd
+    #   run: |
+    #     pwd
+    #     cd $GITHUB_WORKSPACE
+    #     pwd
+    #   working-directory: ${{ env.GITHUB_WORKSPACE }}
 
     # - name: Upload build errors
     #   uses: actions/upload-artifact@v3
