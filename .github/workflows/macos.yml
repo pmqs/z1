@@ -1,10 +1,14 @@
 name: MacOS
 
-on: [push, pull_request, workflow_dispatch]
+# Set to manual execution only for now.
+on:
+  workflow_dispatch:
+  # push:
+  # pull_request:
 
 jobs:
   configure:
-    name: ${{ matrix.os }} + ${{ matrix.compiler }}
+    name: ${{ matrix.os }} + ${{ matrix.compiler }} ${{ matrix.opts }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -13,11 +17,14 @@ jobs:
           - macos-latest
 
         compiler:
-          - gcc-13
-          - gcc-12
-          - gcc-11
-
+          - gcc
           - clang
+
+        opts:
+          - ""
+          - "IZ_ZLIB=/tmp IZ_BZIP2=/tmp"
+          - "NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1"
+
 
     steps:
 
@@ -32,16 +39,12 @@ jobs:
 
     - name: configure (unix/Makefile)
       run: |
-        make -f unix/Makefile flags CC=${{ matrix.compiler }}
-
-    - name: change the flags file protos=${{ matrix.protos }} lzma=${{ matrix.lzma }}
-      run: |
-          sed -i.bak -e 's/CF="/CF=" -Werror /' flags
-          cat flags
+        make -f unix/Makefile flags CC=${{ matrix.compiler }} ${{ matrix.opts }} LOCAL_ZIP="-Werror"
+        cat flags
 
     - name: build (unix/Makefile)
       run: |
-            make -f unix/Makefile generic CC=${{ matrix.compiler }}
+        make -f unix/Makefile generic
 
     - name: Run zip --help
       run: ./zip --help
