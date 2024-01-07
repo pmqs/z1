@@ -8,7 +8,7 @@ on:
 
 jobs:
   configure:
-    name: ${{ matrix.os }} + ${{ matrix.compiler }} + ${{ matrix.opts }}
+    name: ${{ matrix.os }} + ${{ matrix.compiler }} ${{ matrix.opts }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -22,7 +22,7 @@ jobs:
 
         opts:
           - ""
-          - "IZ_ZLIB=1 IZ_BZIP2=1"
+          - "IZ_ZLIB=/tmp IZ_BZIP2=/tmp"
           - "NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1"
 
             # - gcc-13
