@@ -1,7 +1,13 @@
 name: Alpine
 
-# only run on demand
-on: workflow_dispatch
+# Note - adding NO_ASM to the build for now. 32-bit build cores otherwise.
+# See https://github.com/info-zip/zip-demo/issues/19
+
+# Set to manual execution only for now.
+on:
+  workflow_dispatch:
+  # push:
+  # pull_request:
 
 jobs:
   configure:
@@ -45,7 +51,7 @@ jobs:
 
     - name: build (unix/Makefile)
       run: |
-        make -f unix/Makefile generic CC=${{ matrix.compiler }}
+        make -f unix/Makefile generic
 
     - name: Run zip --help
       run: ./zip --help
