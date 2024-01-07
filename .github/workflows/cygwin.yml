@@ -30,7 +30,7 @@ jobs:
       uses: egor-tensin/setup-cygwin@v4
       with:
         # install-dir:$GITHUB_WORKSPACE ${{ github.workspace }}
-        packages: make gcc-g++ dos2unix
+        packages: make gcc-g++ clang dos2unix
 
     # - name: Install Cygwin
     #   uses: cygwin/cygwin-install-action@master
@@ -52,10 +52,10 @@ jobs:
         ref: build
         # path: ???  get it un unpack into the cygwin home dir
 
-    - name: setup git to use line-feed for EOL
-      run: |
-        cd $GITHUB_WORKSPACE
-        dos2unix unix/*
+    # - name: setup git to use line-feed for EOL
+    #   run: |
+    #     cd $GITHUB_WORKSPACE
+    #     dos2unix unix/*
 
     - name: configure (unix/Makefile)
       run: |
