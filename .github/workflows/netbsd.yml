@@ -1,11 +1,14 @@
 name: NetBSD
 
-# only run on demand
-on: workflow_dispatch
+# Set to manual execution only for now.
+on:
+  workflow_dispatch:
+  # push:
+  # pull_request:
 
 jobs:
   configure:
-    name: NetBSD 
+    name: NetBSD
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -20,9 +23,9 @@ jobs:
           usesh: true
           run: |
             ${{ matrix.compiler }} -v
-            make -f unix/Makefile flags CC=${{ matrix.compiler }}
-            sed -i.bak -e 's/CF="/CF=" -Werror /' flags
-            make -f unix/Makefile generic CC=${{ matrix.compiler }}
+            make -f unix/Makefile flags CC=${{ matrix.compiler }} ZIP_LOCAL="-Werror"
+            cat flags
+            make -f unix/Makefile generic
             ./zip -help
             ./zip -v
             ./zipnote -help
