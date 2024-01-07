@@ -8,7 +8,7 @@ on:
 
 jobs:
   configure:
-    name: ${{ matrix.os }} + ${{ matrix.compiler }}
+    name: ${{ matrix.os }} + ${{ matrix.compiler }} + ${{ matrix.opts }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
