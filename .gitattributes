@@ -2,3 +2,7 @@
 
 # encoding
 win32/zip.rc text eol=crlf  working-tree-encoding=ISO-8859-1
+
+# force Linux/Unix EOF for Cygwin
+unix/Makefile text eol=lf
+unix/configure text eol=lf
