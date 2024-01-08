@@ -52,11 +52,11 @@ jobs:
         ref: build
         # path: ???  get it un unpack into the cygwin home dir
 
-      # Hack to get the unix make file with LF EOL
-    - name: setup git to use line-feed for EOL
-      run: |
-        cd $GITHUB_WORKSPACE
-        dos2unix unix/*
+    #   # Hack to get the unix make file with LF EOL
+    # - name: setup git to use line-feed for EOL
+    #   run: |
+    #     cd $GITHUB_WORKSPACE
+    #     dos2unix unix/*
 
     - name: configure (unix/Makefile)
       run: |
