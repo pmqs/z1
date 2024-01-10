@@ -30,7 +30,7 @@ jobs:
       uses: egor-tensin/setup-cygwin@v4
       with:
         # install-dir:$GITHUB_WORKSPACE ${{ github.workspace }}
-        packages: make gcc-g++ dos2unix
+        packages: make gcc-g++ dos2unix zlib-devel libbz2-devel
 
     # - name: Install Cygwin
     #   uses: cygwin/cygwin-install-action@master
@@ -121,19 +121,66 @@ jobs:
         echo xxx ${{ github.workspace }}
 
 
-    # - name: pwd
-    #   run: |
-    #     pwd
-    #     cd $GITHUB_WORKSPACE
-    #     pwd
-    #   working-directory: ${{ env.GITHUB_WORKSPACE }}
 
-    # - name: Upload build errors
-    #   uses: actions/upload-artifact@v3
-    #   if: failure()
-    #   with:
-    #     name: ${{ matrix.name }} (configure)
-    #     path: |
-    #       **/Makefile
-    #       ${{ matrix.build-dir || '.' }}/configure.log
-    #     retention-days: 30
+    - name: configure Disable build
+      run: |
+        cd $GITHUB_WORKSPACE
+        make -f unix/Makefile clean flags CC=${{ matrix.compiler }} LOCAL_ZIP="-Werror"  NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1
+        cat flags
+
+    - name: build
+      run: |
+        cd $GITHUB_WORKSPACE
+        make -f unix/Makefile generic
+
+    - name: Run zip -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zip -v
+
+    - name: Run zipcloak -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipcloak -v
+
+    - name: Run zipnote -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipnote -v
+
+    - name: Run zipsplit -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipsplit -v
+
+
+    - name: configure System zlib/bzip2 build
+      run: |
+        cd $GITHUB_WORKSPACE
+        make -f unix/Makefile clean flags CC=${{ matrix.compiler }} LOCAL_ZIP="-Werror"  IZ_ZLIB=/tmp IZ_BZIP2=/tmp
+        cat flags
+
+    - name: build
+      run: |
+        cd $GITHUB_WORKSPACE
+        make -f unix/Makefile generic
+
+    - name: Run zip -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zip -v
+
+    - name: Run zipcloak -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipcloak -v
+
+    - name: Run zipnote -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipnote -v
+
+    - name: Run zipsplit -v
+      run: |
+        cd $GITHUB_WORKSPACE
+        ./zipsplit -v
