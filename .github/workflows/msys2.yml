@@ -12,7 +12,7 @@ defaults:
 
 jobs:
   configure:
-    name: ${{ matrix.sys }} CC=${{ matrix.compiler }}
+    name: ${{ matrix.sys }} CC=${{ matrix.compiler }} ${{ matrix.opts }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -31,6 +31,10 @@ jobs:
         compiler:
           - gcc
           - clang
+
+        opts:
+          - ""
+          - "NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1"
 
     steps:
 
@@ -60,7 +64,7 @@ jobs:
 
     - name: configure (unix/Makefile)
       run: |
-        make -f unix/Makefile flags LOCAL_ZIP="-Werror" CC=${{ matrix.compiler }}
+        make -f unix/Makefile flags LOCAL_ZIP="-Werror" CC=${{ matrix.compiler }} ${{ matrix.opts }}
         cat flags
 
     - name: build (unix/Makefile)
@@ -91,13 +95,3 @@ jobs:
     - name: Run zipsplit -v
       run: ./zipsplit -v
 
-
-    # - name: Upload build errors
-    #   uses: actions/upload-artifact@v3
-    #   if: failure()
-    #   with:
-    #     name: ${{ matrix.name }} (configure)
-    #     path: |
-    #       **/Makefile
-    #       ${{ matrix.build-dir || '.' }}/configure.log
-    #     retention-days: 30
