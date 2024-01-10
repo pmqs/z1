@@ -30,8 +30,8 @@ jobs:
             cc -v
 
             make -f unix/Makefile flags ZIP_LOCAL="-Werror" PROD=default
-            cat flags
-            make -f unix/Makefile generic
+            cat default/flags
+            make -f unix/Makefile generic PROD=default
 
             ./default/zip -help
             ./default/zip -v
@@ -41,8 +41,9 @@ jobs:
             ./default/zipsplit -v
 
             make -f unix/Makefile flags ZIP_LOCAL="-Werror" PROD=disable NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1
-            cat flags
-            make -f unix/Makefile generic
+            ./disable/zip -help
+            cat disable/flags
+            make -f unix/Makefile generic PROD=disable
 
             ./disable/zip -help
             ./disable/zip -v
@@ -52,8 +53,8 @@ jobs:
             ./disable/zipsplit -v
 
             make -f unix/Makefile flags ZIP_LOCAL="-Werror" PROD=use-sys IZ_ZLIB=/tmp IZ_BZIP2=/tmp
-            cat flags
-            make -f unix/Makefile generic
+            cat use-sys/flags
+            make -f unix/Makefile generic PROD=use-sys
 
             ./use-sys/zip -help
             ./use-sys/zip -v
