@@ -30,12 +30,28 @@ jobs:
           usesh: true
           run: |
             ${{ matrix.compiler }} -v
-            make -f unix/Makefile flags CC=${{ matrix.compiler }} ZIP_LOCAL="-Werror"
-            cat flags
-            make -f unix/Makefile generic
-            ./zip -help
-            ./zip -v
-            ./zipnote -help
-            ./zipnote -v
-            ./zipsplit -help
-            ./zipsplit -v
+
+            make -f unix/Makefile flags ZIP_LOCAL="-Werror" PROD=default
+            cat default/flags
+            make -f unix/Makefile generic PROD=default
+
+            ./default/zip -v
+            ./default/zipnote -v
+            ./default/zipsplit -v
+
+            make -f unix/Makefile flags ZIP_LOCAL="-Werror" PROD=disable NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1
+            ./disable/zip -help
+            cat disable/flags
+            make -f unix/Makefile generic PROD=disable
+
+            ./disable/zip -v
+            ./disable/zipnote -v
+            ./disable/zipsplit -v
+
+            make -f unix/Makefile flags ZIP_LOCAL="-Werror" PROD=use-sys IZ_ZLIB=/tmp IZ_BZIP2=/tmp
+            cat use-sys/flags
+            make -f unix/Makefile generic PROD=use-sys
+
+            ./use-sys/zip -v
+            ./use-sys/zipnote -v
+            ./use-sys/zipsplit -v
