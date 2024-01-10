@@ -8,14 +8,11 @@ on:
 
 jobs:
   configure:
-    name: FreeBSD + ${{ matrix.compiler }}
+    name: FreeBSD
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        compiler:
-        - gcc
-        - clang
+
 
     steps:
       - name: Checkout repository
@@ -32,8 +29,8 @@ jobs:
           prepare: |
             pkg install -y ${{ matrix.compiler }}
           run: |
-            ${{ matrix.compiler }} -v
-            make -f unix/Makefile flags CC=${{ matrix.compiler }} ZIP_LOCAL="-Werror"
+            cc -v
+            make -f unix/Makefile flags ZIP_LOCAL="-Werror"
             cat flags
             make -f unix/Makefile generic
             ./zip -help
@@ -42,3 +39,4 @@ jobs:
             ./zipnote -v
             ./zipsplit -help
             ./zipsplit -v
+
