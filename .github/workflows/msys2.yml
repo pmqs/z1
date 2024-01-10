@@ -1,0 +1,119 @@
+name: MSYS2
+
+# Set to manual execution only for now.
+on:
+  workflow_dispatch:
+  # push:
+  # pull_request:
+
+defaults:
+  run:
+    shell: msys2 {0}
+
+jobs:
+  configure:
+    name: ${{ matrix.sys }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+
+        sys:
+          - msys
+          - mingw64
+          - mingw32
+          - ucrt64
+          - clang64
+          - clang32
+
+        # compiler:
+        #   - gcc
+        #   - clang
+
+        # opts:
+        #   - ""
+        #   - "IZ_ZLIB=/tmp IZ_BZIP2=/tmp"
+        #   - "NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1"
+
+        #     # - gcc-13
+        #     # - gcc-12
+        #     # - gcc-11
+        #     # - gcc-10
+        #     # - gcc-9
+
+        #     # - clang-15
+        #     # - clang-14
+        #     # - clang-13
+        #     # - clang-12
+        #     # - clang-11
+
+    steps:
+
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{matrix.sys}}
+
+    - name: Display uname
+      run: |
+        uname -a
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        show-progress: 'false'
+        # temp hard-code to build branch
+        ref: build
+
+    # - name: Install packages (Ubuntu)
+    #   run: |
+    #     sudo apt-get update
+    #     sudo apt-get install -y ${{ matrix.compiler }}
+
+    # - name: Display ${{ matrix.compiler }} version
+    #   run: ${{ matrix.compiler }} -v
+
+    - name: configure (unix/Makefile)
+      run: |
+        make -f unix/Makefile flags LOCAL_ZIP="-Werror"
+        cat flags
+
+    - name: build (unix/Makefile)
+      run: |
+        make -f unix/Makefile generic
+
+    - name: Run zip --help
+      run: ./zip --help
+
+    - name: Run zip -v
+      run: ./zip -v
+
+    - name: Run zipcloak --help
+      run: ./zipcloak --help
+
+    - name: Run zipcloak -v
+      run: ./zipcloak -v
+
+    - name: Run zipnote --help
+      run: ./zipnote --help
+
+    - name: Run zipnote -v
+      run: ./zipnote -v
+
+    - name: Run zipsplit --help
+      run: ./zipsplit --help
+
+    - name: Run zipsplit -v
+      run: ./zipsplit -v
+
+
+    # - name: Upload build errors
+    #   uses: actions/upload-artifact@v3
+    #   if: failure()
+    #   with:
+    #     name: ${{ matrix.name }} (configure)
+    #     path: |
+    #       **/Makefile
+    #       ${{ matrix.build-dir || '.' }}/configure.log
+    #     retention-days: 30
