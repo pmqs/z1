@@ -22,11 +22,11 @@ jobs:
 
         sys:
           - msys
-          - mingw64
-          - mingw32
-          - ucrt64
-          - clang64
-          - clang32
+          # - mingw64
+          # - mingw32
+          # - ucrt64
+          # - clang64
+          # - clang32
 
         # compiler:
         #   - gcc
@@ -54,6 +54,7 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         msystem: ${{matrix.sys}}
+        pacboy: make:p
 
     - name: Display uname
       run: |
