@@ -12,7 +12,7 @@ defaults:
 
 jobs:
   configure:
-    name: ${{ matrix.sys }} on ${{ matrix.os }}
+    name: ${{ matrix.sys }} on ${{ matrix.os }} CC=${{ matrix.compiler }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -28,9 +28,9 @@ jobs:
           - clang64
           # - clang32
 
-        # compiler:
-        #   - gcc
-        #   - clang
+        compiler:
+          - gcc
+          - clang
 
         # opts:
         #   - ""
@@ -54,7 +54,7 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         msystem: ${{matrix.sys}}
-        install: make clang
+        install: make ${{ matrix.compiler }}
 
     - name: Display uname
       run: |
@@ -77,7 +77,7 @@ jobs:
 
     - name: configure (unix/Makefile)
       run: |
-        make -f unix/Makefile flags LOCAL_ZIP="-Werror"
+        make -f unix/Makefile flags LOCAL_ZIP="-Werror" CC=${{ matrix.compiler }}
         cat flags
 
     - name: build (unix/Makefile)
