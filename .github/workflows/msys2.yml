@@ -12,7 +12,7 @@ defaults:
 
 jobs:
   configure:
-    name: ${{ matrix.sys }} on ${{ matrix.os }} CC=${{ matrix.compiler }}
+    name: ${{ matrix.sys }} CC=${{ matrix.compiler }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -21,33 +21,16 @@ jobs:
           - windows-latest
 
         sys:
-          # - msys
-          # - mingw64
-          # - mingw32
-          # - ucrt64
+          - msys
+          - mingw64
+          - mingw32
+          - ucrt64
           - clang64
-          # - clang32
+          - clang32
 
         compiler:
           - gcc
           - clang
-
-        # opts:
-        #   - ""
-        #   - "IZ_ZLIB=/tmp IZ_BZIP2=/tmp"
-        #   - "NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1"
-
-        #     # - gcc-13
-        #     # - gcc-12
-        #     # - gcc-11
-        #     # - gcc-10
-        #     # - gcc-9
-
-        #     # - clang-15
-        #     # - clang-14
-        #     # - clang-13
-        #     # - clang-12
-        #     # - clang-11
 
     steps:
 
