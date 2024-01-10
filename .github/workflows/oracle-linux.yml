@@ -23,7 +23,6 @@ jobs:
     steps:
 
     - name: Checkout repository
-
       uses: actions/checkout@v4
       with:
         # show-progress: 'false'
@@ -35,6 +34,7 @@ jobs:
         # yum list
         #yum search developerstudio
         dnf install oraclelinux-developer-release-el9
+        dnf install developerstudio-cc-12.6-1.x86_64
         # yum install developerstudio-cc.x86_64
 
     - name: Display /opt
@@ -46,16 +46,12 @@ jobs:
 
     - name: configure (unix/Makefile)
       run: |
-        make -f unix/Makefile flags CC=cc
-
-    - name: change the flags file include -Werror
-      run: |
-        sed -i.bak -e 's/CF="/CF=" -Werror /' flags
+        make -f unix/Makefile flags CC=cc LOCAL_ZIP="-Werror"
         cat flags
 
     - name: build (unix/Makefile)
       run: |
-        make -f unix/Makefile generic CC=cc
+        make -f unix/Makefile generic
 
     - name: Run zip --help
       run: ./zip --help
