@@ -1753,7 +1753,7 @@ if [ -n "${IZ_ZLIB}" ]; then
 int main()
 {
   z_streamp strm;
-  inflateReset(&strm);
+  inflateReset(strm);
   return 0;
 }
 _EOF_

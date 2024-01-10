@@ -45,7 +45,7 @@ jobs:
     - name: Install packages
       run: |
         apk update
-        apk add build-base zlib-dev ${{ matrix.compiler }}
+        apk add build-base zlib-dev bzip2-dev ${{ matrix.compiler }}
 
     - name: Display ${{ matrix.compiler }} version
       run: ${{ matrix.compiler }} -v
