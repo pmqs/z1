@@ -26,17 +26,38 @@ jobs:
         uses: vmactions/freebsd-vm@v1
         with:
           usesh: true
-          prepare: |
-            pkg install -y ${{ matrix.compiler }}
           run: |
             cc -v
-            make -f unix/Makefile flags ZIP_LOCAL="-Werror"
+
+            make -f unix/Makefile flags ZIP_LOCAL="-Werror" PROD=default
             cat flags
             make -f unix/Makefile generic
-            ./zip -help
-            ./zip -v
-            ./zipnote -help
-            ./zipnote -v
-            ./zipsplit -help
-            ./zipsplit -v
 
+            ./default/zip -help
+            ./default/zip -v
+            ./default/zipnote -help
+            ./default/zipnote -v
+            ./default/zipsplit -help
+            ./default/zipsplit -v
+
+            make -f unix/Makefile flags ZIP_LOCAL="-Werror" PROD=disable NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1
+            cat flags
+            make -f unix/Makefile generic
+
+            ./disable/zip -help
+            ./disable/zip -v
+            ./disable/zipnote -help
+            ./disable/zipnote -v
+            ./disable/zipsplit -help
+            ./disable/zipsplit -v
+
+            make -f unix/Makefile flags ZIP_LOCAL="-Werror" PROD=use-sys IZ_ZLIB=/tmp IZ_BZIP2=/tmp
+            cat flags
+            make -f unix/Makefile generic
+
+            ./use-sys/zip -help
+            ./use-sys/zip -v
+            ./use-sys/zipnote -help
+            ./use-sys/zipnote -v
+            ./use-sys/zipsplit -help
+            ./use-sys/zipsplit -v

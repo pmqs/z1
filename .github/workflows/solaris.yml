@@ -1,87 +1,40 @@
 name: Solaris
 
-# only run on demand
-on: workflow_dispatch
+# Set to manual execution only for now.
+on:
+  workflow_dispatch:
+  # push:
+  # pull_request:
 
 jobs:
   configure:
-    name: Solaris ${{ matrix.os }} + ${{ matrix.compiler }}
+    name: Solaris
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        os:
-          - i386
-          - amd64
-        compiler:
-          - gcc
-          - clang
-
-    container:
-        image: ${{ matrix.os }}/alpine
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          show-progress: 'false'
+          # temp hard-code to build branch
+          ref: build
 
-    - name: Checkout repository
-
-    # note that alpine 32-bit only works with checkout v1
-      uses: actions/checkout@v1
-      with:
-        # show-progress: 'false'
-        ref: build
-
-    - name: Install packages (Ubuntu)
-      run: |
-        apk update
-        apk add build-base zlib-dev ${{ matrix.compiler }}
-
-    - name: Display ${{ matrix.compiler }} version
-      run: ${{ matrix.compiler }} -v
-
-    - name: configure (unix/Makefile)
-      run: |
-        make -f unix/Makefile flags CC=${{ matrix.compiler }}
-
-    - name: change the flags file include -Werror
-      run: |
-          sed -i.bak -e 's/CF="/CF=" -Werror /' flags
-          cat flags
-
-    - name: build (unix/Makefile)
-      run: |
-            make -f unix/Makefile generic CC=${{ matrix.compiler }}
-
-    - name: Run zip --help
-      run: ./zip --help
-
-    - name: Run zip -v
-      run: ./zip -v
-
-    - name: Run zipcloak --help
-      run: ./zipcloak --help
-
-    - name: Run zipcloak -v
-      run: ./zipcloak -v
-
-    - name: Run zipnote --help
-      run: ./zipnote --help
-
-    - name: Run zipnote -v
-      run: ./zipnote -v
-
-    - name: Run zipsplit --help
-      run: ./zipsplit --help
-
-    - name: Run zipsplit -v
-      run: ./zipsplit -v
-
-
-    # - name: Upload build errors
-    #   uses: actions/upload-artifact@v3
-    #   if: failure()
-    #   with:
-    #     name: ${{ matrix.name }} (configure)
-    #     path: |
-    #       **/Makefile
-    #       ${{ matrix.build-dir || '.' }}/configure.log
-    #     retention-days: 30
+      - name: Build
+        uses: vmactions/solaris-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y ${{ matrix.compiler }}
+          run: |
+            ${{ matrix.compiler }} -v
+            make -f unix/Makefile flags  ZIP_LOCAL="-Werror"
+            cat flags
+            make -f unix/Makefile generic
+            ./zip -help
+            ./zip -v
+            ./zipnote -help
+            ./zipnote -v
+            ./zipsplit -help
+            ./zipsplit -v
