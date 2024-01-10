@@ -54,8 +54,7 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         msystem: ${{matrix.sys}}
-        pacboy: >-
-          make:p
+        install: make
 
     - name: Display uname
       run: |
