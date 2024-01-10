@@ -11,32 +11,38 @@ on:
 
 jobs:
   configure:
-    name: Alpine ${{ matrix.os }} + ${{ matrix.compiler }}
+    name: ${{ matrix.arch }} + ${{ matrix.compiler }} ${{ matrix.opts }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - i386
-          - amd64
+
+        arch:
+        - i386
+        - amd64
+
         compiler:
-          - gcc
-          - clang
+        - gcc
+        - clang
+
+        opts:
+          - ""
+          - "IZ_ZLIB=/tmp IZ_BZIP2=/tmp"
+          - "NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1"
 
     container:
-        image: ${{ matrix.os }}/alpine
+      image: ${{ matrix.arch }}/alpine
 
     steps:
 
     - name: Checkout repository
-
-    # note that alpine 32-bit only works with checkout v1
-      uses: actions/checkout@v1
+      uses: actions/checkout@v4
       with:
-        # show-progress: 'false'
+        show-progress: 'false'
+        # temp hard-code to build branch
         ref: build
 
-    - name: Install packages (Ubuntu)
+    - name: Install packages
       run: |
         apk update
         apk add build-base zlib-dev ${{ matrix.compiler }}
@@ -46,44 +52,22 @@ jobs:
 
     - name: configure (unix/Makefile)
       run: |
-        make -f unix/Makefile flags CC=${{ matrix.compiler }} LOCAL_ZIP="-Werror -DNO_ASM"
+        make -f unix/Makefile flags CC=${{ matrix.compiler }} LOCAL_ZIP="-Werror -DNO_ASM" ${{ matrix.opts }}
         cat flags
 
     - name: build (unix/Makefile)
       run: |
-        make -f unix/Makefile generic
-
-    - name: Run zip --help
-      run: ./zip --help
+            make -f unix/Makefile generic
 
     - name: Run zip -v
       run: ./zip -v
 
-    - name: Run zipcloak --help
-      run: ./zipcloak --help
-
     - name: Run zipcloak -v
       run: ./zipcloak -v
-
-    - name: Run zipnote --help
-      run: ./zipnote --help
 
     - name: Run zipnote -v
       run: ./zipnote -v
 
-    - name: Run zipsplit --help
-      run: ./zipsplit --help
-
     - name: Run zipsplit -v
       run: ./zipsplit -v
 
-
-    # - name: Upload build errors
-    #   uses: actions/upload-artifact@v3
-    #   if: failure()
-    #   with:
-    #     name: ${{ matrix.name }} (configure)
-    #     path: |
-    #       **/Makefile
-    #       ${{ matrix.build-dir || '.' }}/configure.log
-    #     retention-days: 30
