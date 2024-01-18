@@ -1,0 +1,32 @@
+name: Linux
+
+# Set to manual execution only for now.
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  configure:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+
+
+
+
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        show-progress: 'false'
+        # temp hard-code to build branch
+
+    - name: Install packages (Ubuntu)
+      run: |
+        echo hello
