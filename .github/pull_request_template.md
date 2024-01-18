@@ -11,6 +11,7 @@ Please, go through these steps before you submit a PR.
     c. You have only one commit (if not, squash them into one commit).
 
 
+
 3. **After** these steps, you're ready to open a pull request.
 
     a. Your pull request MUST NOT target the `master` branch on this repository. You probably want to target `staging` instead.
