@@ -10,7 +10,7 @@ Please, go through these steps before you submit a PR.
 
     c. You have only one commit (if not, squash them into one commit).
 
-    d. `npm test` doesn't throw any error. If it does, fix them first and amend your commit (`git commit --amend`).
+
 
 3. **After** these steps, you're ready to open a pull request.
 
@@ -23,5 +23,6 @@ Please, go through these steps before you submit a PR.
     d. Put `closes #XXXX` in your comment to auto-close the issue that your PR fixes (if such).
 
 IMPORTANT: Please review the [CONTRIBUTING.md](../CONTRIBUTING.md) file for detailed contributing guidelines.
+
 
 **PLEASE REMOVE THIS TEMPLATE BEFORE SUBMITTING**
