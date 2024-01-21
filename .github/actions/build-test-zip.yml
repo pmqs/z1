@@ -1,0 +1,66 @@
+# .github/actions/my-action/action.yml
+
+name: 'Build & Test Zip'
+description: 'An action'
+inputs:
+  compiler:
+    description: The C compiler
+    required: true
+    default: 'cc'
+  opts:
+    description: Build Options
+    required: false
+    default: ''
+  local_zip:
+    description: "Values for LOCAL_ZIP"
+    required: false
+    default: -Werror
+
+runs:
+  steps:
+    - name: Display ${{ inputs.compiler }} version
+      run: ${{ inputs.compiler }} -v
+
+    - name: configure (unix/Makefile)
+      run: |
+        make -f unix/Makefile flags CC=${{ inputs.compiler }} ${{ inputs.opts }} LOCAL_ZIP="-${{ inputs.local_zip }}"
+        cat flags
+
+    - name: build (unix/Makefile)
+      run: |
+        make -f unix/Makefile generic
+
+    - name: Run zip --help
+      run: ./zip --help
+
+    - name: Run zip -v
+      run: ./zip -v
+
+    - name: Run zipcloak --help
+      run: ./zipcloak --help
+
+    - name: Run zipcloak -v
+      run: ./zipcloak -v
+
+    - name: Run zipnote --help
+      run: ./zipnote --help
+
+    - name: Run zipnote -v
+      run: ./zipnote -v
+
+    - name: Run zipsplit --help
+      run: ./zipsplit --help
+
+    - name: Run zipsplit -v
+      run: ./zipsplit -v
+
+
+    # - name: Upload build errors
+    #   uses: actions/upload-artifact@v3
+    #   if: failure()
+    #   with:
+    #     name: ${{ inputs.name }} (configure)
+    #     path: |
+    #       **/Makefile
+    #       ${{ inputs.build-dir || '.' }}/configure.log
+    #     retention-days: 30

@@ -3,18 +3,27 @@ name: Linux
 # Set to manual execution only for now.
 on:
   workflow_dispatch:
-  push:
-  pull_request:
+  # push:
+  # pull_request:
 
 jobs:
   configure:
-    name: ${{ matrix.os }}
+    name: ${{ matrix.os }} + ${{ matrix.compiler }} ${{ matrix.opts }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os:
           - ubuntu-latest
+
+        compiler:
+          # - gcc
+          - clang
+
+        opts:
+          - ""
+          # - "IZ_ZLIB=/tmp IZ_BZIP2=/tmp"
+          - "NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1"
 
     steps:
 
@@ -23,7 +32,16 @@ jobs:
       with:
         show-progress: 'false'
         # temp hard-code to build branch
+        # ref: build
 
     - name: Install packages (Ubuntu)
       run: |
-        echo hello
+        sudo apt-get update
+        sudo apt-get install -y ${{ matrix.compiler }}
+
+    - name: Run Build & Test Action
+      uses: ./.github/actions/biuild-test-zip
+      with:
+        compiler: ${{ matrix.compiler }}
+        opts:  ${{ matrix.opts }}
+        # local_zip:  ${{ matrix.opts }}
