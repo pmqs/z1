@@ -23,12 +23,12 @@ runs:
 
     - name: configure (unix/Makefile)
       run: |
-        make -f unix/Makefile flags CC=${{ inputs.compiler }} ${{ inputs.opts }} LOCAL_ZIP="-${{ inputs.local_zip }}"
+        make -j2 -f unix/Makefile flags CC=${{ inputs.compiler }} ${{ inputs.opts }} LOCAL_ZIP="${{ inputs.local_zip }}"
         cat flags
 
     - name: build (unix/Makefile)
       run: |
-        make -f unix/Makefile generic
+        make -j2 -f unix/Makefile generic
 
     - name: Run zip --help
       run: ./zip --help
@@ -54,13 +54,3 @@ runs:
     - name: Run zipsplit -v
       run: ./zipsplit -v
 
-
-    # - name: Upload build errors
-    #   uses: actions/upload-artifact@v3
-    #   if: failure()
-    #   with:
-    #     name: ${{ inputs.name }} (configure)
-    #     path: |
-    #       **/Makefile
-    #       ${{ inputs.build-dir || '.' }}/configure.log
-    #     retention-days: 30

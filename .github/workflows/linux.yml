@@ -39,9 +39,9 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y ${{ matrix.compiler }}
 
-    - name: Run Build & Test Action
-      uses: ./.github/actions/build-test-zip
-      with:
-        compiler: ${{ matrix.compiler }}
-        opts:  ${{ matrix.opts }}
-        # local_zip:  ${{ matrix.opts }}
+  build:
+    uses: ./.github/actions/build-test-zip
+    with:
+      compiler: ${{ matrix.compiler }}
+      opts:  ${{ matrix.opts }}
+      # local_zip:  ${{ matrix.opts }}
