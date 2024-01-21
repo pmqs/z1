@@ -1,23 +1,38 @@
-# .github/actions/my-action/action.yml
+# .github/workflows/action.yml
+on:
+  workflow_call:
 
-name: 'Build & Test Zip'
-description: 'An action'
-inputs:
-  compiler:
-    description: The C compiler
-    required: true
-    default: 'cc'
-  opts:
-    description: Build Options
-    required: false
-    default: ''
-  local_zip:
-    description: "Values for LOCAL_ZIP"
-    required: false
-    default: -Werror
+    inputs:
+      compiler:
+        required: true
+        default: 'cc'
+        type: string
+      opts:
+        description: Build Options
+        required: false
+        default: ''
+        type: string
+      local_zip:
+        description: "Values for LOCAL_ZIP"
+        required: false
+        default: -Werror
+        type: string
+      packages:
+          description: Build Options
+          required: false
+          default: ''
+          type: string
+      os:
+        description: Build Options
+        required: false
+        default: 'ubuntu-latest'
+        type: string
 
-runs:
-  steps:
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+    steps:
 
     - name: Checkout repository
       uses: actions/checkout@v4
