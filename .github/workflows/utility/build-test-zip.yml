@@ -18,6 +18,17 @@ inputs:
 
 runs:
   steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        show-progress: 'false'
+        # temp hard-code to build branch
+        # ref: build
+
+    - name: Install packages (Ubuntu)
+      run: ${{ inputs.packages }}
+
     - name: Display ${{ inputs.compiler }} version
       run: ${{ inputs.compiler }} -v
 
