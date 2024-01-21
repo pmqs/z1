@@ -3,8 +3,8 @@ name: Linux
 # Set to manual execution only for now.
 on:
   workflow_dispatch:
-  # push:
-  # pull_request:
+  push:
+  pull_request:
 
 jobs:
   configure:
@@ -40,7 +40,7 @@ jobs:
         sudo apt-get install -y ${{ matrix.compiler }}
 
     - name: Run Build & Test Action
-      uses: ./.github/actions/biuild-test-zip
+      uses: ./.github/actions/build-test-zip
       with:
         compiler: ${{ matrix.compiler }}
         opts:  ${{ matrix.opts }}
