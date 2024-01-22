@@ -18,9 +18,10 @@ jobs:
       matrix:
 
         debian:
-          - debian:bookworm-slim # 12
-          - debian:bullseye-slim # 11
-          - debian:buster-slim   # 10
+          - debian:experimental-slim
+        #   - debian:bookworm-slim # 12
+        #   - debian:bullseye-slim # 11
+        #   - debian:buster-slim   # 10
 
         compiler:
         - gcc
