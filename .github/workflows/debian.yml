@@ -17,11 +17,11 @@ jobs:
       fail-fast: false
       matrix:
 
-        debian:
-          - experimental
-          - bookworm-slim # 12
-        #   - bullseye-slim # 11
-        #   - buster-slim   # 10
+        # debian:
+        #   - experimental
+        #   - bookworm-slim # 12
+        # #   - bullseye-slim # 11
+        # #   - buster-slim   # 10
 
         include:
         - debian: experimental
@@ -32,10 +32,22 @@ jobs:
           compiler: gcc-12
         - debian: bookworm-slim
           compiler: gcc-11
+        - debian: bullseye-slim
+          compiler: gcc-10
+        - debian: bullseye-slim
+          compiler: gcc-9
+        - debian: buster-slim
+          compiler: gcc-8
+        - debian: buster-slim
+          compiler: gcc-7
+        - debian: buster-slim
+          compiler: gcc-6
+          
         - debian: bookworm-slim
           compiler: clang-14
         - debian: bookworm-slim
           compiler: clang-13
+
                 # - gcc
                 # - clang
             # - debian: debian:bookworm-slim
