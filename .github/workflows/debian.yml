@@ -49,6 +49,8 @@ jobs:
 
         - debian: trixie
           compiler: clang
+        - debian: trixie
+          compiler: clang-17
 
         - debian: bookworm-slim
           compiler: clang-16
@@ -70,9 +72,9 @@ jobs:
           compiler: clang-9
         - debian: buster-slim
           compiler: clang-7
-        - debian: buster-slim
-          compiler: clang-6
-          
+        # - debian: buster-slim
+        #   compiler: clang-6
+
                 # - gcc
                 # - clang
             # - debian: debian:bookworm-slim
