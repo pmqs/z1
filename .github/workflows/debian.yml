@@ -18,7 +18,7 @@ jobs:
       matrix:
 
         debian:
-          - debian:bookwork-slim # 12
+          - debian:bookworm-slim # 12
           - debian:bullseye-slim # 11
           - debian:buster-slim   # 10
 
