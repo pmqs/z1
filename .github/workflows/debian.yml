@@ -31,7 +31,11 @@ jobs:
 
         - debian: trixie
           compiler: gcc
+        - debian: trixie
+          compiler: gcc-14
 
+        - debian: bookworm-slim
+          compiler: gcc-13
         - debian: bookworm-slim
           compiler: gcc-12
         - debian: bookworm-slim
@@ -69,7 +73,7 @@ jobs:
         - debian: bullseye-slim
           compiler: clang-9
         - debian: bullseye-slim
-          compiler: clang-9
+          compiler: clang-8
         - debian: buster-slim
           compiler: clang-7
         # - debian: buster-slim
