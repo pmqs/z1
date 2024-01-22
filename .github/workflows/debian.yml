@@ -1,0 +1,67 @@
+name: dEBIAN
+
+# Note - adding NO_ASM to the build for now. 32-bit build cores otherwise.
+# See https://github.com/info-zip/zip-demo/issues/19
+
+# Set to manual execution only for now.
+on:
+  workflow_dispatch:
+  # push:
+  # pull_request:
+
+jobs:
+  configure:
+    name: ${{ matrix.debian }} + ${{ matrix.compiler }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+
+        debian:
+          - debian:bookwork-slim # 12
+          - debian:bullseye-slim # 11
+          - debian:buster-slim   # 10
+
+        compiler:
+        - gcc
+        - clang
+
+    container:
+      image: ${{ matrix.debian }}
+
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        show-progress: 'false'
+
+    - name: Install packages
+      run: |
+        apt-get update -qq
+        apt-get install -yq ${{ matrix.compiler }}
+
+    - name: Display ${{ matrix.compiler }} version
+      run: ${{ matrix.compiler }} -v
+
+    # - name: configure (unix/Makefile)
+    #   run: |
+    #     make -f unix/Makefile flags CC=${{ matrix.compiler }} LOCAL_ZIP="-Werror -DNO_ASM" ${{ matrix.opts }}
+    #     cat flags
+
+    # - name: build (unix/Makefile)
+    #   run: |
+    #         make -f unix/Makefile generic
+
+    # - name: Run zip -v
+    #   run: ./zip -v
+
+    # - name: Run zipcloak -v
+    #   run: ./zipcloak -v
+
+    # - name: Run zipnote -v
+    #   run: ./zipnote -v
+
+    # - name: Run zipsplit -v
+    #   run: ./zipsplit -v
+
