@@ -84,16 +84,19 @@ jobs:
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty universe"
 
     - name: Update Package Repository for 22.04
-      if: matrix.osver == '22.04'
+      if: matrix.osver == '22.04' && matrix.compiler != 'clang-17'
       run: |
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu lunar main"
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu lunar universe"
 
       # https://apt.llvm.org/
-    - name: Update Package Repository for 22.04 & clang=17
+    - name: Update Package Repository for 22.04 + clang=17
       if: matrix.osver == '22.04' && matrix.compiler == 'clang-17'
       run: |
-        sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main"
+        wget https://apt.llvm.org/llvm.sh
+        chmod u+x llvm.sh
+        echo | sudo ./llvm.sh 17
+
 
     - name: Install packages
       run: |
