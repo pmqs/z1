@@ -35,7 +35,7 @@ jobs:
         #   compiler: gcc-6
         - osver: 20.04
           compiler: gcc-5
-          trusty: true
+          xenial: true
         # - osver: 20.04
         #   compiler: gcc-4
 
@@ -81,11 +81,11 @@ jobs:
 
       # https://askubuntu.com/a/1313032
       # https://help.ubuntu.com/community/Repositories/CommandLine
-    # - name: Update Package Repository for 20.04
-    #   if: matrix.xenial
-    #   run: |
-    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial main"
-    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial universe"
+    - name: Update Package Repository for 20.04
+      if: matrix.xenial
+      run: |
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial main"
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial universe"
 
     # - name: Update Package Repository for 20.04
     #   if: matrix.trusty
@@ -94,7 +94,6 @@ jobs:
     #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty universe"
 
     - name: Update Package Repository for 22.04
-      # if: matrix.osver == '22.04' && matrix.compiler != 'clang-17'
       if: matrix.lunar
       run: |
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu lunar main"
