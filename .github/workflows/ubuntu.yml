@@ -66,10 +66,11 @@ jobs:
         show-progress: 'false'
 
       # https://askubuntu.com/a/1313032
+      # https://help.ubuntu.com/community/Repositories/CommandLine
     - name: Install packages
       run: |
-        sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial main"
-        sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial universe"
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial main"
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial universe"
         sudo apt-get update -qq
         sudo apt-get install -yq ${{ matrix.compiler }}
 
