@@ -58,6 +58,13 @@ jobs:
           compiler: clang-8
         - osver: 20.04
           compiler: clang-7
+        - osver: 20.04
+          compiler: clang-6
+        - osver: 20.04
+          compiler: clang-5
+        - osver: 20.04
+          compiler: clang-4
+
     steps:
 
     - name: Checkout repository
@@ -67,11 +74,17 @@ jobs:
 
       # https://askubuntu.com/a/1313032
       # https://help.ubuntu.com/community/Repositories/CommandLine
-    - name: Update OAckage Repository
+    - name: Update Package Repository ro 20.04
       if: matrix.osver == '20.04'
       run: |
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial main"
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial universe"
+
+    - name: Update Package Repository for 22.04
+      if: matrix.osver == '22.04'
+      run: |
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu lunar main"
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu lunar universe"
 
     - name: Install packages
       run: |
