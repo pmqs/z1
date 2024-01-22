@@ -81,11 +81,12 @@ jobs:
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial universe"
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty main"
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty universe"
+        
     - name: Update Package Repository for 22.04
       if: matrix.osver == '22.04'
       run: |
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu mantic main"
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu mantic universe"
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu lunar main"
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu lunar universe"
 
     - name: Install packages
       run: |
