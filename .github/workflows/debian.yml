@@ -16,21 +16,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-
-        # debian:
-        #   - experimental
-        #   - bookworm-slim # 12
-        # #   - bullseye-slim # 11
-        # #   - buster-slim   # 10
-
         include:
         - debian: experimental
           compiler: gcc
         - debian: experimental
           compiler: clang
 
-        # - debian: trixie
-        #   compiler: gcc
+
 
         - debian: trixie
           compiler: gcc-13
@@ -46,11 +38,8 @@ jobs:
           compiler: gcc-8
         - debian: buster-slim
           compiler: gcc-7
-        # - debian: buster-slim
-        #   compiler: gcc-6
 
-        - debian: trixie
-          compiler: clang
+
 
         - debian: trixie
           compiler: clang-17
@@ -62,8 +51,8 @@ jobs:
           compiler: clang-14
         - debian: bookworm-slim
           compiler: clang-13
-        - debian: bullseye-slim
-          compiler: clang-12
+        # - debian: bullseye-slim
+        #   compiler: clang-12
         - debian: bullseye-slim
           compiler: clang-11
         # - debian: bullseye-slim
