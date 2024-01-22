@@ -18,19 +18,27 @@ jobs:
       matrix:
 
         debian:
-          - debian:experimental
-        #   - debian:bookworm-slim # 12
-        #   - debian:bullseye-slim # 11
-        #   - debian:buster-slim   # 10
+          - experimental
+          - bookworm-slim # 12
+        #   - bullseye-slim # 11
+        #   - buster-slim   # 10
 
-        # include:
-        #     - debian:
+        include:
+            - debian: experimental
+              compiler:
+                - gcc
+                - clang
+            - debian: debian:bookworm-slim
+              compiler:
+                - gcc-12
+                - clang-14
+
         compiler:
         - gcc
         - clang
 
     container:
-      image: ${{ matrix.debian }}
+      image: debian:${{ matrix.debian }}
 
     steps:
 
