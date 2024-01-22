@@ -58,19 +58,21 @@ jobs:
           compiler: clang-14
         - debian: bookworm-slim
           compiler: clang-13
-        - debian: bookworm-slim
+        - debian: bullseye-slim
           compiler: clang-12
         - debian: bullseye-slim
           compiler: clang-11
-        - debian: bullseye-slim
-          compiler: clang-10
+        # - debian: bullseye-slim
+        #   compiler: clang-10
         - debian: bullseye-slim
           compiler: clang-9
         - debian: bullseye-slim
           compiler: clang-9
         - debian: buster-slim
           compiler: clang-7
-
+        - debian: buster-slim
+          compiler: clang-6
+          
                 # - gcc
                 # - clang
             # - debian: debian:bookworm-slim
