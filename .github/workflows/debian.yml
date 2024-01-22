@@ -18,11 +18,13 @@ jobs:
       matrix:
 
         debian:
-          - debian:experimental-slim
+          - debian:experimental
         #   - debian:bookworm-slim # 12
         #   - debian:bullseye-slim # 11
         #   - debian:buster-slim   # 10
 
+        # include:
+        #     - debian:
         compiler:
         - gcc
         - clang
