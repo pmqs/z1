@@ -1,4 +1,4 @@
-name: dEBIAN
+name: Debian
 
 # Note - adding NO_ASM to the build for now. 32-bit build cores otherwise.
 # See https://github.com/info-zip/zip-demo/issues/19
