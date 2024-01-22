@@ -1,8 +1,5 @@
 name: Ubuntu
 
-# Note - adding NO_ASM to the build for now. 32-bit build cores otherwise.
-# See https://github.com/info-zip/zip-demo/issues/19
-
 # Set to manual execution only for now.
 on:
   workflow_dispatch:
@@ -11,8 +8,8 @@ on:
 
 jobs:
   configure:
-    name: ${{ matrix.ubuntu }} + ${{ matrix.compiler }}
-    runs-on: ${{ matrix.compiler }}
+    name: ubuntu-${{ matrix.ubuntu }} + ${{ matrix.compiler }}
+    runs-on: ununtu-${{ matrix.ubuntu }}
     strategy:
       fail-fast: false
       matrix:
@@ -32,6 +29,12 @@ jobs:
           compiler: gcc-8
         - ubuntu: 20.04
           compiler: gcc-7
+        - ubuntu: 20.04
+          compiler: gcc-6
+        - ubuntu: 20.04
+          compiler: gcc-5
+        - ubuntu: 20.04
+          compiler: gcc-4
 
         - ubuntu: 22.04
           compiler: clang-17
@@ -53,7 +56,8 @@ jobs:
           compiler: clang-9
         - ubuntu: 20.04
           compiler: clang-8
-
+        - ubuntu: 20.04
+          compiler: clang-7
     steps:
 
     - name: Checkout repository
@@ -63,6 +67,8 @@ jobs:
 
     - name: Install packages
       run: |
+        echo deb http://dk.archive.ubuntu.com/ubuntu/ xenial main >>/etc/apt/sources.list
+        echo deb http://dk.archive.ubuntu.com/ubuntu/ xenial universe >>/etc/apt/sources.list
         apt-get update -qq
         apt-get install -yq ${{ matrix.compiler }}
 
