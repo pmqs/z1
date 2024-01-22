@@ -35,7 +35,7 @@ jobs:
         #   compiler: gcc-6
         - osver: 20.04
           compiler: gcc-5
-          xenial: true
+          trusty: true
         # - osver: 20.04
         #   compiler: gcc-4
 
