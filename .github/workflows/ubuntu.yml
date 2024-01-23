@@ -8,7 +8,7 @@ on:
 
 jobs:
   configure:
-    name: ubuntu-${{ matrix.osver }} + ${{ matrix.compiler }}
+    name: ubuntu-${{ matrix.osver }} + ${{ matrix.name }}
     runs-on: ubuntu-${{ matrix.osver }}
     strategy:
       fail-fast: false
@@ -95,10 +95,23 @@ jobs:
         # # - compiler: clang-5
         # #   osver: 20.04
 
-        # # - compiler: clang-4
-        # #   osver: 20.04
+        - name: clang-6
+          cmd: clang-6.0
+          package: clang-6.0
+          osver: 20.04
 
-        - compiler: clang
+        - name: clang-5
+          cmd: clang-5.0
+          package: clang-5.0
+          osver: 20.04
+
+        - name: clang-4
+          cmd: clang-4.0
+          package: clang-4.0
+          osver: 20.04
+
+        - name: clang-3
+          cmd: clang
           package: clang-3.3
           osver: 20.04
           trusty: true
@@ -153,30 +166,29 @@ jobs:
         sudo apt-get update -qq
         sudo apt-get install -yq ${{ matrix.package }}
 
-    - name: Display ${{ matrix.compiler }} version
+    - name: Display ${{ matrix.name }} version
       run: |
-        ls -l /usr/bin/clang*
         clang -v
 
-    - name: Display ${{ matrix.compiler }} version
-      run: ${{ matrix.compiler }} -v
+    - name: Display ${{ matrix.name }} version
+      run: ${{ matrix.cmd }} -v
+
+    - name: configure (unix/Makefile)
+      run: |
+        make -j2 -f unix/Makefile generic CC=${{ matrix.cmd }}
+        cat flags
 
     # - name: configure (unix/Makefile)
     #   run: |
-    #     make -j2 -f unix/Makefile generic CC=${{ matrix.compiler }}
-    #     cat flags
-
-    # - name: configure (unix/Makefile)
-    #   run: |
-    #     make -f unix/Makefile flags CC=${{ matrix.compiler }} LOCAL_ZIP="-Werror -DNO_ASM" ${{ matrix.opts }}
+    #     make -f unix/Makefile flags CC=${{ matrix.cmd }} LOCAL_ZIP="-Werror -DNO_ASM" ${{ matrix.opts }}
     #     cat flags
 
     # - name: build (unix/Makefile)
     #   run: |
     #         make -f unix/Makefile generic
 
-    - name: Run zip -v
-      run: ./zip -v
+    # - name: Run zip -v
+    #   run: ./zip -v
 
     # - name: Run zipcloak -v
     #   run: ./zipcloak -v
