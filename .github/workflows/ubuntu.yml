@@ -13,6 +13,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+
+        arch:
+          - -m32
+          - -m64
+
+        osver:
+          - 20.04
+          - 22.04
+
         include:
           # - [
           #     [ name: gcc-13, cmd: gcc-13,  package: gcc-13,  osver: 22.04, lunar: true],
@@ -34,54 +43,54 @@ jobs:
           osver: 22.04
           lunar: true
 
-        - name: gcc-12
-          cmd: gcc-12
-          package: gcc-12
-          osver: 22.04
-          lunar: true
+        # - name: gcc-12
+        #   cmd: gcc-12
+        #   package: gcc-12
+        #   osver: 22.04
+        #   lunar: true
 
-        - name: gcc-11
-          cmd: gcc-11
-          package: gcc-11
-          osver: 22.04
+        # - name: gcc-11
+        #   cmd: gcc-11
+        #   package: gcc-11
+        #   osver: 22.04
 
-        - name: gcc-10
-          cmd: gcc-10
-          package: gcc-10
-          osver: 22.04
+        # - name: gcc-10
+        #   cmd: gcc-10
+        #   package: gcc-10
+        #   osver: 22.04
 
-        - name: gcc-9
-          cmd: gcc-9
-          package: gcc-9
-          osver: 20.04
+        # - name: gcc-9
+        #   cmd: gcc-9
+        #   package: gcc-9
+        #   osver: 20.04
 
-        - name: gcc-8
-          cmd: gcc-8
-          package: gcc-8
-          osver: 20.04
+        # - name: gcc-8
+        #   cmd: gcc-8
+        #   package: gcc-8
+        #   osver: 20.04
 
-        - name: gcc-7
-          cmd: gcc-7
-          package: gcc-7
-          osver: 20.04
+        # - name: gcc-7
+        #   cmd: gcc-7
+        #   package: gcc-7
+        #   osver: 20.04
 
-        - name: gcc-6
-          cmd: gcc-6
-          package: gcc-6
-          osver: 20.04
-          bionic: true
+        # - name: gcc-6
+        #   cmd: gcc-6
+        #   package: gcc-6
+        #   osver: 20.04
+        #   bionic: true
 
-        - name: gcc-5
-          cmd: gcc-5
-          package: gcc-5
-          osver: 20.04
-          bionic: true
+        # - name: gcc-5
+        #   cmd: gcc-5
+        #   package: gcc-5
+        #   osver: 20.04
+        #   bionic: true
 
-        - name: gcc-4
-          cmd: gcc-4.8
-          package: gcc-4.8
-          osver: 20.04
-          bionic: true
+        # - name: gcc-4
+        #   cmd: gcc-4.8
+        #   package: gcc-4.8
+        #   osver: 20.04
+        #   bionic: true
 
           # CLANG Compilers
 
@@ -91,80 +100,80 @@ jobs:
           osver: 22.04
           lunar: true
 
-        - name: clang-16
-          cmd: clang-16
-          package: clang-16
-          osver: 22.04
-          lunar: true
+        # - name: clang-16
+        #   cmd: clang-16
+        #   package: clang-16
+        #   osver: 22.04
+        #   lunar: true
 
-        - name: clang-15
-          cmd: clang-15
-          package: clang-15
-          osver: 22.04
-          lunar: true
+        # - name: clang-15
+        #   cmd: clang-15
+        #   package: clang-15
+        #   osver: 22.04
+        #   lunar: true
 
-        - name: clang-14
-          cmd: clang-14
-          package: clang-14
-          osver: 22.04
+        # - name: clang-14
+        #   cmd: clang-14
+        #   package: clang-14
+        #   osver: 22.04
 
-        - name: clang-13
-          cmd: clang-13
-          package: clang-13
-          osver: 22.04
+        # - name: clang-13
+        #   cmd: clang-13
+        #   package: clang-13
+        #   osver: 22.04
 
-        - name: clang-12
-          cmd: clang-12
-          package: clang-12
-          osver: 22.04
+        # - name: clang-12
+        #   cmd: clang-12
+        #   package: clang-12
+        #   osver: 22.04
 
-        - name: clang-11
-          cmd: clang-11
-          package: clang-11
-          osver: 22.04
+        # - name: clang-11
+        #   cmd: clang-11
+        #   package: clang-11
+        #   osver: 22.04
 
-        - name: clang-10
-          cmd: clang-10
-          package: clang-10
-          osver: 20.04
+        # - name: clang-10
+        #   cmd: clang-10
+        #   package: clang-10
+        #   osver: 20.04
 
-        - name: clang-9
-          cmd: clang-9
-          package: clang-9
-          osver: 20.04
+        # - name: clang-9
+        #   cmd: clang-9
+        #   package: clang-9
+        #   osver: 20.04
 
-        - name: clang-8
-          cmd: clang-8
-          package: clang-8
-          osver: 20.04
+        # - name: clang-8
+        #   cmd: clang-8
+        #   package: clang-8
+        #   osver: 20.04
 
-        - name: clang-7
-          cmd: clang-7
-          package: clang-7
-          osver: 20.04
+        # - name: clang-7
+        #   cmd: clang-7
+        #   package: clang-7
+        #   osver: 20.04
 
-        - name: clang-6
-          cmd: clang-6.0
-          package: clang-6.0
-          osver: 20.04
+        # - name: clang-6
+        #   cmd: clang-6.0
+        #   package: clang-6.0
+        #   osver: 20.04
 
-        - name: clang-5
-          cmd: clang-5.0
-          package: clang-5.0
-          osver: 20.04
-          bionic: true
+        # - name: clang-5
+        #   cmd: clang-5.0
+        #   package: clang-5.0
+        #   osver: 20.04
+        #   bionic: true
 
-        - name: clang-4
-          cmd: clang-4.0
-          package: clang-4.0
-          osver: 20.04
-          bionic: true
+        # - name: clang-4
+        #   cmd: clang-4.0
+        #   package: clang-4.0
+        #   osver: 20.04
+        #   bionic: true
 
-        - name: clang-3
-          cmd: clang
-          package: clang-3.3
-          osver: 20.04
-          trusty: true
+        # - name: clang-3
+        #   cmd: clang
+        #   package: clang-3.3
+        #   osver: 20.04
+        #   trusty: true
 
 
     steps:
@@ -235,7 +244,7 @@ jobs:
 
     - name: configure (unix/Makefile)
       run: |
-        make -j2 -f unix/Makefile generic CC=${{ matrix.cmd }}
+        make -j2 -f unix/Makefile generic CC=${{ matrix.cmd }} LOCAL_ZIP="${{ matrix.arch }}"
         cat flags
 
     # - name: configure (unix/Makefile)
