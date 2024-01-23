@@ -96,15 +96,15 @@ jobs:
 
         - name: clang-5
           cmd: clang-5.0
-          package: clang-5.0 libclang1-5.0 libllvm5.0 libclang-common-5.0-dev llvm-5.0-dev
+          package: clang-5.0
           osver: 20.04
-          xenial-updates: true
+          trusty-updates: true
 
         - name: clang-4
           cmd: clang-4.0
-          package: clang-4.0 libclang1-5.0 libllvm5.0 libclang-common-5.0-dev llvm-5.0-dev
+          package: clang-4.0
           osver: 20.04
-          xenial-updates: true
+          trusty-updates: true
 
         # - name: clang-3
         #   cmd: clang
@@ -130,6 +130,12 @@ jobs:
       run: |
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty main"
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty universe"
+
+    - name: Update Package Repository for 20.04
+      if: matrix.trusty-updates
+      run: |
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty-updates main"
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty-updates universe"
 
     - name: Update Package Repository for 20.04
       if: matrix.xenial
