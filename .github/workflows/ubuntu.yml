@@ -14,62 +14,68 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - [
+              # GCC Compilers
+              [ name: gcc-13, cmd: gcc-13,  package: gcc-13,  osver: 22.04, lunar: true],
+              [ name: gcc-12, cmd: gcc-12,  package: gcc-12,  osver: 22.04             ],
+              [ name: gcc-11, cmd: gcc-11,  package: gcc-11,  osver: 22.04             ],
+              [ name: gcc-10, cmd: gcc-10,  package: gcc-10,  osver: 22.04             ],
+              [ name: gcc-9,  cmd: gcc-9,   package: gcc-9,   osver: 20.04             ],
+              [ name: gcc-8,  cmd: gcc-8,   package: gcc-8,   osver: 20.04             ],
+              [ name: gcc-7,  cmd: gcc-7,   package: gcc-7,   osver: 20.04             ],
+              [ name: gcc-6,  cmd: gcc-6,   package: gcc-6,   osver: 20.04, bionic: true],
+              [ name: gcc-5,  cmd: gcc-5,   package: gcc-5,   osver: 20.04, bionic: true],
+              [ name: gcc-4,  cmd: gcc-4.7, package: gcc-4.7, osver: 20.04, bionic: true],
+            ]
 
-          # GCC Compilers
-        - name: gcc-13
-          cmd: gcc-13
-          package: gcc-13
-          osver: 22.04
-          lunar: true
+        # - name: gcc-12
+        #   cmd: gcc-12
+        #   osver: gcc-12
+        #   package: 22.04
+        #   lunar: true
 
-        - name: gcc-12
-          cmd: gcc-12
-          osver: gcc-12
-          package: 22.04
-          lunar: true
+        # - name: gcc-11
+        #   cmd: gcc-11
+        #   package: gcc-11
+        #   osver: 22.04
 
-        - name: gcc-11
-          cmd: gcc-11
-          package: gcc-11
-          osver: 22.04
+        # - name: gcc-10
+        #   cmd: gcc-10
+        #   package: gcc-10
+        #   osver: 22.04
 
-        - name: gcc-10
-          cmd: gcc-10
-          package: gcc-10
-          osver: 22.04
+        # - name: gcc-9
+        #   cmd: gcc-9
+        #   package: gcc-9
+        #   osver: 20.04
 
-        - name: gcc-9
-          cmd: gcc-9
-          package: gcc-9
-          osver: 20.04
+        # - name: gcc-8
+        #   cmd: gcc-8
+        #   package: gcc-8
+        #   osver: 20.04
 
-        - name: gcc-8
-          cmd: gcc-8
-          package: gcc-8
-          osver: 20.04
+        # - name: gcc-7
+        #   cmd: gcc-7
+        #   package: gcc-7
+        #   osver: 20.04
 
-        - name: gcc-7
-          cmd: gcc-7
-          package: gcc-7
-          osver: 20.04
+        # - name: gcc-6
+        #   cmd: gcc-6
+        #   package: gcc-6
+        #   osver: 20.04
+        #   bionic: true
 
-        - name: gcc-6
-          cmd: gcc-6
-          package: gcc-6
-          osver: 20.04
-          bionic: true
+        # - name: gcc-5
+        #   cmd: gcc-5
+        #   package: gcc-5
+        #   osver: 20.04
+        #   bionic: true
 
-        - name: gcc-5
-          cmd: gcc-5
-          package: gcc-5
-          osver: 20.04
-          bionic: true
-
-        - name: gcc-4
-          cmd: gcc-4.7
-          package: gcc-4.7
-          osver: 20.04
-          bionic: true
+        # - name: gcc-4
+        #   cmd: gcc-4.7
+        #   package: gcc-4.7
+        #   osver: 20.04
+        #   bionic: true
 
           # CLANG Compilers
 
