@@ -15,62 +15,89 @@ jobs:
       matrix:
         include:
 
-        - osver: 22.04
-          compiler: gcc-13
+          # GCC Compilers
+        - compiler: gcc-13
+          osver: 22.04
           lunar: true
-        - osver: 22.04
-          compiler: gcc-12
-          lunar: true
-        - osver: 22.04
-          compiler: gcc-11
-        - osver: 22.04
-          compiler: gcc-10
-        - osver: 20.04
-          compiler: gcc-9
-        - osver: 20.04
-          compiler: gcc-8
-        - osver: 20.04
-          compiler: gcc-7
-        # - osver: 20.04
-        #   compiler: gcc-6
-        - osver: 20.04
-          compiler: gcc-5
-          xenial: true
-        # - osver: 20.04
-        #   compiler: gcc-4
 
-        - osver: 22.04
-          compiler: clang-17
-        - osver: 22.04
-          compiler: clang-16
-          lunar: true
-        - osver: 22.04
-          compiler: clang-15
-          lunar: true
-        - osver: 22.04
-          compiler: clang-14
-        - osver: 22.04
-          compiler: clang-13
-        - osver: 22.04
-          compiler: clang-12
-        - osver: 22.04
-          compiler: clang-11
-        - osver: 20.04
-          compiler: clang-10
-        - osver: 20.04
-          compiler: clang-9
-        - osver: 20.04
-          compiler: clang-8
-        - osver: 20.04
-          compiler: clang-7
-          # xenial: true
+        # - compiler: gcc-12
+        #   osver: 22.04
+        #   lunar: true
 
-        # - osver: 20.04
-        #   compiler: clang-6
-        # - osver: 20.04
-        #   compiler: clang-5
-        # - osver: 20.04
-        #   compiler: clang-4
+        # - compiler: gcc-11
+        #   osver: 22.04
+
+        # - compiler: gcc-10
+        #   osver: 22.04
+
+        # - compiler: gcc-9
+        #   osver: 20.04
+
+        # - compiler: gcc-8
+        #   osver: 20.04
+
+        # - compiler: gcc-7
+        #   osver: 20.04
+
+        # # - compiler: gcc-6
+        # #   osver: 20.04
+        # #   xenial: true
+
+        # - compiler: gcc-5
+        #   osver: 20.04
+        #   xenial: true
+
+        # # - compiler: gcc-4
+        # #   osver: 20.04
+        # #   xenial: true
+
+        #   # CLANG Compilers
+
+        # - compiler: clang-17
+        #   osver: 22.04
+
+        # - compiler: clang-16
+        #   osver: 22.04
+        #   lunar: true
+
+        # - compiler: clang-15
+        #   osver: 22.04
+        #   lunar: true
+
+        # - compiler: clang-14
+        #   osver: 22.04
+
+        # - compiler: clang-13
+        #   osver: 22.04
+
+        # - compiler: clang-12
+        #   osver: 22.04
+
+        # - compiler: clang-11
+        #   osver: 22.04
+
+        # - compiler: clang-10
+        #   osver: 20.04
+
+        # - compiler: clang-9
+        #   osver: 20.04
+
+        # - compiler: clang-8
+        #   osver: 20.04
+
+        # - compiler: clang-7
+        #   osver: 20.04
+
+
+        # # - compiler: clang-6
+        # #   sver: 20.04
+
+        # # - compiler: clang-5
+        # #   osver: 20.04
+
+        # # - compiler: clang-4
+        # #   osver: 20.04
+
 
     steps:
 
@@ -116,6 +143,11 @@ jobs:
     - name: Display ${{ matrix.compiler }} version
       run: ${{ matrix.compiler }} -v
 
+    - name: configure (unix/Makefile)
+      run: |
+        make -f unix/Makefile generic CC=${{ matrix.compiler }} LOCAL_ZIP="
+        cat flags
+
     # - name: configure (unix/Makefile)
     #   run: |
     #     make -f unix/Makefile flags CC=${{ matrix.compiler }} LOCAL_ZIP="-Werror -DNO_ASM" ${{ matrix.opts }}
@@ -125,8 +157,8 @@ jobs:
     #   run: |
     #         make -f unix/Makefile generic
 
-    # - name: Run zip -v
-    #   run: ./zip -v
+    - name: Run zip -v
+      run: ./zip -v
 
     # - name: Run zipcloak -v
     #   run: ./zipcloak -v
