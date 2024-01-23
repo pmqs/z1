@@ -16,83 +16,125 @@ jobs:
         include:
 
           # GCC Compilers
-        # - compiler: gcc-13
-        #   osver: 22.04
-        #   lunar: true
+        - name: gcc-13
+          cmd: gcc-13
+          package: gcc-13
+          osver: 22.04
+          lunar: true
 
-        # - compiler: gcc-12
-        #   osver: 22.04
-        #   lunar: true
+        - name: gcc-12
+          cmd: gcc-12
+          osver: gcc-12
+          package: 22.04
+          lunar: true
 
-        # - compiler: gcc-11
-        #   osver: 22.04
+        - name: gcc-11
+          cmd: gcc-11
+          package: gcc-11
+          osver: 22.04
 
-        # - compiler: gcc-10
-        #   osver: 22.04
+        - name: gcc-10
+          cmd: gcc-10
+          package: gcc-10
+          osver: 22.04
 
-        # - compiler: gcc-9
-        #   osver: 20.04
+        - name: gcc-9
+          cmd: gcc-9
+          package: gcc-9
+          osver: 20.04
 
-        # - compiler: gcc-8
-        #   osver: 20.04
+        - name: gcc-8
+          cmd: gcc-8
+          package: gcc-8
+          osver: 20.04
 
-        # - compiler: gcc-7
-        #   osver: 20.04
+        - name: gcc-7
+          cmd: gcc-7
+          package: gcc-7
+          osver: 20.04
 
-        # - compiler: gcc-6
-        #   osver: 20.04
-        #   bionic: true
+        - name: gcc-6
+          cmd: gcc-6
+          package: gcc-6
+          osver: 20.04
+          bionic: true
 
-        # - compiler: gcc-5
-        #   osver: 20.04
-        #   bionic: true
+        - name: gcc-5
+          cmd: gcc-5
+          package: gcc-5
+          osver: 20.04
+          bionic: true
 
-        # - compiler: gcc-4.7
-        #   osver: 20.04
-        #   bionic: true
+        - name: gcc-4
+          cmd: gcc-4.7
+          package: gcc-4.7
+          osver: 20.04
+          bionic: true
 
-        #   # CLANG Compilers
+          # CLANG Compilers
 
-        # - compiler: clang-17
-        #   osver: 22.04
+        - name: clang-17
+          cmd: clang-17
+          package: clang-17
+          osver: 22.04
 
-        # - compiler: clang-16
-        #   osver: 22.04
-        #   lunar: true
+        - name: clang-16
+          cmd: clang-16
+          package: clang-16
+          osver: 22.04
+          lunar: true
 
-        # - compiler: clang-15
-        #   osver: 22.04
-        #   lunar: true
+        - name: clang-15
+          cmd: clang-15
+          package: clang-15
+          osver: 22.04
+          lunar: true
 
-        # - compiler: clang-14
-        #   osver: 22.04
+        - name: clang-14
+          cmd: clang-14
+          package: clang-14
+          osver: 22.04
 
-        # - compiler: clang-13
-        #   osver: 22.04
+        - name: clang-13
+          cmd: clang-13
+          package: clang-13
+          osver: 22.04
 
-        # - compiler: clang-12
-        #   osver: 22.04
+        - name: clang-12
+          cmd: 22.04
+          package: 22.04
+          osver: 22.04
 
-        # - compiler: clang-11
-        #   osver: 22.04
+        - name: clang-11
+          cmd: 22.04
+          package: 22.04
+          osver: 22.04
 
-        # - compiler: clang-10
-        #   osver: 20.04
+        - name: clang-10
+          cmd: clang-10
+          package: clang-10
+          osver: 20.04
 
-        # - compiler: clang-9
-        #   osver: 20.04
+        - name: clang-9
+          cmd: clang-9
+          package: clang-9
+          osver: 20.04
 
-        # - compiler: clang-8
-        #   osver: 20.04
+        - name: clang-8
+          cmd: clang-8
+          package: clang-8
+          osver: 20.04
 
-        # - compiler: clang-7
-        #   osver: 20.04
+        - name: clang-7
+          cmd: clang-7
+          package: clang-7
+          osver: 20.04
 
 
-        # - name: clang-6
-        #   cmd: clang-6.0
-        #   package: clang-6.0
-        #   osver: 20.04
+        - name: clang-6
+          cmd: clang-6.0
+          package: clang-6.0
+          osver: 20.04
 
         - name: clang-5
           cmd: clang-5.0
@@ -106,11 +148,11 @@ jobs:
           osver: 20.04
           bionic: true
 
-        # - name: clang-3
-        #   cmd: clang
-        #   package: clang-3.3
-        #   osver: 20.04
-        #   trusty: true
+        - name: clang-3
+          cmd: clang
+          package: clang-3.3
+          osver: 20.04
+          trusty: true
 
 
     steps:
@@ -193,8 +235,8 @@ jobs:
     #   run: |
     #         make -f unix/Makefile generic
 
-    # - name: Run zip -v
-    #   run: ./zip -v
+    - name: Run zip -v
+      run: ./zip -v
 
     # - name: Run zipcloak -v
     #   run: ./zipcloak -v
