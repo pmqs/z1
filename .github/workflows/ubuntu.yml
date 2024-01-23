@@ -51,10 +51,6 @@ jobs:
         #   osver: 20.04
         #   bionic: true
 
-        - compiler: gcc-3.3
-          osver: 20.04
-          trusty: true
-
         #   # CLANG Compilers
 
         # - compiler: clang-17
@@ -102,6 +98,10 @@ jobs:
         # # - compiler: clang-4
         # #   osver: 20.04
 
+        - compiler: clang-3.3
+          osver: 20.04
+          trusty: true
+          
 
     steps:
 
