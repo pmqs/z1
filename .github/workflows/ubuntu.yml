@@ -30,14 +30,14 @@ jobs:
           # GCC Compilers
         - name: gcc-13
           cmd: gcc-13
-          osver: gcc-13
-          package: 22.04
+          package: gcc-13
+          osver: 22.04
           lunar: true
 
         - name: gcc-12
           cmd: gcc-12
-          osver: gcc-12
-          package: 22.04
+          package: gcc-12
+          osver: 22.04
           lunar: true
 
         - name: gcc-11
