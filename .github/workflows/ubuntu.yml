@@ -173,23 +173,23 @@ jobs:
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty main"
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty universe"
 
-    - name: Update Package Repository for 20.04
-      if: matrix.trusty-updates
-      run: |
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty-updates main"
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty-updates universe"
+    # - name: Update Package Repository for 20.04
+    #   if: matrix.trusty-updates
+    #   run: |
+    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty-updates main"
+    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty-updates universe"
 
-    - name: Update Package Repository for 20.04
-      if: matrix.xenial
-      run: |
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial main"
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial universe"
+    # - name: Update Package Repository for 20.04
+    #   if: matrix.xenial
+    #   run: |
+    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial main"
+    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial universe"
 
-    - name: Update Package Repository for 20.04
-      if: matrix.xenial-updates
-      run: |
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial-updates main"
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial-updates universe"
+    # - name: Update Package Repository for 20.04
+    #   if: matrix.xenial-updates
+    #   run: |
+    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial-updates main"
+    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial-updates universe"
 
 
     - name: Update Package Repository for 20.04
@@ -206,7 +206,7 @@ jobs:
 
       # https://apt.llvm.org/
     - name: Update Package Repository for 22.04 + clang=17
-      if:  matrix.compiler == 'clang-17'
+      if:  matrix.name == 'clang-17'
       run: |
         wget https://apt.llvm.org/llvm.sh
         chmod u+x llvm.sh
