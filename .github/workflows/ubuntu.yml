@@ -40,7 +40,7 @@ jobs:
         #   osver: 20.04
 
         # Not available in stock 20.04 or xenial
-        - compiler: gcc-6
+        - compiler: gcc-6.5
           osver: 20.04
           # xenial: true
 
