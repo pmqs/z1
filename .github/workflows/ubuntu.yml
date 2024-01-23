@@ -98,13 +98,13 @@ jobs:
           cmd: clang-5.0
           package: clang-5.0
           osver: 20.04
-          trusty-updates: true
+          bionic: true
 
         - name: clang-4
           cmd: clang-4.0
           package: clang-4.0
           osver: 20.04
-          trusty-updates: true
+          bionic: true
 
         # - name: clang-3
         #   cmd: clang
