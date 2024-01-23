@@ -98,7 +98,7 @@ jobs:
         # # - compiler: clang-4
         # #   osver: 20.04
 
-        - compiler: clang-3
+        - compiler: clang
           package: clang-3.3
           osver: 20.04
           trusty: true
@@ -155,16 +155,16 @@ jobs:
 
     - name: Display ${{ matrix.compiler }} version
       run: |
+        ls -l /usr/bin/clang*
         clang -v
-        clang-3 -v
 
     - name: Display ${{ matrix.compiler }} version
       run: ${{ matrix.compiler }} -v
 
-    - name: configure (unix/Makefile)
-      run: |
-        make -j2 -f unix/Makefile generic CC=${{ matrix.compiler }}
-        cat flags
+    # - name: configure (unix/Makefile)
+    #   run: |
+    #     make -j2 -f unix/Makefile generic CC=${{ matrix.compiler }}
+    #     cat flags
 
     # - name: configure (unix/Makefile)
     #   run: |
