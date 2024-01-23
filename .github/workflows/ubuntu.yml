@@ -39,10 +39,10 @@ jobs:
         # - compiler: gcc-7
         #   osver: 20.04
 
-        # Not available in stock 20.04 or xenial
+        # Not available in stock 20.04 or xenial or trusty
         - compiler: gcc-6
-          osver: 20.04
-          trusty: true
+          osver: 22.04
+          # trusty: true
 
         # - compiler: gcc-5
         #   osver: 20.04
