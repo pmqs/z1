@@ -78,8 +78,8 @@ jobs:
           bionic: true
 
         - name: gcc-4
-          cmd: gcc-4.7
-          package: gcc-4.7
+          cmd: gcc-4.8
+          package: gcc-4.8
           osver: 20.04
           bionic: true
 
