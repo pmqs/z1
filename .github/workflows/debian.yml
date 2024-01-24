@@ -7,7 +7,7 @@ on:
 
 jobs:
   configure:
-    name: ${{ matrix.compiler.name }} + ${{ matrix.arch }}  ${{ matrix.compiler.opts }}
+    name: ${{ matrix.compiler.name }} + ${{ matrix.arch }}  ${{ matrix.opts }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -33,40 +33,40 @@ jobs:
         - name: clang
           tag: debian:testing-slim
 
-        # # GCC
-        # - name: gcc-13
-        #   tag: debian:trixie-slim
-        # - name: gcc-12
-        #   tag: debian:bookworm-slim
-        # - name: gcc-11
-        #   tag: debian:bookworm-slim
-        # - name: gcc-10
-        #   tag: debian:bullseye-slim
-        # - name: gcc-9
-        #   tag: debian:bullseye-slim
-        # - name: gcc-8
-        #   tag: debian:buster-slim
-        # - name: gcc-7
-        #   tag: debian:buster-slim
+        # GCC
+        - name: gcc-13
+          tag: debian:trixie-slim
+        - name: gcc-12
+          tag: debian:bookworm-slim
+        - name: gcc-11
+          tag: debian:bookworm-slim
+        - name: gcc-10
+          tag: debian:bullseye-slim
+        - name: gcc-9
+          tag: debian:bullseye-slim
+        - name: gcc-8
+          tag: debian:buster-slim
+        - name: gcc-7
+          tag: debian:buster-slim
 
 
-        # # CLANG
-        # - name: clang-17
-        #   tag: trixie
-        # - name: clang-16
-        #   tag: debian:bookworm-slim
-        # - name: clang-15
-        #   tag: debian:bookworm-slim
-        # - name: clang-14
-        #   tag: debian:bookworm-slim
-        # - name: clang-13
-        #   tag: debian:bookworm-slim
-        # - name: clang-11
-        #   tag: debian:bullseye-slim
-        # - name: clang-9
-        #   tag: debian:bullseye-slim
-        # - name: clang-7
-        #   tag: debian:buster-slim
+        # CLANG
+        - name: clang-17
+          tag: trixie
+        - name: clang-16
+          tag: debian:bookworm-slim
+        - name: clang-15
+          tag: debian:bookworm-slim
+        - name: clang-14
+          tag: debian:bookworm-slim
+        - name: clang-13
+          tag: debian:bookworm-slim
+        - name: clang-11
+          tag: debian:bullseye-slim
+        - name: clang-9
+          tag: debian:bullseye-slim
+        - name: clang-7
+          tag: debian:buster-slim
 
 
         # TODO
