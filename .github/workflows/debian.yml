@@ -47,15 +47,15 @@ jobs:
 
         - name: gcc-6
           debian: buster
-          repo: bionic
+          repo: stretch
 
         - name: gcc-5
           debian: buster
-          repo: bionic
+          repo: stretch
 
         - name: gcc-4
           debian: buster
-          repo: bionic
+          repo: stretch
 
 
         # - name: clang-17
@@ -113,9 +113,8 @@ jobs:
     - name: Install packages
       if: matrix.compiler.repo
       run: |
-        echo "deb http://azure.archive.ubuntu.com/ubuntu ${{ matrix.compiler.repo }} main" >> /etc/apt/sources.list
-        echo "deb http://azure.archive.ubuntu.com/ubuntu ${{ matrix.compiler.repo }} universe" >> /etc/apt/sources.list
-
+        echo "deb http://archive.debian.org/debian-archive/ oldstable main contrib non-free" >> /etc/apt/sources.list
+        echo "deb-src http://archive.debian.org/debian-archive/ oldstable main contrib non-free" >> /etc/apt/sources.list
 
     - name: whoami
       run: id
