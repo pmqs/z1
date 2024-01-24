@@ -29,45 +29,45 @@ jobs:
 
         - debian: trixie
           name: gcc-13
-        # - debian: bookworm-slim
-        #   name: gcc-12
-        # - debian: bookworm-slim
-        #   name: gcc-11
-        # - debian: bullseye-slim
-        #   name: gcc-10
-        # - debian: bullseye-slim
-        #   name: gcc-9
-        # - debian: buster-slim
-        #   name: gcc-8
-        # - debian: buster-slim
-        #   name: gcc-7
+        - debian: bookworm-slim
+          name: gcc-12
+        - debian: bookworm-slim
+          name: gcc-11
+        - debian: bullseye-slim
+          name: gcc-10
+        - debian: bullseye-slim
+          name: gcc-9
+        - debian: buster-slim
+          name: gcc-8
+        - debian: buster-slim
+          name: gcc-7
 
 
 
-        # - debian: trixie
-        #   name: clang-17
-        # - debian: bookworm-slim
-        #   name: clang-16
-        # - debian: bookworm-slim
-        #   name: clang-15
-        # - debian: bookworm-slim
-        #   name: clang-14
-        # - debian: bookworm-slim
-        #   name: clang-13
-        # # - debian: bullseye-slim
-        # #   name: clang-12
+        - debian: trixie
+          name: clang-17
+        - debian: bookworm-slim
+          name: clang-16
+        - debian: bookworm-slim
+          name: clang-15
+        - debian: bookworm-slim
+          name: clang-14
+        - debian: bookworm-slim
+          name: clang-13
         # - debian: bullseye-slim
-        #   name: clang-11
-        # # - debian: bullseye-slim
-        # #   name: clang-10
+        #   name: clang-12
+        - debian: bullseye-slim
+          name: clang-11
         # - debian: bullseye-slim
-        #   name: clang-9
-        # # - debian: bookworm-slim
-        # #   name: clang-8
-        # - debian: buster-slim
-        #   name: clang-7
-        # # - debian: bullseye-slim
-        # #   name: clang-6
+        #   name: clang-10
+        - debian: bullseye-slim
+          name: clang-9
+        # - debian: bookworm-slim
+        #   name: clang-8
+        - debian: buster-slim
+          name: clang-7
+        # - debian: bullseye-slim
+        #   name: clang-6
 
 
 
@@ -91,7 +91,7 @@ jobs:
 
     - name: configure (unix/Makefile)
       run: |
-        make -f unix/Makefile generic CC=${{ matrix.compiler.name }} LOCAL_ZIP="-Werror -DNO_ASM" ${{ matrix.opts }}
+        make -f unix/Makefile generic CC=${{ matrix.compiler.name }} LOCAL_ZIP="-Werror" ${{ matrix.opts }}
         cat flags
 
     - name: Run zip -v
