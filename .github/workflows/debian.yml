@@ -20,29 +20,32 @@ jobs:
 
         compiler:
 
+            # https://hub.docker.com/_/debian/tags
+            # https://hub.docker.com/r/debian/eol/tags
+
         # - name: gcc
-        #   debian: experimental
+        #   tag: experimental
         # - name: clang
-        #   debian: experimental
+        #   tag: experimental
 
 
 
 
         # WORKING
         - name: gcc-13
-          debian: trixie
+          tag: debian:trixie-slim
         # - name: gcc-12
-        #   debian: bookworm
+        #   tag: bookworm
         # - name: gcc-11
-        #   debian: bookworm
+        #   tag: bookworm
         # - name: gcc-10
-        #   debian: bullseye
+        #   tag: bullseye
         # - name: gcc-9
-        #   debian: bullseye
+        #   tag: bullseye
         # - name: gcc-8
-        #   debian: buster
+        #   tag: buster
         # - name: gcc-7
-        #   debian: buster
+        #   tag: buster
 
 
 
@@ -50,51 +53,51 @@ jobs:
 
         # WORKING
         # - name: clang-17
-        #   debian: trixie
+        #   tag: trixie
         # - name: clang-16
-        #   debian: bookworm
+        #   tag: bookworm
         # - name: clang-15
-        #   debian: bookworm
+        #   tag: bookworm
         # - name: clang-14
-        #   debian: bookworm
+        #   tag: bookworm
         # - name: clang-13
-        #   debian: bookworm
+        #   tag: bookworm
         # - name: clang-11
-        #   debian: bullseye
+        #   tag: bullseye
         # - name: clang-9
-        #   debian: bullseye
+        #   tag: bullseye
         # - name: clang-7
-        #   debian: buster
+        #   tag: buster
 
 
         # NOT WORKING
 
         - name: gcc-6
-          debian: eol:stretch
+          tag: debian/eol:stretch-slim
 
-        - name: gcc-5
-          debian: eol:stretch
+        # - name: gcc-5
+        #   tag: debian/eol:stretch
 
-        - name: gcc-4
-          debian: eol:stretch
+        # - name: gcc-4
+        #   tag: debian/eol:stretch
 
-        - name: clang-12
-          debian: eol:stretch
+        # - name: clang-12
+        #   tag: debian/eol:stretch
 
-        - name: clang-10
-          debian: eol:stretch
+        # - name: clang-10
+        #   tag: debian/eol:stretch
 
 
-        - name: clang-8
-          debian: eol:stretch
+        # - name: clang-8
+        #   tag: debian/eol:stretch
 
-        - name: clang-6
-          debian: eol:stretch
+        # - name: clang-6
+        #   tag: debian/eol:stretch
 
 
 
     container:
-      image: ${{ matrix.arch }}/debian/${{ matrix.compiler.debian }}
+      image: ${{ matrix.arch }}/${{ matrix.compiler.tag }}
 
     steps:
 
@@ -103,13 +106,13 @@ jobs:
     #   with:
         # show-progress: 'false'
 
-    - name: Install packages
-      if: matrix.compiler.repo
-      run: |
+    # - name: Install packages
+    #   if: matrix.compiler.repo
+    #   run: |
 
-        echo "deb http://archive.debian.org/debian stretch main contrib non-free" > /etc/apt/sources.list
-        echo "deb http://archive.debian.org/debian-archive/ oldstable main contrib non-free" >> /etc/apt/sources.list
-        echo "deb-src http://archive.debian.org/debian-archive/ oldstable main contrib non-free" >> /etc/apt/sources.list
+    #     echo "deb http://archive.debian.org/debian stretch main contrib non-free" > /etc/apt/sources.list
+    #     echo "deb http://archive.debian.org/debian-archive/ oldstable main contrib non-free" >> /etc/apt/sources.list
+    #     echo "deb-src http://archive.debian.org/debian-archive/ oldstable main contrib non-free" >> /etc/apt/sources.list
 
     - name: whoami
       run: id
