@@ -189,8 +189,8 @@ jobs:
     - name: Update Package Repository
       if: matrix.compiler.repo
       run: |
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu $(( matrix.compiler.repo )) main"
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu $(( matrix.compiler.repo )) universe"
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu ${{ matrix.compiler.repo }} main"
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu ${{ matrix.compiler.repo }} universe"
 
       # https://apt.llvm.org/
     - name: Install clang=17
