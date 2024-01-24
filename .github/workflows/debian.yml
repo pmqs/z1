@@ -32,8 +32,8 @@ jobs:
 
 
         # WORKING
-        - name: gcc-13
-          tag: debian:trixie-slim
+        # - name: gcc-13
+        #   tag: debian:trixie-slim
         # - name: gcc-12
         #   tag: bookworm
         # - name: gcc-11
@@ -97,7 +97,8 @@ jobs:
 
 
     container:
-      image: linux/${{ matrix.arch }}/${{ matrix.compiler.tag }}
+    #   image: ${{ matrix.arch }}/${{ matrix.compiler.tag }}
+      image: debian/eol:stretch-slim@sha256:769c8ce77cee9100b12dec0af9a4cfba0b35097fabbbd65a2898e5ca72893a52
 
     steps:
 
