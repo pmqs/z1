@@ -1,8 +1,5 @@
 name: Debian
 
-# Note - adding NO_ASM to the build for now. 32-bit build cores otherwise.
-# See https://github.com/info-zip/zip-demo/issues/19
-
 # Set to manual execution only for now.
 on:
   workflow_dispatch:
@@ -11,65 +8,71 @@ on:
 
 jobs:
   configure:
-    name: ${{ matrix.debian }} + ${{ matrix.compiler }}
+    name: ${{ matrix.compiler.debian }} + ${{ matrix.compiler.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+
       matrix:
-        include:
-        - debian: experimental
-          compiler: gcc
-        - debian: experimental
-          compiler: clang
+        arch:
+        - amd64
+        - i386
+
+        compiler:
+
+        # - debian: experimental
+        #   name: gcc
+        # - debian: experimental
+        #   name: clang
 
 
 
         - debian: trixie
-          compiler: gcc-13
-        - debian: bookworm-slim
-          compiler: gcc-12
-        - debian: bookworm-slim
-          compiler: gcc-11
-        - debian: bullseye-slim
-          compiler: gcc-10
-        - debian: bullseye-slim
-          compiler: gcc-9
-        - debian: buster-slim
-          compiler: gcc-8
-        - debian: buster-slim
-          compiler: gcc-7
-
-
-
-        - debian: trixie
-          compiler: clang-17
-        - debian: bookworm-slim
-          compiler: clang-16
-        - debian: bookworm-slim
-          compiler: clang-15
-        - debian: bookworm-slim
-          compiler: clang-14
-        - debian: bookworm-slim
-          compiler: clang-13
-        # - debian: bullseye-slim
-        #   compiler: clang-12
-        - debian: bullseye-slim
-          compiler: clang-11
-        # - debian: bullseye-slim
-        #   compiler: clang-10
-        - debian: bullseye-slim
-          compiler: clang-9
+          name: gcc-13
         # - debian: bookworm-slim
-        #   compiler: clang-8
-        - debian: buster-slim
-          compiler: clang-7
+        #   name: gcc-12
+        # - debian: bookworm-slim
+        #   name: gcc-11
         # - debian: bullseye-slim
-        #   compiler: clang-6
+        #   name: gcc-10
+        # - debian: bullseye-slim
+        #   name: gcc-9
+        # - debian: buster-slim
+        #   name: gcc-8
+        # - debian: buster-slim
+        #   name: gcc-7
+
+
+
+        # - debian: trixie
+        #   name: clang-17
+        # - debian: bookworm-slim
+        #   name: clang-16
+        # - debian: bookworm-slim
+        #   name: clang-15
+        # - debian: bookworm-slim
+        #   name: clang-14
+        # - debian: bookworm-slim
+        #   name: clang-13
+        # # - debian: bullseye-slim
+        # #   name: clang-12
+        # - debian: bullseye-slim
+        #   name: clang-11
+        # # - debian: bullseye-slim
+        # #   name: clang-10
+        # - debian: bullseye-slim
+        #   name: clang-9
+        # # - debian: bookworm-slim
+        # #   name: clang-8
+        # - debian: buster-slim
+        #   name: clang-7
+        # # - debian: bullseye-slim
+        # #   name: clang-6
 
 
 
     container:
-      image: debian:${{ matrix.debian }}
+      image: debian:${{ matrix.compiler.debian }}:${{ matrix.arch }}
 
     steps:
 
@@ -81,15 +84,19 @@ jobs:
     - name: Install packages
       run: |
         apt-get update -qq
-        apt-get install -yq ${{ matrix.compiler }}
+        apt-get install -yq ${{ matrix.compiler.name }}
 
-    - name: Display ${{ matrix.compiler }} version
-      run: ${{ matrix.compiler }} -v
+    - name: Display ${{ matrix.compiler.name }} version
+      run: ${{ matrix.compiler.name }} -v
 
-    # - name: configure (unix/Makefile)
-    #   run: |
-    #     make -f unix/Makefile flags CC=${{ matrix.compiler }} LOCAL_ZIP="-Werror -DNO_ASM" ${{ matrix.opts }}
-    #     cat flags
+    - name: configure (unix/Makefile)
+      run: |
+        make -f unix/Makefile generic CC=${{ matrix.compiler.name }} LOCAL_ZIP="-Werror -DNO_ASM" ${{ matrix.opts }}
+        cat flags
+
+    - name: Run zip -v
+      run: ./zip -v
+
 
     # - name: build (unix/Makefile)
     #   run: |

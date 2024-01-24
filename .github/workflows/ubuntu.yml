@@ -8,21 +8,19 @@ on:
 
 jobs:
   configure:
-    name: ubuntu-${{ matrix.osver }} + ${{ matrix.name }}
-    runs-on: ubuntu-${{ matrix.osver }}
+    name: ubuntu-${{ matrix.compiler.osver }} + ${{ matrix.compiler.name }}
+    runs-on: ubuntu-${{ matrix.compiler.osver }}
     strategy:
       fail-fast: false
       matrix:
 
-        arch:
-          - -m32
-          - -m64
+        opts:
+          - ""
+          - "IZ_ZLIB=/tmp IZ_BZIP2=/tmp"
+          - "NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1"
 
-        osver:
-          - 20.04
-          - 22.04
 
-        include:
+        compiler:
           # - [
           #     [ name: gcc-13, cmd: gcc-13,  package: gcc-13,  osver: 22.04, lunar: true],
           #     [ name: gcc-12, cmd: gcc-12,  package: gcc-12,  osver: 22.04             ],
@@ -37,11 +35,11 @@ jobs:
           #     ]
 
           # GCC Compilers
-        - name: gcc-13
-          cmd: gcc-13
-          package: gcc-13
-          osver: 22.04
-          lunar: true
+        # - name: gcc-13
+        #   cmd: gcc-13
+        #   package: gcc-13
+        #   osver: 22.04
+        #   lunar: true
 
         # - name: gcc-12
         #   cmd: gcc-12
@@ -49,10 +47,10 @@ jobs:
         #   osver: 22.04
         #   lunar: true
 
-        # - name: gcc-11
-        #   cmd: gcc-11
-        #   package: gcc-11
-        #   osver: 22.04
+        - name: gcc-11
+          cmd: gcc-11
+          package: gcc-11
+          osver: 22.04
 
         # - name: gcc-10
         #   cmd: gcc-10
@@ -214,20 +212,20 @@ jobs:
 
 
     - name: Update Package Repository for 20.04
-      if: matrix.bionic
+      if: matrix.compiler.bionic
       run: |
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu bionic main"
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu bionic universe"
 
     - name: Update Package Repository for 22.04
-      if: matrix.lunar
+      if: matrix.compiler.lunar
       run: |
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu lunar main"
         sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu lunar universe"
 
       # https://apt.llvm.org/
     - name: Update Package Repository for 22.04 + clang=17
-      if:  matrix.name == 'clang-17'
+      if:  matrix.compiler.name == 'clang-17'
       run: |
         wget https://apt.llvm.org/llvm.sh
         chmod u+x llvm.sh
@@ -237,14 +235,14 @@ jobs:
     - name: Install packages
       run: |
         sudo apt-get update -qq
-        sudo apt-get install -yq ${{ matrix.package }}
+        sudo apt-get install -yq ${{ matrix.compiler.package }}
 
-    - name: Display ${{ matrix.name }} version
-      run: ${{ matrix.cmd }} -v
+    - name: Display ${{ matrix.compiler.name }} version
+      run: ${{ matrix.compiler.cmd }} -v
 
     - name: configure (unix/Makefile)
       run: |
-        make -j2 -f unix/Makefile generic CC=${{ matrix.cmd }} LOCAL_ZIP="${{ matrix.arch }}"
+        make -j2 -f unix/Makefile generic CC=${{ matrix.compiler.cmd }} LOCAL_ZIP="${{ matrix.arch }}"
         cat flags
 
     # - name: configure (unix/Makefile)
