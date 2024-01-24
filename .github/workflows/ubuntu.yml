@@ -8,7 +8,7 @@ on:
 
 jobs:
   configure:
-    name: ${{ matrix.compiler.name }} ${{ matrix.compiler.opts }}
+    name: ${{ matrix.compiler.name }} ${{ matrix.opts }}
     runs-on: ubuntu-${{ matrix.compiler.osver }}
     strategy:
       fail-fast: false
@@ -96,7 +96,7 @@ jobs:
           cmd: clang-17
           package: clang-17
           osver: 22.04
-          repo: lunar
+          # repo: lunar
 
         # - name: clang-16
         #   cmd: clang-16
