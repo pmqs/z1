@@ -78,7 +78,7 @@ jobs:
 
     - name: Checkout repository
       uses: actions/checkout@v1
-      with:
+    #   with:
         # show-progress: 'false'
 
     - name: Install packages
