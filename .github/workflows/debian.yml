@@ -8,7 +8,7 @@ on:
 
 jobs:
   configure:
-    name: ${{ matrix.compiler.debian }} + ${{ matrix.compiler.name }}
+    name: ${{ matrix.arch }} + ${{ matrix.compiler.debian }} + ${{ matrix.compiler.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -72,7 +72,7 @@ jobs:
 
 
     container:
-      image: debian:${{ matrix.compiler.debian }}:${{ matrix.arch }}
+      image: ${{ matrix.arch }}/debian:${{ matrix.compiler.debian }}
 
     steps:
 
