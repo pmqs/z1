@@ -77,14 +77,14 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v1
       with:
-        show-progress: 'false'
+        # show-progress: 'false'
 
     - name: Install packages
       run: |
         apt-get update -qq
-        apt-get install -yq ${{ matrix.compiler.name }}
+        apt-get install -yq make ${{ matrix.compiler.name }}
 
     - name: Display ${{ matrix.compiler.name }} version
       run: ${{ matrix.compiler.name }} -v
