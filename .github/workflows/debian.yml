@@ -94,7 +94,7 @@ jobs:
 
 
     container:
-      image: ${{ matrix.arch }}/debian:${{ matrix.compiler.debian }}
+      image: ${{ matrix.arch }}/debian/${{ matrix.compiler.debian }}
 
     steps:
 
