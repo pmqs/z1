@@ -29,9 +29,9 @@ jobs:
 
         # Bleeding Edge
         - name: gcc
-          tag: testing-slim
+          tag: debian:testing-slim
         - name: clang
-          tag: testing-slim
+          tag: debian:testing-slim
 
         # # GCC
         # - name: gcc-13
