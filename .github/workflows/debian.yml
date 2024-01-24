@@ -1,6 +1,5 @@
-name: Debian
+name: Linux 32-bit
 
-# Set to manual execution only for now.
 on:
   workflow_dispatch:
   # push:
@@ -8,97 +7,93 @@ on:
 
 jobs:
   configure:
-    name: ${{ matrix.compiler.name }} + ${{ matrix.arch }} + ${{ matrix.compiler.tag }}
+    name: ${{ matrix.compiler.name }} + ${{ matrix.arch }}  ${{ matrix.compiler.opts }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
 
       matrix:
         arch:
-        - amd64
-        # - i386
+        # - amd64
+        - i386
+
+        opts:
+          - ""
+          - "IZ_ZLIB=/tmp IZ_BZIP2=/tmp"
+          - "NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1"
 
         compiler:
 
-            # https://hub.docker.com/_/debian/tags
-            # https://hub.docker.com/r/debian/eol/tags
+          # https://wiki.debian.org/DebianReleases
+          # See https://hub.docker.com/_/debian/tags
 
-        # - name: gcc
-        #   tag: experimental
-        # - name: clang
-        #   tag: experimental
+        # Bleeding Edge
+        - name: gcc
+          tag: testing-slim
+        - name: clang
+          tag: testing-slim
 
-
-
-
-        # WORKING
+        # # GCC
         # - name: gcc-13
         #   tag: debian:trixie-slim
         # - name: gcc-12
-        #   tag: bookworm
+        #   tag: debian:bookworm-slim
         # - name: gcc-11
-        #   tag: bookworm
+        #   tag: debian:bookworm-slim
         # - name: gcc-10
-        #   tag: bullseye
+        #   tag: debian:bullseye-slim
         # - name: gcc-9
-        #   tag: bullseye
+        #   tag: debian:bullseye-slim
         # - name: gcc-8
-        #   tag: buster
+        #   tag: debian:buster-slim
         # - name: gcc-7
-        #   tag: buster
+        #   tag: debian:buster-slim
 
 
-
-
-
-        # WORKING
+        # # CLANG
         # - name: clang-17
         #   tag: trixie
         # - name: clang-16
-        #   tag: bookworm
+        #   tag: debian:bookworm-slim
         # - name: clang-15
-        #   tag: bookworm
+        #   tag: debian:bookworm-slim
         # - name: clang-14
-        #   tag: bookworm
+        #   tag: debian:bookworm-slim
         # - name: clang-13
-        #   tag: bookworm
+        #   tag: debian:bookworm-slim
         # - name: clang-11
-        #   tag: bullseye
+        #   tag: debian:bullseye-slim
         # - name: clang-9
-        #   tag: bullseye
+        #   tag: debian:bullseye-slim
         # - name: clang-7
-        #   tag: buster
+        #   tag: debian:buster-slim
 
 
-        # NOT WORKING
+        # TODO
+        # Need to figure out how to read 386 image from
+        # https://hub.docker.com/r/debian/eol/tags
 
-        - name: gcc-6
-          tag: debian/eol:stretch-slim
 
+        # - name: gcc-6
+        #   tag: debian/eol:stretch-slim
         # - name: gcc-5
         #   tag: debian/eol:stretch
-
         # - name: gcc-4
         #   tag: debian/eol:stretch
 
         # - name: clang-12
         #   tag: debian/eol:stretch
-
         # - name: clang-10
         #   tag: debian/eol:stretch
-
-
         # - name: clang-8
         #   tag: debian/eol:stretch
-
         # - name: clang-6
         #   tag: debian/eol:stretch
 
 
 
     container:
-    #   image: ${{ matrix.arch }}/${{ matrix.compiler.tag }}
-      image: debian/eol:stretch-slim@sha256:769c8ce77cee9100b12dec0af9a4cfba0b35097fabbbd65a2898e5ca72893a52
+      image: ${{ matrix.arch }}/${{ matrix.compiler.tag }}
 
     steps:
 
@@ -106,14 +101,6 @@ jobs:
       uses: actions/checkout@v1
     #   with:
         # show-progress: 'false'
-
-    # - name: Install packages
-    #   if: matrix.compiler.repo
-    #   run: |
-
-    #     echo "deb http://archive.debian.org/debian stretch main contrib non-free" > /etc/apt/sources.list
-    #     echo "deb http://archive.debian.org/debian-archive/ oldstable main contrib non-free" >> /etc/apt/sources.list
-    #     echo "deb-src http://archive.debian.org/debian-archive/ oldstable main contrib non-free" >> /etc/apt/sources.list
 
     - name: whoami
       run: id
@@ -139,20 +126,13 @@ jobs:
     - name: Run zip -v
       run: ./zip -v
 
+    - name: Run zipcloak -v
+      run: ./zipcloak -v
 
-    # - name: build (unix/Makefile)
-    #   run: |
-    #         make -j2 -f unix/Makefile generic
+    - name: Run zipnote -v
+      run: ./zipnote -v
 
-    # - name: Run zip -v
-    #   run: ./zip -v
+    - name: Run zipsplit -v
+      run: ./zipsplit -v
 
-    # - name: Run zipcloak -v
-    #   run: ./zipcloak -v
-
-    # - name: Run zipnote -v
-    #   run: ./zipnote -v
-
-    # - name: Run zipsplit -v
-    #   run: ./zipsplit -v
 

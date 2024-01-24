@@ -96,7 +96,6 @@ jobs:
           cmd: clang-17
           package: clang-17
           osver: 22.04
-          # repo: lunar
 
         # - name: clang-16
         #   cmd: clang-16
