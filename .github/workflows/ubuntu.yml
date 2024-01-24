@@ -14,6 +14,11 @@ jobs:
       fail-fast: false
       matrix:
 
+        arch:
+          # - na./zip
+          - name: i386
+            cc: -m32
+
         opts:
           - ""
           - "IZ_ZLIB=/tmp IZ_BZIP2=/tmp"
@@ -209,7 +214,10 @@ jobs:
 
     - name: configure (unix/Makefile)
       run: |
-        make -j2 -f unix/Makefile generic CC=${{ matrix.compiler.cmd }} LOCAL_ZIP="${{ matrix.arch }}"
+        make -j2 -f unix/Makefile generic CC=${{ matrix.compiler.cmd }} LOCAL_ZIP="${{ matrix.arch.cc }}"
+        sed -i -e's/LF1="/LF1="${{ matrix.arch.cc }}/' flags
+        touch flags_bz
+        sed -i -e's/CFLAGS="/CFLAGS="${{ matrix.arch.cc }}/' flags_bz
         cat flags
 
     # - name: configure (unix/Makefile)
@@ -217,9 +225,9 @@ jobs:
     #     make -f unix/Makefile flags CC=${{ matrix.cmd }} LOCAL_ZIP="-Werror -DNO_ASM" ${{ matrix.opts }}
     #     cat flags
 
-    # - name: build (unix/Makefile)
-    #   run: |
-    #         make -f unix/Makefile generic
+    - name: build (unix/Makefile)
+      run: |
+            make -j2 -f unix/Makefile generic
 
     - name: Run zip -v
       run: ./zip -v
