@@ -110,13 +110,6 @@ jobs:
     #   with:
         # show-progress: 'false'
 
-    - name: Install packages
-      run: |
-          apt-get update -qq
-          apt-get install -yq add-apt-repository
-
-
-
     - name: whoami
       run: id
 
