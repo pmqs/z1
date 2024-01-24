@@ -1,7 +1,7 @@
 /*
   unix/osdep.h - Zip 3
 
-  Copyright (c) 1990-2014 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -99,6 +99,14 @@
 #ifndef NO_ETWODD_SUPPORT
 # define ETWODD_SUPPORT
 #endif /* ndef NO_ETWODD_SUPPORT */
+
+
+/* Function prototypes. */
+
+#ifdef APPLE_XATTR
+int apl_dbl_xattr_ignore_add( char *name);
+#endif /* def APPLE_XATTR */
+
 
 /* None of this may be needed now. */
 /* These should go away next beta. */

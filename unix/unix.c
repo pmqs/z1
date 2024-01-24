@@ -1,7 +1,7 @@
 /*
   unix/unix.c - Zip 3
 
-  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -75,15 +75,15 @@ local char *readd OF((DIR *));
 
 /* get_apl_dbl_info()
  * Look for data which require an AppleDouble ("._name") file.
- * Return zero if any are found.  Qualifying data:
- *    Non-zero Finder info
- *    Resource fork (size > 0)
- *    Extended attributes (non-null list, where available)
+ * Return non-zero if any are found.  Bit, qualifying data:
+ *    0x01: Non-zero Finder info
+ *    0x02: Resource fork (size > 0)
+ *    0x04: Extended attributes (non-null list, where available)
  */
 static int get_apl_dbl_info( char *name)
 {
   int sts;
-  int ret = 1;                  /* Assume failure. */
+  int ret = 0;                  /* Assume none. */
 
   /* Attribute request structures for getattrlist(). */
   struct attrlist attr_list_fndr;
@@ -120,48 +120,45 @@ static int get_apl_dbl_info( char *name)
     if (fior != 0)
     {
       /* Non-zero Finder info. */
-      ret = 0;
+      ret |= 0x01;
     }
-    else
+
+    /* Check resource fork size. */
+
+    /* Clear attribute list structure. */
+    memset( &attr_list_rsrc, 0, sizeof( attr_list_rsrc));
+    /* Set attribute list bits for resource fork size. */
+    attr_list_rsrc.bitmapcount = ATTR_BIT_MAP_COUNT;
+    attr_list_rsrc.fileattr = ATTR_FILE_RSRCLENGTH;
+
+    sts = getattrlist( name,                    /* Path. */
+                       &attr_list_rsrc,         /* Attrib list. */
+                       &attr_bufr_rsrc,         /* Dest buffer. */
+                       sizeof( attr_bufr_rsrc), /* Dest buffer size. */
+                       0);                      /* Options. */
+
+    if ((sts == 0) && (attr_bufr_rsrc.size > 0))
     {
-      /* Check resource fork size. */
-      /* Clear attribute list structure. */
-      memset( &attr_list_rsrc, 0, sizeof( attr_list_rsrc));
-      /* Set attribute list bits for resource fork size. */
-      attr_list_rsrc.bitmapcount = ATTR_BIT_MAP_COUNT;
-      attr_list_rsrc.fileattr = ATTR_FILE_RSRCLENGTH;
-
-      sts = getattrlist( name,                      /* Path. */
-                         &attr_list_rsrc,           /* Attrib list. */
-                         &attr_bufr_rsrc,           /* Dest buffer. */
-                         sizeof( attr_bufr_rsrc),   /* Dest buffer size. */
-                         0);                        /* Options. */
-
-      if ((sts == 0) && (attr_bufr_rsrc.size > 0))
-      {
-        /* Non-zero-size resource fork. */
-        ret = 0;
-      }
-# ifdef APPLE_XATTR
-      else
-      {
-        /* Check extended attribute list length.
-         * Note: If we decide to filter extended attributes, then a more
-         * complex test would be needed here.
-         */
-        sts = listxattr( name,                  /* Real file name. */
-                         NULL,                  /* Name list buffer. */
-                         0,                     /* Name list buffer size. */
-                         XATTR_NOFOLLOW);       /* Options. */
-
-        if (sts > 0)
-        {
-          /* Non-null list of extended attributes. */
-          ret = 0;
-        }
-      }
-# endif /* def APPLE_XATTR */
+      /* Non-zero-size resource fork. */
+      ret |= 0x02;
     }
+
+# ifdef APPLE_XATTR
+    /* Check extended attribute list length.
+     * Note: If we decide to filter extended attributes, then a more
+     * complex test would be helpful here.
+     */
+    sts = listxattr( name,                      /* Real file name. */
+                     NULL,                      /* Name list buffer. */
+                     0,                         /* Name list buffer size. */
+                     XATTR_NOFOLLOW);           /* Options. */
+
+    if (sts > 0)
+    {
+      /* Non-null list of extended attributes. */
+      ret |= 0x04;
+    }
+# endif /* def APPLE_XATTR */
   }
   return ret;
 }
@@ -170,18 +167,85 @@ static int get_apl_dbl_info( char *name)
 unsigned char *apl_dbl_hdr;             /* AppleDouble header buffer. */
 int apl_dbl_hdr_alloc;                  /* Allocated size of apl_dbl_hdr. */
 
-# ifdef APPLE_XATTR
-char *apl_dbl_xattr_ignore[] =
- { "com.apple.FinderInfo", "com.apple.ResourceFork", NULL };
-# endif /* def APPLE_XATTR */
 
+# ifdef APPLE_XATTR
+
+/* Apple extended attributes to ignore.
+ * Returns zero for success, non-zero for failure.
+ * Simple, rather than fancy/efficient, but used only infrequently.
+ * Allocated storage free()'d in zip.c:freeup().
+ */
+
+/* Save excluded extended attribute name.  "-ax/--apple-ext-attr" options. */
+
+int apl_dbl_xattr_ignore_add( char *name)
+{
+  int sts = 0;
+  char *new_name;
+
+  if (name == NULL)
+  {
+    sts = 1;                            /* Invalid (null) argument. */
+  }
+  else
+  {
+    if (strlen( name) <= 0)
+    {
+      sts = 2;                          /* Invalid (blank) argument. */
+    }
+    else
+    {
+      new_name = malloc( strlen( name)+ 1);
+      if (new_name == NULL)
+      {
+        sts = 3;                        /* Memory alloc failure (name). */
+      }
+      else
+      {
+        strcpy( new_name, name);
+
+        apl_dbl_xattr_ignore = realloc( apl_dbl_xattr_ignore,
+         (apl_dbl_xattr_ignore_cnt+ 1)* sizeof( apl_dbl_xattr_ignore));
+        if (apl_dbl_xattr_ignore == NULL)
+        {
+          sts = 4;                      /* Memory allloc failure (array). */
+        }
+        else
+        {
+          apl_dbl_xattr_ignore[ apl_dbl_xattr_ignore_cnt++] = new_name;
+        }
+      }
+    }
+  }
+  return sts;
+}
+
+
+/* Accept/reject AppleDouble extended attributes. */
+int apl_dbl_attr_select( char *name)
+{
+  int j;
+  int sts;              /* sts == 0: Process; sts != 0: Ignore. */
+
+  sts = 0;
+  for (j = 0; j < apl_dbl_xattr_ignore_cnt; j++)
+  {
+    if (strcmp( apl_dbl_xattr_ignore[ j], name) == 0)
+    {
+      sts = 1;
+      break;
+    }
+  }
+  return sts;
+}
+
+# endif /* def APPLE_XATTR */
 
 
 int make_apl_dbl_header( char *name, int *hdr_size)
 {
 
   char btrbslash;               /* Saved character had better be a slash. */
-  int j;                        /* Misc. counter. */
   int sts;
   struct attrlist attr_list_fndr;
   struct attrlist attr_list_rsrc;
@@ -262,16 +326,8 @@ int make_apl_dbl_header( char *name, int *hdr_size)
             xan_ptr = xan_buf;              /* Attribute name pointer. */
             while (xan_ptr < xan_buf+ xan_len)
             {
-              sts = 0;
-              for (j = 0; apl_dbl_xattr_ignore[ j] != NULL; j++)
-              {
-                if (strcmp( apl_dbl_xattr_ignore[ j], xan_ptr) == 0)
-                {
-                  sts = 1;
-                  break;
-                }
-              }
-
+              /* Recognize/skip attributes which we don't want. */
+              sts = apl_dbl_attr_select( xan_ptr);
               if (sts == 0)
               {
                 xa_cnt++;                       /* Count the attributes. */
@@ -447,16 +503,7 @@ int make_apl_dbl_header( char *name, int *hdr_size)
       while (xan_ptr < xan_buf+ xan_len)
       {
         /* Recognize attributes which we don't want. */
-        sts = 0;
-        for (j = 0; apl_dbl_xattr_ignore[ j] != NULL; j++)
-        {
-          if (strcmp( apl_dbl_xattr_ignore[ j], xan_ptr) == 0)
-          {
-            sts = 1;
-            break;
-          }
-        }
-
+        sts = apl_dbl_attr_select( xan_ptr);
         if (sts == 0)
         {
           /* Not one of the unwanted attributes.  Process it. */
@@ -552,9 +599,12 @@ DIR *dirp;
 #define closedir(dirp) fclose(dirp)
 #endif /* NO_DIR */
 
-
+#ifndef NO_PROTO
+local char *readd(DIR *d)
+#else
 local char *readd(d)
-DIR *d;                 /* directory stream to read from */
+  DIR *d;                 /* directory stream to read from */
+#endif
 /* Return a pointer to the next name in the directory stream d, or NULL if
    no more entries or an error occurs. */
 {
@@ -636,15 +686,18 @@ local int fqcmpz_icfirst(const FTSENT *FTSCONST *a, const FTSENT *FTSCONST *b)
     free(aa);
   if (bbtofree)
     free(bb);
-  
+
   return i;
 }
 #endif /* FTS_SUPPORT */
 
-
+#ifndef NO_PROTO
+int procname(char *n, int caseflag)
+#else
 int procname(n, caseflag)
-char *n;                /* name to process */
-int caseflag;           /* true to force case-sensitive match */
+  char *n;                /* name to process */
+  int caseflag;           /* true to force case-sensitive match */
+#endif
 /* Process a name or sh expression to operate on (or exclude).  Return
    an error code in the ZE_ class. */
 {
@@ -670,7 +723,7 @@ int caseflag;           /* true to force case-sensitive match */
   }
   ftsoptions |= FTS_NOSTAT;  /* avoid performance penalty, zipup() will stat */
   ftsoptions |= FTS_NOCHDIR; /* tests show that fts is faster with this */
-  
+
   paths[0] = n;
   paths[1] = NULL;
 #endif /* FTS_SUPPORT */
@@ -764,15 +817,15 @@ int caseflag;           /* true to force case-sensitive match */
     {
       /* Regular file or symlink.  Add or remove name of file. */
       if ((m = newname(n, 0, caseflag)) != ZE_OK)
-        return m; 
+        return m;
 
 #ifdef __APPLE__
       /* If saving AppleDouble files, process one for this file. */
       if (data_fork_only <= 0)
       {
-        /* Check for non-null Finder info and resource fork. */
+        /* Check for non-null Finder info and/or resource fork. */
         m = get_apl_dbl_info( n);
-        if (m == 0)
+        if (m != 0)
         {
           /* Process the AppleDouble file. */
           if ((m = newname(n, ZFLAG_APLDBL, caseflag)) != ZE_OK)
@@ -878,12 +931,13 @@ int caseflag;           /* true to force case-sensitive match */
       /* If saving AppleDouble files, process one for this file. */
       if (data_fork_only <= 0)
       {
-        /* Check for non-null Finder info and resource fork. */
+        /* Check for non-null Finder info and/or resource fork. */
         m = get_apl_dbl_info(entry->fts_path);
-        if (m == 0)
+        if (m != 0)
         {
           /* Process the AppleDouble file. */
-          if ((m = newname(entry->fts_path, ZFLAG_APLDBL, caseflag)) != ZE_OK)
+          m = newname(entry->fts_path, ZFLAG_APLDBL, caseflag);
+          if (m != ZE_OK)
             return m;
         }
       }
@@ -917,10 +971,14 @@ int caseflag;           /* true to force case-sensitive match */
   return ZE_OK;
 }
 
+#ifndef NO_PROTO
+char *ex2in(char *x, int isdir, int *pdosflag)
+#else
 char *ex2in(x, isdir, pdosflag)
-char *x;                /* external file name */
-int isdir;              /* input: x is a directory */
-int *pdosflag;          /* output: force MSDOS file attributes? */
+  char *x;                /* external file name */
+  int isdir;              /* input: x is a directory */
+  int *pdosflag;          /* output: force MSDOS file attributes? */
+#endif
 /* Convert the external file name to a zip file name, returning the malloc'ed
    string or NULL if not enough memory. */
 {
@@ -974,8 +1032,12 @@ int *pdosflag;          /* output: force MSDOS file attributes? */
   return n;
 }
 
+#ifndef NO_PROTO
+char *in2ex(char *n)
+#else
 char *in2ex(n)
-char *n;                /* internal file name */
+  char *n;                /* internal file name */
+#endif
 /* Convert the zip file name to an external file name, returning the malloc'ed
    string or NULL if not enough memory. */
 {
@@ -994,9 +1056,13 @@ char *n;                /* internal file name */
 /*
  * XXX use ztimbuf in both POSIX and non POSIX cases ?
  */
+#ifndef NO_PROTO
+void stamp(char *f, ulg d)
+#else
 void stamp(f, d)
-char *f;                /* name of file to change */
-ulg d;                  /* dos-style time to change it to */
+  char *f;                /* name of file to change */
+  ulg d;                  /* dos-style time to change it to */
+#endif
 /* Set last updated and accessed time of file f to the DOS time d. */
 {
 #ifdef _POSIX_VERSION
@@ -1016,11 +1082,15 @@ ulg d;                  /* dos-style time to change it to */
 
 }
 
+#ifndef NO_PROTO
+ulg filetime(char *f, ulg *a, zoff_t *n, iztimes *t)
+#else
 ulg filetime(f, a, n, t)
   char *f;                /* name of file to get info on */
   ulg *a;                 /* return value: file attributes */
   zoff_t *n;              /* return value: file size */
   iztimes *t;             /* return value: access, modific. and creation times */
+#endif
 /* If file *f does not exist, return 0.  Else, return the file's last
    modified date and time as an MSDOS date and time.  The date and
    time is returned in a long with the date most significant to allow
@@ -1036,7 +1106,7 @@ ulg filetime(f, a, n, t)
   z_stat s;         /* results of stat() */
   /* converted to pointer from using FNMAX - 11/8/04 EG */
   char *name;
-  int len = strlen(f);
+  size_t len = strlen(f);
 
   if (f == label) {
     if (a != NULL)
@@ -1144,9 +1214,13 @@ ulg filetime(f, a, n, t)
 
 #ifndef QLZIP /* QLZIP Unix2QDOS cross-Zip supplies an extended variant */
 
+#ifndef NO_PROTO
+int set_new_unix_extra_field(struct zlist far *z, z_stat *s)
+#else
 int set_new_unix_extra_field(z, s)
   struct zlist far *z;
   z_stat *s;
+#endif
   /* New unix extra field.
      Currently only UIDs and GIDs are stored. */
 {
@@ -1277,15 +1351,19 @@ int set_new_unix_extra_field(z, s)
 }
 
 
+#ifndef NO_PROTO
+int set_extra_field(struct zlist far *z, iztimes *z_utim)
+#else
 int set_extra_field(z, z_utim)
   struct zlist far *z;
   iztimes *z_utim;
+#endif
   /* store full data in local header but just modification time stamp info
      in central header */
 {
   z_stat s;
   char *name;
-  int len = strlen(z->name);
+  size_t len = strlen(z->name);
   int i;
   int j;
 
@@ -1439,9 +1517,12 @@ int set_extra_field(z, z_utim)
 
 #endif /* !QLZIP */
 
-
+#ifndef NO_PROTO
+int deletedir(char *d)
+#else
 int deletedir(d)
-char *d;                /* directory to delete */
+  char *d;                /* directory to delete */
+#endif
 /* Delete the directory *d if it is empty, do nothing otherwise.
    Return the result of rmdir(), delete(), or system().
    For VMS, d must be in format [x.y]z.dir;1  (not [x.y.z]).
@@ -1449,7 +1530,8 @@ char *d;                /* directory to delete */
 {
 # ifdef NO_RMDIR
     /* code from Greg Roelofs, who horked it from Mark Edwards (unzip) */
-    int r, len;
+    size_t len;
+    int r;
     char *s;              /* malloc'd string for system command */
 
     len = strlen(d);
@@ -1473,10 +1555,13 @@ char *d;                /* directory to delete */
 
 /* whole is a pathname with wildcards, wildtail points somewhere in the  */
 /* middle of it.  All wildcards to be expanded must come AFTER wildtail. */
-
+#ifndef NO_PROTO
+local int wild_recurse(char *whole, char *wildtail)
+#else
 local int wild_recurse(whole, wildtail)
   char *whole;
   char *wildtail;
+#endif
 {
   DIR *dir;
   char *subwild, *name, *newwhole = NULL, *glue = NULL, plug = 0, plug2;
@@ -1581,9 +1666,12 @@ ohforgetit:
   return e;
 }
 
-
+#ifndef NO_PROTO
+int wild(char *w)
+#else
 int wild(w)
   char *w;               /* path/pattern to match */
+#endif
 /* If not in exclude mode, expand the pattern based on the contents of the
    file system.  Return an error code in the ZE_ class. */
 {

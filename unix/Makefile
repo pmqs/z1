@@ -1165,7 +1165,9 @@ $(PROD)/flags: unix/configure
          "NO_IZ_BZIP2='$(NO_IZ_BZIP2)'" \
          "NO_LZMA='$(NO_LZMA)'" \
          "NO_PPMD='$(NO_PPMD)'" \
-         "IZ_ZLIB='$(IZ_ZLIB)'"
+         "IZ_ZLIB='$(IZ_ZLIB)'" \
+         "DEBUG_BUILD='$(DEBUG_BUILD)'" \
+         "SANITIZE='$(SANITIZE)'"
 
 
 # BZIP2 flags
