@@ -16,7 +16,7 @@ jobs:
       matrix:
         arch:
         - amd64
-        - i386
+        # - i386
 
         compiler:
 
@@ -29,8 +29,8 @@ jobs:
 
 
         # WORKING
-        # - name: gcc-13
-        #   debian: trixie
+        - name: gcc-13
+          debian: trixie
         # - name: gcc-12
         #   debian: bookworm
         # - name: gcc-11
@@ -47,15 +47,15 @@ jobs:
 
         - name: gcc-6
           debian: buster
-          stretch: true
+          repo: stretch
 
         - name: gcc-5
           debian: buster
-          stretch: true
+          repo: stretch
 
         - name: gcc-4
           debian: buster
-          stretch: true
+          repo: stretch
 
 
         # - name: clang-17
@@ -75,28 +75,28 @@ jobs:
 
         - name: clang-12
           debian: bullseye
-          stretch: true
+          repo: stretch
 
         # - name: clang-11
         #   debian: bullseye
 
         - name: clang-10
           debian: bullseye
-          stretch: true
+          repo: stretch
 
         # - name: clang-9
         #   debian: bullseye
 
         - name: clang-8
           debian: bookworm
-          stretch: true
+          repo: stretch
 
         # - name: clang-7
         #   debian: buster
 
         - name: clang-6
           debian: bullseye
-          stretch: true
+          repo: stretch
 
 
 
@@ -110,12 +110,17 @@ jobs:
     #   with:
         # show-progress: 'false'
 
+    - name: Install packages
+      if: matrix.compiler.repo
+      run: |
+        echo "deb http://deb.debian.org/debian ${{ matrix.compiler.repo }} main" >> /etc/apt/sources.list
+
+
     - name: whoami
       run: id
 
     - name: Install packages
       run: |
-            echo "deb http://deb.debian.org/debian stretch main" >> /etc//etc/apt/sources.list
             apt-get update -qq
             apt-get install -yq make ${{ matrix.compiler.name }}
 
