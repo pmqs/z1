@@ -8,7 +8,7 @@ on:
 
 jobs:
   configure:
-    name: ubuntu-${{ matrix.compiler.osver }} + ${{ matrix.compiler.name }}
+    name: ${{ matrix.compiler.name }} ${{ matrix.compiler.opts }}
     runs-on: ubuntu-${{ matrix.compiler.osver }}
     strategy:
       fail-fast: false
