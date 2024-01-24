@@ -8,7 +8,7 @@ on:
 
 jobs:
   configure:
-    name: ${{ matrix.arch }} + ${{ matrix.compiler.debian }} + ${{ matrix.compiler.name }}
+    name: ${{ matrix.compiler.name }}+ ${{ matrix.arch }} + ${{ matrix.compiler.debian }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -20,54 +20,58 @@ jobs:
 
         compiler:
 
-        # - debian: experimental
-        #   name: gcc
-        # - debian: experimental
-        #   name: clang
+        - debian: experimental
+          name: gcc
+        - debian: experimental
+          name: clang
 
 
 
-        - debian: trixie
-          name: gcc-13
-        - debian: bookworm-slim
-          name: gcc-12
-        - debian: bookworm-slim
-          name: gcc-11
-        - debian: bullseye-slim
-          name: gcc-10
-        - debian: bullseye-slim
-          name: gcc-9
-        - debian: buster-slim
-          name: gcc-8
-        - debian: buster-slim
-          name: gcc-7
-
-
-
-        - debian: trixie
-          name: clang-17
-        - debian: bookworm-slim
-          name: clang-16
-        - debian: bookworm-slim
-          name: clang-15
-        - debian: bookworm-slim
-          name: clang-14
-        - debian: bookworm-slim
-          name: clang-13
-        # - debian: bullseye-slim
-        #   name: clang-12
-        - debian: bullseye-slim
-          name: clang-11
-        # - debian: bullseye-slim
-        #   name: clang-10
-        - debian: bullseye-slim
-          name: clang-9
+        # - debian: trixie
+        #   name: gcc-13
         # - debian: bookworm-slim
-        #   name: clang-8
-        - debian: buster-slim
-          name: clang-7
+        #   name: gcc-12
+        # - debian: bookworm-slim
+        #   name: gcc-11
         # - debian: bullseye-slim
-        #   name: clang-6
+        #   name: gcc-10
+        # - debian: bullseye-slim
+        #   name: gcc-9
+        # - debian: buster-slim
+        #   name: gcc-8
+        # - debian: buster-slim
+        #   name: gcc-7
+        - debian: buster-slim
+          name: gcc-6
+        - debian: buster-slim
+          name: gcc-5
+        - debian: buster-slim
+          name: gcc-4
+
+        # - debian: trixie
+        #   name: clang-17
+        # - debian: bookworm-slim
+        #   name: clang-16
+        # - debian: bookworm-slim
+        #   name: clang-15
+        # - debian: bookworm-slim
+        #   name: clang-14
+        # - debian: bookworm-slim
+        #   name: clang-13
+        # # - debian: bullseye-slim
+        # #   name: clang-12
+        # - debian: bullseye-slim
+        #   name: clang-11
+        # # - debian: bullseye-slim
+        # #   name: clang-10
+        # - debian: bullseye-slim
+        #   name: clang-9
+        # # - debian: bookworm-slim
+        # #   name: clang-8
+        # - debian: buster-slim
+        #   name: clang-7
+        # # - debian: bullseye-slim
+        # #   name: clang-6
 
 
 
@@ -88,6 +92,9 @@ jobs:
 
     - name: Display ${{ matrix.compiler.name }} version
       run: ${{ matrix.compiler.name }} -v
+
+    - name: Display uname
+      run: uname -a
 
     - name: configure (unix/Makefile)
       run: |
