@@ -14,8 +14,10 @@ jobs:
 
       matrix:
         arch:
-        # - amd64
-        - i386
+        - name: amd64
+          cc: -m64
+        - name: i386
+          cc: -m32
 
         opts:
           - ""
@@ -27,46 +29,46 @@ jobs:
           # https://wiki.debian.org/DebianReleases
           # See https://hub.docker.com/_/debian/tags
 
-        # Bleeding Edge
-        - name: gcc
-          tag: debian:testing-slim
-        - name: clang
-          tag: debian:testing-slim
+        # # Bleeding Edge
+        # - name: gcc
+        #   tag: debian:testing-slim
+        # - name: clang
+        #   tag: debian:testing-slim
 
-        # GCC
+        # # GCC
         - name: gcc-13
           tag: debian:trixie-slim
-        - name: gcc-12
-          tag: debian:bookworm-slim
-        - name: gcc-11
-          tag: debian:bookworm-slim
-        - name: gcc-10
-          tag: debian:bullseye-slim
-        - name: gcc-9
-          tag: debian:bullseye-slim
-        - name: gcc-8
-          tag: debian:buster-slim
-        - name: gcc-7
-          tag: debian:buster-slim
+        # - name: gcc-12
+        #   tag: debian:bookworm-slim
+        # - name: gcc-11
+        #   tag: debian:bookworm-slim
+        # - name: gcc-10
+        #   tag: debian:bullseye-slim
+        # - name: gcc-9
+        #   tag: debian:bullseye-slim
+        # - name: gcc-8
+        #   tag: debian:buster-slim
+        # - name: gcc-7
+        #   tag: debian:buster-slim
 
 
-        # CLANG
+        # # CLANG
         - name: clang-17
-          tag: trixie
-        - name: clang-16
-          tag: debian:bookworm-slim
-        - name: clang-15
-          tag: debian:bookworm-slim
-        - name: clang-14
-          tag: debian:bookworm-slim
-        - name: clang-13
-          tag: debian:bookworm-slim
-        - name: clang-11
-          tag: debian:bullseye-slim
-        - name: clang-9
-          tag: debian:bullseye-slim
-        - name: clang-7
-          tag: debian:buster-slim
+          tag: debian:trixie-slim
+        # - name: clang-16
+        #   tag: debian:bookworm-slim
+        # - name: clang-15
+        #   tag: debian:bookworm-slim
+        # - name: clang-14
+        #   tag: debian:bookworm-slim
+        # - name: clang-13
+        #   tag: debian:bookworm-slim
+        # - name: clang-11
+        #   tag: debian:bullseye-slim
+        # - name: clang-9
+        #   tag: debian:bullseye-slim
+        # - name: clang-7
+        #   tag: debian:buster-slim
 
 
         # TODO
@@ -93,7 +95,7 @@ jobs:
 
 
     container:
-      image: ${{ matrix.arch }}/${{ matrix.compiler.tag }}
+      image: ${{ matrix.arch.name }}/${{ matrix.compiler.tag }}
 
     steps:
 
@@ -120,7 +122,7 @@ jobs:
 
     - name: configure (unix/Makefile)
       run: |
-        make -j2 -f unix/Makefile generic CC=${{ matrix.compiler.name }} LOCAL_ZIP="-Werror" ${{ matrix.opts }}
+        make -j2 -f unix/Makefile generic CC=${{ matrix.compiler.name }} LOCAL_ZIP="-Werror ${{ matrix.arch.cc }}" ${{ matrix.opts }}
         cat flags
 
     - name: Run zip -v
