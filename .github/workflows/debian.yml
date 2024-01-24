@@ -110,12 +110,20 @@ jobs:
     #   with:
         # show-progress: 'false'
 
+    - name: Install packages
+      run: |
+          apt-get update -qq
+          apt-get install -yq add-apt-repository
+
+
+
+    - name: whoami
+      run: id
+      
     - name: Update Package Repository for stretch
       if: matrix.compiler.stretch
       run: |
         add-apt-repository "deb http://deb.debian.org/debian stretch main"
-
-
 
     - name: Install packages
       run: |
