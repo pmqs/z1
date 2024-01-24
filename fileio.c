@@ -1,7 +1,7 @@
 /*
   fileio.c - Zip 3.1
 
-  Copyright (c) 1990-2023 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -136,8 +136,12 @@ local int ucs4_string_to_utf8 OF((ZCONST ulg *ucs4, char *utf8buf,
 local int dots_this_group;
 #endif /* def PROGRESS_DOTS_PER_FLUSH */
 
+#ifndef NO_PROTO
+local void display_dot_char(int chr)
+#else
 local void display_dot_char(chr)
   int chr;
+#endif
 {
 #ifdef WINDLL
   zprintf("%c", chr);
@@ -161,9 +165,13 @@ local void display_dot_char(chr)
 #endif
 }
 
+#ifndef NO_PROTO
+void display_dot(int condition, int size)
+#else
 void display_dot(condition, size)
   int condition;
   int size;
+#endif
 {
   if (dot_size > 0)
   {
@@ -243,9 +251,13 @@ char *n;                /* where to put name (must have >=FNMAX+1 bytes) */
 /* Now just set to max length allowed for paths. */
 #define GETNAM_MAX MAX_PATH_SIZE
 
+#ifndef NO_PROTO
+char *getnam(FILE *fp, int null_term)
+#else
 char *getnam(fp, null_term)
   FILE *fp;
   int null_term;
+#endif
   /* Read a \n or \r delimited name from stdin (or whereever fp points)
      into n, and return n.  If EOF, then return NULL.  Also, if problem
      return NULL. */
@@ -358,8 +370,12 @@ char *getnam(fp, null_term)
   return p;
 }
 
+#ifndef NO_PROTO
+struct flist far *fexpel(struct flist far *f)
+#else
 struct flist far *fexpel(f)
-struct flist far *f;    /* entry to delete */
+  struct flist far *f;    /* entry to delete */
+#endif
 /* Delete the entry *f in the doubly-linked found list.  Return pointer to
    next entry to allow stepping through list. */
 {
@@ -422,8 +438,12 @@ local int fqcmpz(a, b)
 
 /* New name sort function, replacing fqcmp(). */
 
+#ifndef NO_PROTO
+local int fqcmp_icfirst(ZCONST zvoid *a, ZCONST zvoid *b)
+#else
 local int fqcmp_icfirst(a, b)
   ZCONST zvoid *a, *b;          /* pointers to pointers to found entries */
+#endif
 /* Used by qsort() to compare entries in the found list by name. */
 /* Sorts ignoring case first, but when strings match uses case.
    This sorts uniquely, but similar to how Unix shell lists files. */
@@ -452,8 +472,12 @@ local int fqcmp_icfirst(a, b)
 
 /* New iname sort function, replacing fqcmpz(). */
 
+#ifndef NO_PROTO
+local int fqcmpz_icfirst(ZCONST zvoid *a, ZCONST zvoid *b)
+#else
 local int fqcmpz_icfirst(a, b)
   ZCONST zvoid *a, *b;          /* pointers to pointers to found entries */
+#endif
 /* Used by qsort() to compare entries in the found list by iname. */
 /* Sorts ignoring case first, but when strings match uses case.
    This sorts uniquely, but similar to how Unix shell lists files. */
@@ -479,9 +503,13 @@ local int fqcmpz_icfirst(a, b)
 /* ---------------------------------------------- */
 
 
+#ifndef NO_PROTO
+char *last(char *p, int c)
+#else
 char *last(p, c)
   char *p;                /* sequence of path components */
   int c;                  /* path components separator character */
+#endif
 /* Return a pointer to the start of the last path component. For a directory
  * name terminated by the character in c, the return value is an empty string.
  */
@@ -536,8 +564,12 @@ wchar_t *lastw(pw, c)
 #endif /* UNICODE_SUPPORT_WIN32 */
 
 
+#ifndef NO_PROTO
+char *msname(char *n)
+#else
 char *msname(n)
   char *n;
+#endif
 /* Reduce all path components to MSDOS upper case 8.3 style names. */
 {
   int c;                /* current character */
@@ -651,9 +683,13 @@ wchar_t *msnamew(nw)
 #endif /* UNICODE_SUPPORT_WIN32 */
 
 
+#ifndef NO_PROTO
+int proc_archive_name(char *n, int caseflag)
+#else
 int proc_archive_name(n, caseflag)
   char *n;              /* name to process */
   int caseflag;         /* true to force case-sensitive match */
+#endif
 /* Process a name or sh expression in existing archive to operate
    on (or exclude).  Return an error code in the ZE_ class. */
 {
@@ -740,8 +776,12 @@ int proc_archive_name(n, caseflag)
 }
 
 
+#ifndef NO_PROTO
+int check_dup_sort(int sort_found_list)
+#else
 int check_dup_sort(sort_found_list)
   int sort_found_list;
+#endif
 /* Sort the found list and remove duplicates.
    Return an error code in the ZE_ class. */
 {
@@ -942,7 +982,7 @@ int check_dup_sort(sort_found_list)
        * found list based on the sorted nodup[] entries.  Typically
        * this takes milliseconds for large numbers of files, where
        * sorting each directory scan could take magnitudes more
-       * time. 
+       * time.
        */
 
       /* The found list is never navigated backwards.  In fact, it
@@ -954,7 +994,7 @@ int check_dup_sort(sort_found_list)
 
          There's no reason to work with the existing links in the
          found list.  Easiest just to rebuild it from scratch in the
-         order we need. */  
+         order we need. */
 
       found = nodup[0];
       fnxt = &found;
@@ -979,15 +1019,19 @@ int check_dup_sort(sort_found_list)
 
 /* ------------------------------------ */
 
-   
+
     free((zvoid *)s);
   }
   return ZE_OK;
 }
 
+#ifndef NO_PROTO
+int filter(char *name, int casesensitive)
+#else
 int filter(name, casesensitive)
   char *name;
   int casesensitive;
+#endif
   /* Scan the -R, -i and -x lists for matches to the given name.
      Return TRUE if the name must be included, FALSE otherwise.
      Give precedence to -x over -i and -R.
@@ -1159,7 +1203,7 @@ int newnamew(namew, zflags, casesensitive)
       break;
     }
   }
-  
+
   if (t[i] == L'\0') {
     /* path is just a bunch of ./ - just skip */
     return ZE_OK;
@@ -1558,7 +1602,7 @@ int newname(name, zflags, casesensitive)
       break;
     }
   }
-  
+
   if (t[i] == '\0') {
     /* path is just a bunch of ./ - just skip */
     return ZE_OK;
@@ -1642,7 +1686,7 @@ int newname(name, zflags, casesensitive)
       free((zvoid *)zname);
     } else {
       z->mark = 1;
-      if ((z->name = malloc(strlen(name_flsys) + 1 + PAD)) == NULL) {
+      if ((z->name = realloc(z->name, strlen(name_flsys) + 1 + PAD)) == NULL) {
         if (undosm != zname)
           free((zvoid *)undosm);
         free((zvoid *)iname);
@@ -1803,6 +1847,9 @@ int newname(name, zflags, casesensitive)
   return ZE_OK;
 }
 
+#ifndef NO_PROTO
+ulg dostime(int y, int n, int d, int h, int m, int s)
+#else
 ulg dostime(y, n, d, h, m, s)
 int y;                  /* year */
 int n;                  /* month */
@@ -1810,6 +1857,7 @@ int d;                  /* day */
 int h;                  /* hour */
 int m;                  /* minute */
 int s;                  /* second */
+#endif
 /* Convert the date y/n/d and time h:m:s to a four byte DOS date and
    time (date in high two bytes, time in low two bytes allowing magnitude
    comparison). */
@@ -1820,8 +1868,12 @@ int s;                  /* second */
 }
 
 
+#ifndef NO_PROTO
+ulg unix2dostime(time_t *t)
+#else
 ulg unix2dostime(t)
-time_t *t;              /* unix time to convert */
+  time_t *t;              /* unix time to convert */
+#endif
 /* Return the Unix time t in DOS format, rounded up to the next two
    second boundary. */
 {
@@ -1841,8 +1893,12 @@ time_t *t;              /* unix time to convert */
                  s->tm_hour, s->tm_min, s->tm_sec);
 }
 
+#ifndef NO_PROTO
+int issymlnk(ulg a)
+#else
 int issymlnk(a)
-ulg a;                  /* Attributes returned by filetime() */
+  ulg a;                  /* Attributes returned by filetime() */
+#endif
 /* Return true if the attributes are those of a symbolic link */
 {
 #ifndef QDOS
@@ -1887,8 +1943,12 @@ ulg a;                  /* Attributes returned by filetime() */
 
 #ifdef ZP_NEED_GEN_D2U_TIME
 
+#ifndef NO_PROTO
+time_t dos2unixtime(ulg dostime)
+#else
 time_t dos2unixtime(dostime)
-ulg dostime;            /* DOS time to convert */
+  ulg dostime;            /* DOS time to convert */
+#endif
 /* Return the Unix time_t value (GMT/UTC time) for the DOS format (local)
  * time dostime, where dostime is a four byte value (date in most significant
  * word, time in least significant word), see dostime() function.
@@ -1915,8 +1975,12 @@ ulg dostime;            /* DOS time to convert */
 
 
 #ifndef MACOS
+#ifndef NO_PROTO
+int destroy(char *f)
+#else
 int destroy(f)
   char *f;             /* file to delete */
+#endif
 /* Delete the file *f, returning non-zero on failure. */
 {
   return unlink(f);
@@ -1925,8 +1989,12 @@ int destroy(f)
 
 
 
+#ifndef NO_PROTO
+int replace(char *d, char *s)
+#else
 int replace(d, s)
 char *d, *s;            /* destination and source file names */
+#endif
 /* Replace file *d by file *s, removing the old *s.  Return an error code
    in the ZE_ class. This function need not preserve the file attributes,
    this will be done by setfileattr() later.
@@ -2115,8 +2183,12 @@ char *d, *s;            /* destination and source file names */
 #endif /* !MACOS */
 
 
+#ifndef NO_PROTO
+int getfileattr(char *f)
+#else
 int getfileattr(f)
-char *f;                /* file path */
+  char *f;                /* file path */
+#endif
 /* Return the file attributes for file f or 0 if failure */
 {
 #ifdef __human68k__
@@ -2131,9 +2203,13 @@ char *f;                /* file path */
 }
 
 
+#ifndef NO_PROTO
+int setfileattr(char *f, int a)
+#else
 int setfileattr(f, a)
-char *f;                /* file path */
-int a;                  /* attributes returned by getfileattr() */
+  char *f;                /* file path */
+  int a;                  /* attributes returned by getfileattr() */
+#endif
 /* Give the file f the attributes a, return non-zero on failure */
 {
 #ifdef UNICODE_SUPPORT_WIN32
@@ -2168,8 +2244,12 @@ int a;                  /* attributes returned by getfileattr() */
 
 #ifndef VMS /* VMS-specific function is in VMS.C. */
 
+#ifndef NO_PROTO
+char *tempname(char *zip)
+#else
 char *tempname(zip)
   char *zip;              /* path name of zip file to generate temp name for */
+#endif
 
 /* Return a temporary file name in its own malloc'ed space, using tempath. */
 {
@@ -2344,10 +2424,14 @@ char *tempname(zip)
 }
 #endif /* !VMS */
 
+#ifndef NO_PROTO
+int fcopy(FILE *f, FILE *g, uzoff_t n)
+#else
 int fcopy(f, g, n)
   FILE *f, *g;            /* source and destination files */
   /* now use uzoff_t for all file sizes 5/14/05 CS */
   uzoff_t n;               /* number of bytes to copy or -1 for all */
+#endif
 /* Copy n bytes from file *f to file *g, or until EOF if (zoff_t)n == -1.
    Return an error code in the ZE_ class. */
 {
@@ -2428,7 +2512,7 @@ FILE *fopen_utf8(char *filename, char *mode)
     f = _wfopen(wfilename, wmode);
     free(wfilename);
     free(wmode);
-  
+
     return f;
   } else {
     return fopen(filename, mode);
@@ -2438,9 +2522,13 @@ FILE *fopen_utf8(char *filename, char *mode)
 
 
 /* always copies from global in_file to global output file y */
+#ifndef NO_PROTO
+int bfcopy(uzoff_t n)
+#else
 int bfcopy(n)
   /* now use uzoff_t for all file sizes 5/14/05 CS */
   uzoff_t n;               /* number of bytes to copy or -1 for all */
+#endif
 /* Copy n bytes from in_file to out_file, or until EOF if (zoff_t)n == -1.
 
    Normally we have the compressed size from either the central directory
@@ -2869,7 +2957,7 @@ void show_current_dir()
   if (noisy) {
 # ifdef UNICODE_SUPPORT_WIN32
     wchar_t *current_dirw = NULL;
-      
+
     if ((current_dirw = _wgetcwd(NULL, 0)) == NULL) {
       sprintf(errbuf, "getting current dir: %s", strerror(errno));
       ZIPERR(ZE_PARMS, errbuf);
@@ -2879,7 +2967,7 @@ void show_current_dir()
     free(current_dirw);
 # else /* not UNICODE_SUPPORT_WIN32 */
     char *current_dir = NULL;
-      
+
     if ((current_dir = GETCWD(NULL, 0)) == NULL) {
       sprintf(errbuf, "getting current dir: %s", strerror(errno));
       ZIPERR(ZE_PARMS, errbuf);
@@ -2995,8 +3083,12 @@ register unsigned int len;
 
 #define SPLIT_MAXPATH (FNMAX + 4010)
 
+#ifndef NO_PROTO
+int ask_for_split_read_path(ulg current_disk)
+#else
 int ask_for_split_read_path(current_disk)
   ulg current_disk;
+#endif
 {
   FILE *f;
   int is_readable = 0;
@@ -3246,8 +3338,12 @@ int ask_for_split_read_path(current_disk)
  *
  * Updates out_path and return 1 if OK or 0 if cancel
  */
+#ifndef NO_PROTO
+int ask_for_split_write_path(ulg current_disk)
+#else
 int ask_for_split_write_path(current_disk)
   ulg current_disk;
+#endif
 {
   unsigned int num = (unsigned int)current_disk + 1;
   int i;
@@ -3384,9 +3480,13 @@ int ask_for_split_write_path(current_disk)
  *
  * get name of split being read
  */
+#ifndef NO_PROTO
+char *get_in_split_path(char *base_path, ulg disk_number)
+#else
 char *get_in_split_path(base_path, disk_number)
   char *base_path;
   ulg disk_number;
+#endif
 {
   char *split_path = NULL;
   int base_len = 0;
@@ -3455,9 +3555,13 @@ char *get_in_split_path(base_path, disk_number)
  *
  * get name of split being written
  */
+#ifndef NO_PROTO
+char *get_out_split_path(char *base_path, ulg disk_number)
+#else
 char *get_out_split_path(base_path, disk_number)
   char *base_path;
   ulg disk_number;
+#endif
 {
   char *split_path = NULL;
   int base_len = 0;
@@ -3516,10 +3620,14 @@ char *get_out_split_path(base_path, disk_number)
  * close a split - assume that the paths needed for the splits are
  * available.
  */
+#ifndef NO_PROTO
+int close_split(ulg disk_number, FILE *tempfile, char *temp_name)
+#else
 int close_split(disk_number, tempfile, temp_name)
   ulg disk_number;
   FILE *tempfile;
   char *temp_name;
+#endif
 {
   char *split_path = NULL;
 
@@ -3539,11 +3647,15 @@ int close_split(disk_number, tempfile, temp_name)
 
 /* bfwrite - buffered fwrite
    Does the fwrite but also counts bytes and does splits */
+#ifndef NO_PROTO
+size_t bfwrite(ZCONST void *buffer, size_t size, size_t count, int mode)
+#else
 size_t bfwrite(buffer, size, count, mode)
   ZCONST void *buffer;
   size_t size;
   size_t count;
   int mode;
+#endif
 {
   size_t bytes_written = 0;
   size_t r;
@@ -3773,7 +3885,7 @@ size_t bfwrite(buffer, size, count, mode)
       /* could let flush_outbuf() handle error but bfwrite() is called for
          headers also */
       if (ferror(y))
-        ziperr(ZE_WRITE, "write error on zip file");
+        ziperr(ZE_WRITE, "write error on zip file (1)");
     }
   }
 
@@ -3958,7 +4070,7 @@ int set_locale()
      do all that.  For instance, the handling of surrogates.  Best to leave
      converting Windows wide strings to UTF-8 to Windows.)  has_win32_wide()
      is used to determine if the Windows port supports wide characters.
-     
+
      Note that paths displayed in a Windows command prompt window will likely
      be escaped.  If a Unicode supporting font is loaded (like Lucida Console)
      and the code page is set to UTF-8 (chcp 65001), then most Western
@@ -3979,7 +4091,7 @@ int set_locale()
      (double byte character set) environment that seems to mirror somewhat
      Windows wide functionality, but this is reported to be insufficient.  IBM
      support is still rough and untested.
-     
+
      AIX will support the UTF-8 locale, but it is an optional feature, so one
      must do a test to see if it is present.  Some specific testing is needed
      and is being worked on.
@@ -4247,8 +4359,12 @@ char *get_comment_line()
  *
  * Get the comment for an entry.
  */
+#ifndef NO_PROTO
+int get_entry_comment(struct zlist far *z)
+#else
 int get_entry_comment(z)
   struct zlist far *z;
+#endif
 {
   char *p;
   int comlen;
@@ -4438,7 +4554,7 @@ char *trim_string(instring)
 
   if (instring == NULL)
     return NULL;
-  
+
   len = (int)strlen(instring);
 
   if (len > 0) {
@@ -4821,7 +4937,7 @@ char *strip_rootdir(in_path, root_dir, case_ins)
 int read_utf8_bom(FILE *infile)
 {
   int b1, b2, b3;
-  
+
   /* read first 3 bytes */
   b1 = getc(infile);
   if (b1 != 0xef) {
@@ -4860,7 +4976,7 @@ int is_utf16LE_file(FILE *infile)
   int bsize;
   int i;
   int b1, b2;
-  
+
   rewind(infile);
 
   /* read first 2 bytes */
@@ -4939,8 +5055,12 @@ int is_utf16LE_file(FILE *infile)
  * Returns the number of bytes used by the first character in a UTF-8
  * string, or -1 if the UTF-8 is invalid or null.
  */
+#ifndef NO_PROTO
+local int utf8_char_bytes(ZCONST char *utf8)
+#else
 local int utf8_char_bytes(utf8)
   ZCONST char *utf8;
+#endif
 {
   int      t, r;
   unsigned lead;
@@ -4981,8 +5101,12 @@ local int utf8_char_bytes(utf8)
  * up to the current 21-bit mappings) changed this to signed to allow -1 to
  * be returned.
  */
+#ifndef NO_PROTO
+local long ucs4_char_from_utf8(ZCONST char **utf8)
+#else
 local long ucs4_char_from_utf8(utf8)
   ZCONST char **utf8;
+#endif
 {
   ulg  ret;
   int  t, bytes;
@@ -5008,9 +5132,13 @@ local long ucs4_char_from_utf8(utf8)
  * Returns the number of bytes put into utf8buf to represent ch, from 1 to 6,
  * or -1 if ch is too large to represent.  utf8buf must have room for 6 bytes.
  */
+#ifndef NO_PROTO
+local int utf8_from_ucs4_char(char *utf8buf, ulg ch)
+#else
 local int utf8_from_ucs4_char(utf8buf, ch)
   char *utf8buf;
   ulg ch;
+#endif
 {
   int trailing = 0;
   int leadmask = 0x80;
@@ -5047,10 +5175,14 @@ local int utf8_from_ucs4_char(utf8buf, ch)
  *
  * Return UCS count.  Now returns int so can return -1.
  */
+#ifndef NO_PROTO
+local int utf8_to_ucs4_string(ZCONST char *utf8, ulg *ucs4buf, int buflen)
+#else
 local int utf8_to_ucs4_string(utf8, ucs4buf, buflen)
   ZCONST char *utf8;
   ulg *ucs4buf;
   int buflen;
+#endif
 {
   int count = 0;
 
@@ -5075,10 +5207,14 @@ local int utf8_to_ucs4_string(utf8, ucs4buf, buflen)
  *
  *
  */
+#ifndef NO_PROTO
+local int ucs4_string_to_utf8(ZCONST ulg *ucs4, char *utf8buf, int buflen)
+#else
 local int ucs4_string_to_utf8(ucs4, utf8buf, buflen)
   ZCONST ulg *ucs4;
   char *utf8buf;
   int buflen;
+#endif
 {
   char mb[6];
   int  count = 0;
@@ -5131,9 +5267,13 @@ local int utf8_chars(utf8)
  * A split has a tempfile name until it is closed, then
  * here rename it as out_path the final name for the split.
  */
+#ifndef NO_PROTO
+int rename_split(char *temp_name, char *out_path)
+#else
 int rename_split(temp_name, out_path)
   char *temp_name;
   char *out_path;
+#endif
 {
   int r;
 #ifdef CHANGE_DIRECTORY
@@ -5166,9 +5306,13 @@ int rename_split(temp_name, out_path)
 /* ------------------------------------------------------------- */
 /* Output functions from zip.c. */
 
+#ifndef NO_PROTO
+void zipmessage_nl(ZCONST char *a, int nl)
+#else
 void zipmessage_nl(a, nl)
-ZCONST char *a;     /* message string to output */
-int nl;             /* 1 = add nl to end */
+  ZCONST char *a;     /* message string to output */
+  int nl;             /* 1 = add nl to end */
+#endif
 /* If nl false, print a message to mesg without new line.
    If nl true, print and add new line.
    If logfile is open then also write message to log file. */
@@ -5210,8 +5354,12 @@ int nl;             /* 1 = add nl to end */
 }
 
 
+#ifndef NO_PROTO
+void zipmessage(ZCONST char *a, ZCONST char *b)
+#else
 void zipmessage(a, b)
-ZCONST char *a, *b;     /* message strings juxtaposed in output */
+    ZCONST char *a, *b;     /* message strings juxtaposed in output */
+#endif
 /* Print a message to mesg and flush.  Also write to log file if
    open.  Write new line first if current line has output already. */
 {
@@ -5243,8 +5391,12 @@ ZCONST char *a, *b;     /* message strings juxtaposed in output */
 }
 
 
+#ifndef NO_PROTO
+void sdmessage(ZCONST char *a, ZCONST char *b)
+#else
 void sdmessage(a, b)
-ZCONST char *a, *b;     /* message strings juxtaposed in output */
+    ZCONST char *a, *b;     /* message strings juxtaposed in output */
+#endif
 /* Print a message for -sd.  If performance timing is enabled,
    append elapsed time to end of message.  Always output to
    stderr in case output is piped. */
@@ -5299,11 +5451,15 @@ ZCONST char *a, *b;     /* message strings juxtaposed in output */
 /* Print a warning message to mesg (usually stderr) and return,
  * with or without indentation.
  */
+#ifndef NO_PROTO
+void zipwarn_i(char *mesg_prefix, int indent, ZCONST char *a, ZCONST char *b, int nl)
+#else
 void zipwarn_i(mesg_prefix, indent, a, b, nl)
   char *mesg_prefix;      /* message prefix string */
   int indent;
   ZCONST char *a, *b;     /* message strings juxtaposed in output */
   int nl;                 /* add nl at end */
+#endif
 /* Print a warning message to mesg (usually stderr) and return. */
 /* Embedded \n now break message across multiple lines, second on indented. */
 {
@@ -5396,8 +5552,12 @@ void zipwarn_i(mesg_prefix, indent, a, b, nl)
 
 /* For Windows with UNICODE_SUPPORT, outputs using
    write_console(), otherwise just print to mesg. */
+#ifndef NO_PROTO
+void print_utf8(ZCONST char *message)
+#else
 void print_utf8(message)
   ZCONST char *message;
+#endif
 {
 # if defined(UNICODE_SUPPORT_WIN32) && !defined(ZIP_DLL_LIB)
   int utf8;
@@ -5436,8 +5596,12 @@ void print_utf8(message)
 }
 
 /* stderr version of print_utf8(). */
+#ifndef NO_PROTO
+void print_utf8_stderr(ZCONST char *message)
+#else
 void print_utf8_stderr(message)
   ZCONST char *message;
+#endif
 {
 # if defined(UNICODE_SUPPORT_WIN32) && !defined(ZIP_DLL_LIB)
   int utf8;
@@ -5571,7 +5735,7 @@ int is_utf8_string(instring, has_bom, count, ascii_count, utf8_count)
   int b1, b2, b3;
   int string_has_bom = 0;
   int len;
-  
+
   if (!instring) {
     return 0;
   }
@@ -5905,14 +6069,14 @@ wchar_t *utf8_to_wchar_string(ZCONST char *utf8_string)
     wide_string = utf8_to_wide_stringz(utf8_string);
     if (wide_string == NULL)
       return NULL;
-    
+
     wchar_string = wide_to_wchar_stringz(wide_string);
 
     free(wide_string);
 
     return wchar_string;
   }
-  
+
 #   endif
 
 #   if defined(UNICODE_WCHAR) && defined(UNICODE_ICONV)
@@ -6035,7 +6199,7 @@ char *wchar_to_utf8_string(wchar_t *wchar_string)
   if (sizeof(wchar_t) == 4)
   {
     /* This works if don't use surrogate pairs (wchar_t is 4 bytes) */
-  
+
     zwchar *wide_string = wchar_to_wide_stringz(wchar_string);
     char *utf8_string = wide_to_utf8_string(wide_string);
 
@@ -6396,7 +6560,7 @@ wchar_t *wide_to_wchar_stringz(zwchar *wide_string)
   char *tocode   = "WCHAR_T";
 
   char *inp;
-  char *outp; 
+  char *outp;
 
   int i;
   int k;
@@ -6919,7 +7083,7 @@ char *local_to_escape_string(char *local_string)
 # endif
   if (wide_string == NULL)
     return NULL;
-  
+
   escape_string = wide_to_escape_stringz(wide_string);
 
   free(wide_string);
@@ -6947,7 +7111,7 @@ char *wchar_to_local_string(wchar_t *wstring)
   wide_string = wchar_to_wide_stringz(wstring);
   if (wide_string == NULL)
     return NULL;
-  
+
 # ifdef WIN32
   local_string = wide_to_local_string_windows(wide_string);
 # else
@@ -7074,7 +7238,7 @@ char *wide_to_local_stringz(zwchar *wide_string)
   char *tocode   = charsetname;
 
   char *inp;
-  char *outp; 
+  char *outp;
 
   int outlen;
   int i;
@@ -7158,7 +7322,7 @@ char *wide_to_local_stringz(zwchar *wide_string)
 
   outlen = outbuf_size - outbytesleft;
   outbuf[outlen] = '\0';
-  
+
   return outbuf;
 
 #     else /* not UNICODE_ICONV */
@@ -7250,7 +7414,7 @@ char *local_to_display_string(local_string)
 
      For all other ports, just make a copy of local_string.  Those ports
      should put reasonable code here as applicable.
-  
+
      Note that if the current environment supports Unicode display and
      Unicode display is used, this code is not called.  It is assumed
      the port Unicode display routines will display the right characters.
@@ -7260,7 +7424,7 @@ char *local_to_display_string(local_string)
      Note that, where applicable, Unicode escapes get substituted for
      non-printable chars, such as control codes.
 
-     Cases such as ^x still need to be worked.   
+     Cases such as ^x still need to be worked.
    */
 
 #ifdef UNIX
@@ -7358,7 +7522,7 @@ char *utf8_to_local_stringz(char *utf8_string)
 #if defined(UNICODE_WCHAR) || defined(UNICODE_ICONV)
   zwchar *wide_string;
   char *loc;
-  
+
   if (utf8_string == NULL)
     return NULL;
 
@@ -7369,7 +7533,7 @@ char *utf8_to_local_stringz(char *utf8_string)
   loc = wide_to_local_stringz(wide_string);
   if (wide_string)
     free(wide_string);
-  
+
   return loc;
 
 #else
@@ -7674,7 +7838,7 @@ wchar_t *local_to_wchar_string(ZCONST char *local_string) {
    now in win32zip.c so that the Windows functions can
    be used and multiple character wide characters can
    be handled easily.
-   
+
    That used to be true.  Now need this to do things
    like uppercasing strings.
  */
@@ -7741,7 +7905,7 @@ zwchar *utf8_to_wide_stringz(ZCONST char *utf8_string)
   if (wcount == -1)
     return NULL;
   if ((wide_string = (zwchar *) malloc((wcount + 2) * sizeof(zwchar))) == NULL) {
-    sprintf(errbuf, "  --  wcount = %d    utf8 = '%s'    sizeof(zwchar) = %d    asked for = %d\n",
+    sprintf(errbuf, "  --  wcount = %d    utf8 = '%s'    sizeof(zwchar) = %zu    asked for = %zu\n",
             wcount, utf8_string, sizeof(zwchar), (wcount + 2) * sizeof(zwchar));
     zipwarn(errbuf, "");
     ZIPERR(ZE_MEM, "utf8_to_wide_stringz");
@@ -7775,8 +7939,8 @@ zwchar *utf8_to_wide_stringz(ZCONST char *utf8_string)
 int zprintf(const char *format, ...)
 #else
 int zprintf(format, va_alist)
-  const char *format;
-  va_dcl
+const char *format;
+va_dcl
 #endif
 {
   int len;
@@ -7786,7 +7950,7 @@ int zprintf(format, va_alist)
 #ifndef NO_PROTO
   va_start(argptr, format);
 #else
-  va_start(argptr);
+va_start(argptr);
 #endif
 
   len = vsprintf(buf, format, argptr);
@@ -7831,9 +7995,9 @@ int zprintf(format, va_alist)
 int zfprintf(FILE *file, const char *format, ...)
 #else
 int zfprintf(file, format, va_alist)
-  FILE *file;
-  const char *format;
-  va_dcl
+FILE *file;
+const char *format;
+va_dcl
 #endif
 {
   int len;
@@ -7972,8 +8136,12 @@ void zperror(parm1)
    to represent additional characters than can fit in a single byte
    character set.  The code used here is based on the ANSI mblen function. */
 #ifdef MULTIBYTE_GETOPTNS
+#ifndef NO_PROTO
+  int mb_clen(ZCONST char *ptr)
+#else
   int mb_clen(ptr)
     ZCONST char *ptr;
+#endif
   {
     /* return the number of bytes that the char pointed to is.  Return 1 if
        null character or error like not start of valid multibyte character. */
@@ -8086,11 +8254,15 @@ static ZCONST char Far at_without_argfile_err[] = "'@' missing arg file name";
 
 
 /* copy error, option name, and option description if any to buf */
+#ifndef NO_PROTO
+local int optionerr(char *buf, ZCONST char *err, int optind, int islong)
+#else
 local int optionerr(buf, err, optind, islong)
   char *buf;
   ZCONST char *err;
   int optind;
   int islong;
+#endif
 {
   char optname[100];
 
@@ -8156,9 +8328,13 @@ int dump_args(arrayname, args)
  * allocated with malloc or by NULL if last argument so that free_argsz
  * will properly work.
  */
+#ifndef NO_PROTO
+char **copy_argsz(char **args, int max_args)
+#else
 char **copy_argsz(args, max_args)
   char **args;
   int max_args;
+#endif
 {
   int j;
   char **new_args;
@@ -8203,8 +8379,12 @@ char **copy_argsz(args, max_args)
  *
  * Return argc for args.
  */
+#ifndef NO_PROTO
+int arg_countz(char **args)
+#else
 int arg_countz(args)
   char **args;
+#endif
 {
   int i;
 
@@ -8218,8 +8398,12 @@ int arg_countz(args)
  *
  * Free args created with one of these functions.
  */
+#ifndef NO_PROTO
+int free_argsz(char **args)
+#else
 int free_argsz(args)
   char **args;
+#endif
 {
   int i;
 
@@ -8245,11 +8429,15 @@ int free_argsz(args)
  * argv but only on args allocated with malloc.
  */
 
+#ifndef NO_PROTO
+int insert_argz(char ***pargs, ZCONST char *arg, int at_arg, int free_args)
+#else
 int insert_argz(pargs, arg, at_arg, free_args)
    char ***pargs;
    ZCONST char *arg;
    int at_arg;
    int free_args;
+#endif
 {
    char *newarg = NULL;
    char **args;
@@ -8540,7 +8728,7 @@ int insert_args_from_file(pargs, argfilename, at_arg, recursion_depth)
    * There must not be any non-spaces next to the #.
    *
    * If @argfile is found, recurses to process that file at that arg
-   * location, incrementing recursion_depth. 
+   * location, incrementing recursion_depth.
    */
 
 #ifdef UNICODE_SUPPORT
@@ -8572,7 +8760,7 @@ int insert_args_from_file(pargs, argfilename, at_arg, recursion_depth)
     }
 
     a = fgets(argfile_line, MAX_ARGFILE_LINE, argfile);
-  
+
     if (a == NULL) {
       if (ferror(argfile)) {
         zperror(argfilename);
@@ -8590,7 +8778,7 @@ int insert_args_from_file(pargs, argfilename, at_arg, recursion_depth)
 
     c = argfile_line;
     comment_line = FALSE;
-  
+
     /* skip any leading whitespace */
     uc = *c;
     while (*c && isspace(uc)) {
@@ -8654,10 +8842,10 @@ int insert_args_from_file(pargs, argfilename, at_arg, recursion_depth)
         {
           /* not a double quote */
 
-          uc = *c;    
+          uc = *c;
           if (*c == '\0' || isspace(uc)) {
             /* end of line or end of arg */
-        
+
             /* ------------------------------------------------- */
             /* process arg */
 
@@ -8697,7 +8885,7 @@ int insert_args_from_file(pargs, argfilename, at_arg, recursion_depth)
             /* #echo */
             if (argstart == leftedge && strmatch(newarg, "#echo", CASE_INS, ENTIRE_STRING)) {
               int clen;
-              
+
               spaces[0] = '\0';
               for (i = 0; i < recursion_depth; i++)
                 strcat(spaces, "  ");
@@ -8843,7 +9031,7 @@ int insert_args_from_file(pargs, argfilename, at_arg, recursion_depth)
             c++;
           }
         } /* not double quote */
-    
+
       } /* while */
     } /* !comment_line */
 
@@ -8945,6 +9133,10 @@ int insert_args_from_file(pargs, argfilename, at_arg, recursion_depth)
  *                  value lists.
  *    depth       - recursion depth (0 at top level, 1 or more in arg files)
  */
+#ifndef NO_PROTO
+local unsigned long get_shortopt(char **args, int argnum, int *optchar, int *negated, char **value,
+                                 int *option_num, int depth)
+#else
 local unsigned long get_shortopt(args, argnum, optchar, negated, value,
                                  option_num, depth)
   char **args;
@@ -8954,6 +9146,7 @@ local unsigned long get_shortopt(args, argnum, optchar, negated, value,
   char **value;
   int *option_num;
   int depth;
+#endif
 {
   char *shortopt;
   int clen;
@@ -9282,6 +9475,10 @@ local unsigned long get_shortopt(args, argnum, optchar, negated, value,
  * Parameters same as for get_shortopt.
  */
 
+#ifndef NO_PROTO
+local unsigned long get_longopt(char **args, int argnum, int *optchar, int *negated, char **value,
+                                int *option_num, int depth)
+#else
 local unsigned long get_longopt(args, argnum, optchar, negated, value,
                                 option_num, depth)
   char **args;
@@ -9291,6 +9488,7 @@ local unsigned long get_longopt(args, argnum, optchar, negated, value,
   char **value;
   int *option_num;
   int depth;
+#endif
 {
   char *longopt;
   char *lastchr;
@@ -9704,6 +9902,10 @@ local unsigned long get_longopt(args, argnum, optchar, negated, value,
  *
  */
 
+#ifndef NO_PROTO
+unsigned long get_optionz(char ***pargs, int *argc, int *argnum, int *optchar, char **value, int *negated,
+                          int *first_nonopt_arg, int *option_num, int recursion_depth)
+#else
 unsigned long get_optionz(pargs, argc, argnum, optchar, value, negated,
                           first_nonopt_arg, option_num, recursion_depth)
   char ***pargs;
@@ -9715,6 +9917,7 @@ unsigned long get_optionz(pargs, argc, argnum, optchar, value, negated,
   int *first_nonopt_arg;
   int *option_num;
   int recursion_depth;
+#endif
 {
   char **args;
   unsigned long option_ID;
@@ -10051,7 +10254,7 @@ unsigned long get_optionz(pargs, argc, argnum, optchar, value, negated,
 #endif
       if (strlen(arg) > 1)
         argfilename = arg + 1;
-      
+
       /* Any quotes around argfilename are handled by insert_args_from_file. */
 
       if (argfilename) {

@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -144,8 +144,12 @@ local z_uint4 near *crytab_init OF((__GPRO));
 /***********************************************************************
  * Return the next byte in the pseudo-random sequence
  */
+#ifndef NO_PROTO
+int decrypt_byte(__GPRO__)
+#else
 int decrypt_byte(__G)
     __GDEF
+#endif
 {
     unsigned temp;  /* POTENTIAL BUG:  temp*(temp^1) may overflow in an
                      * unpredictable manner on 16-bit systems; not a problem
@@ -159,9 +163,13 @@ int decrypt_byte(__G)
 /***********************************************************************
  * Update the encryption keys with the next byte of plain text
  */
+#ifndef NO_PROTO
+int update_keys(__GPRO__ int c)
+#else
 int update_keys(__G__ c)
     __GDEF
     int c;                      /* byte of plain text */
+#endif
 {
     GLOBAL(keys[0]) = CRC32(GLOBAL(keys[0]), c, CRY_CRC_TAB);
     GLOBAL(keys[1]) = (GLOBAL(keys[1])
@@ -179,9 +187,13 @@ int update_keys(__G__ c)
  * Initialize the encryption keys and the random header according to
  * the given password.
  */
+#ifndef NO_PROTO
+void init_keys(__GPRO__ ZCONST char *passwd)
+#else
 void init_keys(__G__ passwd)
     __GDEF
     ZCONST char *passwd;        /* password string with which to modify keys */
+#endif
 {
 #  ifdef IZ_CRC_BE_OPTIMIZ
     if (cry_crctb_p == NULL) {
@@ -231,9 +243,13 @@ local z_uint4 near *crytab_init(__G)
  * Write (Traditional) encryption header to file zfile using the
  * password passwd and the cyclic redundancy check crc.
  */
+#ifndef NO_PROTO
+void crypthead(ZCONST char *passwd, ulg crc)
+#else
 void crypthead(passwd, crc)
     ZCONST char *passwd;         /* password string */
     ulg crc;                     /* crc of file being encrypted */
+#endif
 {
     int n;                       /* index in random header */
     int t;                       /* temporary */
@@ -281,10 +297,14 @@ void crypthead(passwd, crc)
  * A bug has been found when encrypting large files that don't
  * compress.  See trees.c for the details and the fix.
  */
+#ifndef NO_PROTO
+unsigned int zfwrite(zvoid *buf, extent item_size, extent nb)
+#else
 unsigned int zfwrite(buf, item_size, nb)
     zvoid *buf;                 /* data buffer */
     extent item_size;           /* size of each item in bytes */
     extent nb;                  /* number of items */
+#endif
 {
 #ifdef IZ_CRYPT_TRAD
     int t;                      /* temporary */
@@ -383,6 +403,9 @@ ush SH(uch* p) { return ((ush)(uch)((p)[0]) | ((ush)(uch)((p)[1]) << 8)); }
  * Used "long" to accommodate any systems with 16-bit "int".)
  */
 
+#ifndef NO_PROTO
+int ef_scan_for_aes( ZCONST uch *ef_buf, long ef_len, ush *vers, ush *vend, char *mode, ush *mthd)
+#else
 int ef_scan_for_aes( ef_buf, ef_len, vers, vend, mode, mthd)
     ZCONST uch *ef_buf;         /* Buffer containing extra field */
     long ef_len;                /* Total length of extra field */
@@ -390,6 +413,7 @@ int ef_scan_for_aes( ef_buf, ef_len, vers, vend, mode, mthd)
     ush *vend;                  /* Return storage: AES encryption vendor. */
     char *mode;                 /* Return storage: AES encryption mode. */
     ush *mthd;                  /* Return storage: Real compression method. */
+#endif
 {
     int ret = 0;
     unsigned eb_id;
@@ -488,9 +512,13 @@ int ef_scan_for_aes( ef_buf, ef_len, vers, vend, mode, mthd)
  * Changed long types to size_t.  (Assume size_t >= 32 bits.)
  */
 
+#ifndef NO_PROTO
+local int ef_strip_aes( ZCONST uch *ef_buf, long ef_len)
+#else
 local int ef_strip_aes( ef_buf, ef_len)
     ZCONST uch *ef_buf;         /* Buffer containing extra field */
     long ef_len;                /* Total length of extra field */
+#endif
 {
     int ret = -1;               /* Return value. */
     unsigned eb_id;             /* Extra block ID. */
@@ -574,9 +602,13 @@ local int ef_strip_aes( ef_buf, ef_len)
  *
  * bfwrite() should take care of any byte counting.
  */
+#ifndef NO_PROTO
+int zipcloak(struct zlist far *z, ZCONST char * passwd)
+#else
 int zipcloak(z, passwd)
     struct zlist far *z;        /* zip entry to encrypt */
     ZCONST char *passwd;        /* password string */
+#endif
 {
     int res;                    /* result code */
     struct zlist far *localz;   /* local header */
@@ -741,9 +773,13 @@ int zipcloak(z, passwd)
  * Decrypt the zip entry described by z from file in_file to file y
  * using the password passwd.  Return an error code in the ZE_ class.
  */
+#ifndef NO_PROTO
+int zipbare(struct zlist far *z, ZCONST char *passwd)
+#else
 int zipbare(z, passwd)
     struct zlist far *z;  /* zip entry to encrypt */
     ZCONST char *passwd;  /* password string */
+#endif
 {
 #   ifdef ZIP10
     int c0                /* byte preceding the last input byte */

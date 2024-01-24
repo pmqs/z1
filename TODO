@@ -1,4 +1,4 @@
-TODO list for Zip (last updated 2023-11-11)
+TODO list for Zip (last updated 2024-01-03)
 
 ===============================================================================
 
@@ -124,12 +124,18 @@ List of what's being worked on and what's in the queue
 
     NEW STUFF
     
-New stuff goes here, newest at the top.  Items here need to be assigned a
-priority before being worked.
+New stuff goes here, newest at the top.  Items here need to be assigned an
+ID and a priority before being worked.
 
 ------
 
-201228
+240103
+
+Mount point support for other than Windows.  See note in zipup.c.
+
+------
+
+231228
 
 Timeout when zip gets stuck.  c/cygwin64xx/usr/share/avogadro/crystals/zeolitesx/CON.cif
 while cygwin is running.

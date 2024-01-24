@@ -1,7 +1,7 @@
 /*
   zipsplit.c - Zip 3.1
 
-  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -30,7 +30,7 @@ extern void globals_dummy( void);
    removable media sizes probably are the more likely output size, as well as
    2 GB to get around the FAT32 limitation.  Nonetheless, we keep the below
    floppy disk description for historical reasons.
-   
+
    Different OS have different native capacities.  The IBM HD format (the
    most commonly used nowadays) is just one of them.  (This was set to 36000L.)
    On other systems other smaller and larger capacities are used.  The default
@@ -136,8 +136,12 @@ zvoid *talls[TMAX];     /* malloc'ed pointers to track */
 int talln = 0;          /* number of entries in talls[] */
 
 
+#ifndef NO_PROTO
+int set_filetype(char *out_path)
+#else
 int set_filetype(out_path)
   char *out_path;
+#endif
 {
 #ifdef __BEOS__
   /* Set the filetype of the zipfile to "application/zip" */
@@ -232,8 +236,12 @@ ZCONST char *a, *b;     /* message strings juxtaposed in output */
 }
 #endif
 
+#ifndef NO_PROTO
+local zvoid *talloc(extent s)
+#else
 local zvoid *talloc(s)
-extent s;
+  extent s;
+#endif
 /* does a malloc() and saves the pointer to free later (does not check
    for an overflow of the talls[] list) */
 {
@@ -245,8 +253,12 @@ extent s;
 }
 
 
+#ifndef NO_PROTO
+local void tfree(zvoid *p)
+#else
 local void tfree(p)
-zvoid *p;
+  zvoid *p;
+#endif
 /* does a free() and also removes the pointer from the talloc() list */
 {
   int i;
@@ -273,9 +285,13 @@ local void tfreeall()
 }
 
 
+#ifndef NO_PROTO
+void ziperr(int c, ZCONST char *h)
+#else
 void ziperr(c, h)
-int c;                  /* error code from the ZE_ class */
-ZCONST char *h;         /* message about how it happened */
+  int c;                  /* error code from the ZE_ class */
+  ZCONST char *h;         /* message about how it happened */
+#endif
 /* Issue a message for the error, clean up files and memory, and exit. */
 {
   if (PERR(c))
@@ -299,8 +315,12 @@ ZCONST char *h;         /* message about how it happened */
 
 
 #ifndef NO_EXCEPT_SIGNALS
+# ifndef NO_PROTO
+local void handler(int s)
+# else
 local void handler(s)
-int s;                  /* signal number (ignored) */
+  int s;                  /* signal number (ignored) */
+# endif
 /* Upon getting a user interrupt, abort cleanly using ziperr(). */
 {
 # ifndef MSDOS
@@ -313,8 +333,12 @@ int s;                  /* signal number (ignored) */
 
 /* Print a warning message to mesg (usually stderr) and return. */
 
+#ifndef NO_PROTO
+void zipwarn(ZCONST char *a, ZCONST char *b)
+#else
 void zipwarn(a, b)
-ZCONST char *a, *b;     /* message strings juxtaposed in output */
+  ZCONST char *a, *b;     /* message strings juxtaposed in output */
+#endif
 {
   zipwarn_i("zipsplit warning:", 0, a, b, ADD_NL);
 }
@@ -322,8 +346,12 @@ ZCONST char *a, *b;     /* message strings juxtaposed in output */
 
 /* zipwarn_indent(): zipwarn(), with message indented. */
 
+#ifndef NO_PROTO
+void zipwarn_indent(ZCONST char *a, ZCONST char *b)
+#else
 void zipwarn_indent(a, b)
-ZCONST char *a, *b;
+  ZCONST char *a, *b;
+#endif
 {
     zipwarn_i("zipsplit warning:", 1, a, b, ADD_NL);
 }
@@ -559,11 +587,15 @@ void show_options()
 }
 
 
+#ifndef NO_PROTO
+local extent simple(uzoff_t *a, extent n, uzoff_t c, uzoff_t d)
+#else
 local extent simple(a, n, c, d)
 uzoff_t *a;     /* items to put in bins, return value: destination bins */
 extent n;       /* number of items */
 uzoff_t c;      /* capacity of each bin */
 uzoff_t d;      /* amount to deduct from first bin */
+#endif
 /* Return the number of bins of capacity c that are needed to contain the
    integers in a[0..n-1] placed sequentially into the bins.  The value d
    is deducted initially from the first bin (space for index).  The entries
@@ -588,8 +620,12 @@ uzoff_t d;      /* amount to deduct from first bin */
 }
 
 
+#ifndef NO_PROTO
+local int descmp(ZCONST zvoid *a, ZCONST zvoid *b)
+#else
 local int descmp(a, b)
 ZCONST zvoid *a, *b;          /* pointers to pointers to uzoff_t's (was ulg's) to compare */
+#endif
 /* Used by qsort() in greedy() to do a descending sort. */
 {
   return **(uzoff_t **)a < **(uzoff_t **)b ? 1 :
@@ -597,11 +633,15 @@ ZCONST zvoid *a, *b;          /* pointers to pointers to uzoff_t's (was ulg's) t
 }
 
 
+#ifndef NO_PROTO
+local extent greedy(uzoff_t*a, extent n, uzoff_t c, uzoff_t d)
+#else
 local extent greedy(a, n, c, d)
 uzoff_t *a;     /* items to put in bins, return value: destination bins */
 extent n;       /* number of items */
 uzoff_t c;      /* capacity of each bin */
 uzoff_t d;      /* amount to deduct from first bin */
+#endif
 /* Return the number of bins of capacity c that are needed to contain the
    items with sizes a[0..n-1] placed non-sequentially into the bins.  The
    value d is deducted initially from the first bin (space for index).
@@ -731,15 +771,22 @@ local int retry()
   return *m == 'y' || *m == 'Y';
 }
 
-
-#ifndef USE_ZIPSPLITMAIN
-int main(argc, argv)
+#ifndef NO_PROTO
+#  ifndef USE_ZIPSPLITMAIN
+int main(int argc, char **argv)
+#  else
+int zipsplitmain(int argc, char **argv)
+#  endif
 #else
+#  ifndef USE_ZIPSPLITMAIN
+int main(argc, argv)
+#  else
 int zipsplitmain(argc, argv)
-#endif
+#  endif
 
 int argc;               /* number of tokens in command line */
 char **argv;            /* command line tokens */
+#endif
 /* Split a zip file into several zip files less than a specified size.  See
    the command help in help() above. */
 {
@@ -938,7 +985,7 @@ char **argv;            /* command line tokens */
 
   k = h = x = d = u = 0;
   c = DEFSIZ;
- 
+
   zipfile = NULL;
 
   /* make copy of args that can use with insert_arg() */

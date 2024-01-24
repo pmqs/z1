@@ -1,7 +1,7 @@
 /*
   zip.c - Zip 3.1
 
-  Copyright (c) 1990-2023 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -420,7 +420,7 @@ local void freeup()
     free(charsetname);
     charsetname = NULL;
   }
- 
+
   /* free any suffix lists */
   for (j = 0; mthd_lvl[j].method >= 0; j++)
   {
@@ -481,6 +481,23 @@ local void freeup()
     free_argsz(orig_argv);
   }
 
+#ifdef APPLE_XATTR
+  /* Free AppleDouble attribute name storage ("-ax/--apple-ext-attr" options).
+   * (NULL tests should be pointless.)
+   */
+  for (j = 0; j < apl_dbl_xattr_ignore_cnt; j++)
+  {
+    if (apl_dbl_xattr_ignore[ j] != NULL)
+    {
+      free(apl_dbl_xattr_ignore[ j]); /* Individual attribute name. */
+    }
+  }
+  if (apl_dbl_xattr_ignore != NULL)
+  {
+    free(apl_dbl_xattr_ignore);    /* Attribute name pointer array. */
+  }
+#endif /* def APPLE_XATTR */
+
 #ifdef VMSCLI
   if (argv_cli != NULL)
   {
@@ -497,8 +514,12 @@ local void freeup()
   }
 }
 
+#ifndef NO_PROTO
+local int finish(int e)
+#else
 local int finish(e)
-int e;                  /* exit code */
+  int e;                  /* exit code */
+#endif
 /* Process -o and -m options (if specified), free up malloc'ed stuff, and
    exit with the code e. */
 {
@@ -608,8 +629,12 @@ int e;                  /* exit code */
 # endif
   };
 
+#ifndef NO_PROTO
+void show_env(int non_null_only)
+#else
 void show_env(non_null_only)
  int non_null_only;
+#endif
 {
   int heading = 0;
   int i;
@@ -642,9 +667,13 @@ void show_env(non_null_only)
 }
 
 
+#ifndef NO_PROTO
+void ziperr(int c, ZCONST char *h)
+#else
 void ziperr(c, h)
-int c;                  /* error code from the ZE_ class */
-ZCONST char *h;         /* message about how it happened */
+  int c;                  /* error code from the ZE_ class */
+  ZCONST char *h;         /* message about how it happened */
+#endif
 /* Issue a message for the error, clean up files and memory, and exit. */
 {
   /* Message h may be using errbuf, so overwriting errbuf overwrites
@@ -775,16 +804,24 @@ ZCONST char *h;         /* message about how it happened */
 }
 
 
+#ifndef NO_PROTO
+void error(ZCONST char *h)
+#else
 void error(h)
   ZCONST char *h;
+#endif
 /* Internal error, should never happen */
 {
   ziperr(ZE_LOGIC, h);
 }
 
 #if (!defined(MACOS) && !defined(ZIP_DLL_LIB) && !defined(NO_EXCEPT_SIGNALS))
+#ifndef NO_PROTO
+local void handler(int s)
+#else
 local void handler(s)
-int s;                  /* signal number (ignored) */
+  int s;                  /* signal number (ignored) */
+#endif
 /* Upon getting a user interrupt, turn echo back on for tty and abort
    cleanly using ziperr(). */
 {
@@ -808,16 +845,24 @@ int s;                  /* signal number (ignored) */
 
 /* void zipwarn_i(indent, a, b) - moved to fileio.c */
 
+#ifndef NO_PROTO
+void zipwarn(ZCONST char *a, ZCONST char *b)
+#else
 void zipwarn(a, b)
-ZCONST char *a, *b;     /* message strings juxtaposed in output */
+  ZCONST char *a, *b;     /* message strings juxtaposed in output */
+#endif
 {
   zipwarn_i("zip warning:", 0, a, b, ADD_NL);
 }
 
 /* zipwarn_indent(): zipwarn(), with message indented. */
 
+#ifndef NO_PROTO
+void zipwarn_indent(ZCONST char *a, ZCONST char *b)
+#else
 void zipwarn_indent(a, b)
-ZCONST char *a, *b;
+  ZCONST char *a, *b;
+#endif
 {
     zipwarn_i("zip warning:", 1, a, b, ADD_NL);
 }
@@ -1026,6 +1071,7 @@ local void help_extended()
 "  -r      recurse into directories (see Recursion below)",
 "  -m      after archive created, delete original files (move into archive)",
 "  -j      junk directory names (store just file names, not relative paths)",
+"  -k      Attempt to convert the names and paths to conform to MSDOS",
 "  -p      include relative dir path (deprecated) - use -j- instead (default)",
 "  -q      quiet operation",
 "  -v      verbose operation (just \"zip -v\" shows version information)",
@@ -2144,7 +2190,7 @@ local void help_extended()
 "  On ports with Unicode enabled, can use either UTF-8 or Unicode escapes",
 "  as well as the local character set (code page in Windows) in a path or",
 "  pattern on command line to match files in archive.  Zip first checks",
-"  for a direct match, then converts escapes to Unicode and tries again.",  
+"  for a direct match, then converts escapes to Unicode and tries again.",
 "",
 "  Zip 3.1 no longer transliterates characters.  If there is no exact",
 "  match for a char in the destination charset, a Unicode escape is used.",
@@ -2762,7 +2808,7 @@ local void version_info()
 # if defined( IZ_CRYPT_ANY) || defined( IZ_CRYPT_AES_WG_NEW)
   zprintf("\n");
 # endif
-  
+
   if (charsetname)
   {
     zprintf("Current charset/code page:  %s\n", charsetname);
@@ -2822,8 +2868,12 @@ local void zipstdout()
 
 
 # ifdef CHECK_UNZIP
+#ifndef NO_PROTO
+local char *unzip_feature(int bit_mask)
+#else
 local char *unzip_feature(bit_mask)
   unsigned int bit_mask;
+#endif
 {
   char *feature;
   char *feature_string;
@@ -3000,7 +3050,7 @@ local ulg get_needed_unzip_features()
 #  ifndef RISCOS
     int i;
 #  endif
-    
+
     /* check the global compression method */
     if (method == BZIP2) {
       needed_unzip_features |= UNZIP_BZIP2_SUPPORT;
@@ -3164,10 +3214,14 @@ local ulg get_needed_unzip_features()
 # define MAX_UNZIP_VERSION_LINES  100
 
 #ifdef CHECK_UNZIP
+#ifndef NO_PROTO
+local void get_unzip_features(char *unzippath, float *version, ulg *features)
+#else
 local void get_unzip_features(unzippath, version, features)
   char *unzippath;   /* path to unzip */
   float *version;    /* returned version of unzip */
   ulg *features;     /* returned feature set */
+#endif
 {
   /* Spawn "unzip -v" for unzip path given and get the version of unzip
    * as well as a list of supported features returned as an unsigned int
@@ -3323,6 +3377,7 @@ local void get_unzip_features(unzippath, version, features)
   if (good_popen) {
     /* read the unzip version information */
 
+
     /* get first line */
     if (fgets(buf, MAX_UNZIP_VER_LINE_LEN, unzip_out) == NULL) {
       zipwarn("failed to get information from UnZip", "");
@@ -3351,10 +3406,17 @@ local void get_unzip_features(unzippath, version, features)
       }
 
       if (success) {
+        /* Due to clang issue below, now split UnZip version into
+        * major and minor (major.minor) so comparing ints instead
+        * of floats. */
+        int majorvers = (int)UnZip_Version;
+        int minorvers = (int)((UnZip_Version - majorvers) * 100);
+        unsigned long majorminorvers =  majorvers * 1000 + minorvers ;
+
         if (show_what_doing) {
-          sprintf(errbuf, "sd:  UnZip %4.2f (%s) number %s beta %s",
+          sprintf(errbuf, "sd:  UnZip %4.2f (%s) number %s beta %s maj %d min %d najor-minor %lu",
                   UnZip_Version, unzip_version_string, number_string,
-                  beta_string);
+                  beta_string, majorvers, minorvers, majorminorvers);
           sdmessage(errbuf, "");
         }
 
@@ -3362,16 +3424,18 @@ local void get_unzip_features(unzippath, version, features)
            Basic splits requires all the splits to be in the same place as
            the .zip file.  As of this writing, UnZip does not support splits
            spread across multiple media, and so probably can't test an archive
-           made with -sp. */
-        if ((UnZip_Version == 6.1 &&             /* UnZip 6.1 and either */
-             (strcmp(beta_string, "c") == 0 ||   /*  final public beta "c" */
-              strcmp(beta_string, "d") >= 0)) || /*  or "d" and later betas */
-            (UnZip_Version > 6.1)) {             /* or UnZip 6.11 or later */
+           made with -sp.
+        */
+         if (majorminorvers >= 6002 ||            /* UnZip 6.2 and later */
+             (majorminorvers == 6001 &&           /* UnZip 6.1 and either */
+             (strcmp(beta_string, "c") == 0 ||    /*  final public beta "c" */
+              strcmp(beta_string, "d") >= 0))) {  /*  or "d" and later betas */
           at_least_61c = 1;
           if (show_what_doing) {
             sdmessage("sd:  at least UnZip 6.1c with basic split support", "");
           }
         }
+
         if (at_least_61c) {
           unzip_supported_features |= UNZIP_SPLITS_BASIC;
         }
@@ -3430,13 +3494,20 @@ local void get_unzip_features(unzippath, version, features)
 
   *version = UnZip_Version;
   *features = unzip_supported_features;
+
+  free(number_string);
+  free(beta_string);
 }
 # endif /* CHECK_UNZIP */
 
 
+#ifndef NO_PROTO
+local int check_unzip_version(char *unzippath, ulg needed_unzip_features)
+#else
 local int check_unzip_version(unzippath, needed_unzip_features)
   char *unzippath;
   ulg needed_unzip_features;
+#endif
 {
   /* Here is where we need to check for the version of unzip the user
    * has.  If creating a Zip64 archive, we need UnZip 6 or later or
@@ -3469,7 +3540,7 @@ local int check_unzip_version(unzippath, needed_unzip_features)
     /* unzip_version and unzip_supported_features are global to zip.c */
     get_unzip_features(unzippath, &unzip_version, &unzip_supported_features);
   }
-  
+
   if (show_what_doing) {
     sprintf(errbuf, "sd:  unzip version:  %4.2f", unzip_version);
     sdmessage(errbuf, "");
@@ -3527,9 +3598,13 @@ local int check_unzip_version(unzippath, needed_unzip_features)
  * space needed by the source string. It probably would be cleaner
  * to allocate the destination here and return a pointer to it.
  */
+#ifndef NO_PROTO
+local int strcpy_qu( char *dst, char *src)
+#else
 local int strcpy_qu( dst, src)
  char *dst;
  char *src;
+#endif
 {
   char *cp1;
   char *cp2;
@@ -3610,11 +3685,15 @@ local char* quote_quotes(instring)
 # endif /* 0 */
 
 
+#ifndef NO_PROTO
+local void warn_unzip_return(int status)
+#else
 local void warn_unzip_return(status)
   int status;
+#endif
 {
   /* Output warning appropriate for UnZip return code. */
-  
+
   if (status == 0) {
     zipwarn("unzip returned 0 (success)", "");
   } else if (status == 1) {
@@ -3659,6 +3738,10 @@ local void warn_unzip_return(status)
 }
 
 
+#ifndef NO_PROTO
+local char *parse_TT_string(char *unzip_string, char *temp_zip_path,
+                            char *passwd, char *keyfile, char *key, int *unzip_being_used)
+#else
 local char *parse_TT_string(unzip_string, temp_zip_path,
                             passwd, keyfile, key, unzip_being_used)
   char *unzip_string;    /* -TT string */
@@ -3667,6 +3750,7 @@ local char *parse_TT_string(unzip_string, temp_zip_path,
   char *keyfile;         /* keyfile path (can be NULL) */
   char *key;             /* key = passwd + keyfile password content (text only) */
   int *unzip_being_used; /* returns 1 if {u} (UnZip being used), else 0 */
+#endif
 {
   /* Given the -TT unzip command string provided by user, find {...}
    * placeholders and replace with values as appropriate.
@@ -3977,11 +4061,15 @@ local char *parse_TT_string(unzip_string, temp_zip_path,
 }
 
 
+#ifndef NO_PROTO
+local char *build_unzip_command(char *unzip_path, char *temp_zip_path, char *passwd, char *keyfile)
+#else
 local char *build_unzip_command(unzip_path, temp_zip_path, passwd, keyfile)
   char *unzip_path;      /* path to unzip */
   char *temp_zip_path;   /* path to temp zip file */
   char *passwd;          /* password string (not key) */
   char *keyfile;         /* keyfile path (can be NULL) */
+#endif
 {
   /* Build the command string from the given components, accounting for
    * existence of password or keyfile.  This is used whenever -TT is not
@@ -4100,8 +4188,12 @@ local char *build_unzip_command(unzip_path, temp_zip_path, passwd, keyfile)
  * becomes >fr'"'ed<, for example.)  Not a problem for file specs, but
  * imposes a restriction on passwords.
  */
+#ifndef NO_PROTO
+local char *quote_arg(char *instring)
+#else
 local char *quote_arg(instring)
   char *instring;
+#endif
 {
   int i;
   int j;
@@ -4198,10 +4290,14 @@ local char *quote_arg(instring)
 }
 
 
+#ifndef NO_PROTO
+local void check_zipfile(char *zipname, char *zippath, int is_temp)
+#else
 local void check_zipfile(zipname, zippath, is_temp)
   char *zipname;   /* name of archive to test */
   char *zippath;   /* our path */
   int is_temp;     /* true if testing temp file */
+#endif
   /* Invoke unzip -t on the given zip file */
 {
   int result;      /* result of unzip invocation */
@@ -4325,7 +4421,7 @@ local void check_zipfile(zipname, zippath, is_temp)
       zipwarn(errbuf, "");
     }
   }  /* result > 0 */
-    
+
   if (unzip_string) {
     free(unzip_string);
     unzip_string = NULL;
@@ -4479,9 +4575,13 @@ local int get_filters(argc, argv)
  */
 
 /* add a filter to the linked list */
+#ifndef NO_PROTO
+local int add_filter(int flag, char *pattern)
+#else
 local int add_filter(flag, pattern)
   int flag;
   char *pattern;
+#endif
 {
   char *iname;
   int pathput_save;
@@ -4656,9 +4756,13 @@ local int filterlist_to_patterns()
 
 
 /* add a file argument to linked list */
+#ifndef NO_PROTO
+local long add_name(char *filearg, int verbatim)
+#else
 local long add_name(filearg, verbatim)
   char *filearg;
   int verbatim;
+#endif
 {
   char *name = NULL;
   struct filelist_struct *fileentry = NULL;
@@ -4707,8 +4811,12 @@ local long add_name(filearg, verbatim)
 
 
 /* add incremental archive path to linked list */
+#ifndef NO_PROTO
+local long add_apath(char *path)
+#else
 local long add_apath(path)
   char *path;
+#endif
 {
   char *name = NULL;
   struct filelist_struct *apath_entry = NULL;
@@ -5128,11 +5236,15 @@ char *check_archive_comment(zcomment, zcomlen)
 
 #ifdef IZ_CRYPT_ANY
 # ifndef ZIP_DLL_LIB
+#  ifndef NO_PROTO
+int encr_passwd(int modeflag, char *pwbuf, int  size, ZCONST char *zfn)
+#  else
 int encr_passwd(modeflag, pwbuf, size, zfn)
-int modeflag;
-char *pwbuf;
-int size;
-ZCONST char *zfn;
+  int modeflag;
+  char *pwbuf;
+  int size;
+  ZCONST char *zfn;
+#  endif
 {
     char *prompt;
 
@@ -5151,10 +5263,14 @@ ZCONST char *zfn;
 /* This version should be sufficient for Zip.  Zip does not track the
    Zip file name so that parameter is not needed and, in fact, is
    misleading. */
+#ifndef NO_PROTO
+int simple_encr_passwd(int modeflag, char *pwbuf, size_t bufsize)
+#else
 int simple_encr_passwd(modeflag, pwbuf, bufsize)
   int modeflag;
   char *pwbuf;
   size_t bufsize; /* max password length  + 1 (includes NULL) */
+#endif
 {
     char *prompt;
 
@@ -5203,8 +5319,12 @@ int simple_encr_passwd(modeflag, pwbuf, bufsize)
 /* int rename_split(temp_name, out_path) - moved to fileio.c */
 
 
+#ifndef NO_PROTO
+int set_filetype(char *out_path)
+#else
 int set_filetype(out_path)
   char *out_path;
+#endif
 {
 #ifdef __BEOS__
   /* Set the filetype of the zipfile to "application/zip" */
@@ -5268,9 +5388,13 @@ int set_filetype(out_path)
 
 #define DT_BAD ((ulg)-1)        /* Bad return value. */
 
+#ifndef NO_PROTO
+local ulg datetime(ZCONST char *arg, ZCONST time_t curtime)
+#else
 local ulg datetime(arg, curtime)
   ZCONST char *arg;
   ZCONST time_t curtime;
+#endif
 {
   int yr;                               /* Year. */
   int mo;                               /* Month. */
@@ -5306,7 +5430,7 @@ local ulg datetime(arg, curtime)
   hr = 0;
   mn = 0;
   sc = 0;
-  
+
   cyr = 0;
   cmo = 0;
   cdy = 0;
@@ -6204,109 +6328,110 @@ void check_path(path, option_name)
 #define o_aa            0x101
 #define o_ad            0x102
 #define o_as            0x103
-#define o_AC            0x104
-#define o_AF            0x105
-#define o_AS            0x106
-#define o_BC            0x107
-#define o_BD            0x108
-#define o_BF            0x109
-#define o_BL            0x110
-#define o_BN            0x111
-#define o_BT            0x112
-#define o_cc            0x113
-#define o_cd            0x114
-#define o_ci            0x115
-#define o_cs            0x116
-#define o_C2            0x117
-#define o_C5            0x118
-#define o_CO            0x119
-#define o_Cl            0x120
-#define o_Cu            0x121
-#define o_db            0x122
-#define o_dc            0x123
-#define o_dd            0x124
-#define o_de            0x125
-#define o_des           0x126
-#define o_df            0x127
-#define o_DF            0x128
-#define o_DI            0x129
-#define o_dg            0x130
-#define o_dr            0x131
-#define o_ds            0x132
-#define o_dt            0x133
-#define o_du            0x134
-#define o_dv            0x135
-#define o_EA            0x136
-#define o_fc            0x137
-#define o_FF            0x138
-#define o_FI            0x139
-#define o_FS            0x140
-#define o_h2            0x141
-#define o_ic            0x142
-#define o_jj            0x143
-#define o_kf            0x144
-#define o_la            0x145
-#define o_lf            0x146
-#define o_lF            0x147
-#define o_li            0x148
-#define o_ll            0x149
-#define o_lu            0x150
-#define o_mm            0x151
-#define o_MM            0x152
-#define o_MV            0x153
-#define o_nw            0x154
-#define o_p0            0x155
-#define o_pa            0x156
-#define o_pn            0x157
-#define o_pp            0x158
-#define o_ps            0x159
-#define o_pt            0x160
-#define o_pu            0x161
-#define o_RE            0x162
-#define o_sb            0x163
-#define o_sc            0x164
-#define o_sC            0x165
-#define o_sd            0x166
-#define o_sf            0x167
-#define o_sF            0x168
-#define o_si            0x169
-#define o_SI            0x170
-#define o_so            0x171
-#define o_sp            0x172
-#define o_sP            0x173
-#define o_ss            0x174
-#define o_SS            0x175
-#define o_st            0x176
-#define o_ST            0x177
-#define o_su            0x178
-#define o_sU            0x179
-#define o_sv            0x180
-#define o_td            0x181
-#define o_tn            0x182
-#define o_tt            0x183
-#define o_TT            0x184
-#define o_TU            0x185
-#define o_TV            0x186
-#define o_UD            0x187
-#define o_UE            0x188
-#define o_UL            0x189
-#define o_UN            0x190
-#define o_US            0x191
-#define o_UT            0x192
-#define o_ve            0x193
-#define o_vq            0x194
-#define o_VV            0x195
-#define o_wl            0x196
-#define o_ws            0x197
-#define o_ww            0x198
-#define o_yy            0x199
-#define o_z64           0x200
-#define o_zc            0x201
-#define o_zz            0x202
-#define o_atat          0x203
-#define o_vn            0x204
-#define o_et            0x205
-#define o_exex          0x206
+#define o_ax            0x104
+#define o_AC            0x105
+#define o_AF            0x106
+#define o_AS            0x107
+#define o_BC            0x108
+#define o_BD            0x109
+#define o_BF            0x110
+#define o_BL            0x111
+#define o_BN            0x112
+#define o_BT            0x113
+#define o_cc            0x114
+#define o_cd            0x115
+#define o_ci            0x116
+#define o_cs            0x117
+#define o_C2            0x118
+#define o_C5            0x119
+#define o_CO            0x120
+#define o_Cl            0x121
+#define o_Cu            0x122
+#define o_db            0x123
+#define o_dc            0x124
+#define o_dd            0x125
+#define o_de            0x126
+#define o_des           0x127
+#define o_df            0x128
+#define o_DF            0x129
+#define o_DI            0x130
+#define o_dg            0x131
+#define o_dr            0x132
+#define o_ds            0x133
+#define o_dt            0x134
+#define o_du            0x135
+#define o_dv            0x136
+#define o_EA            0x137
+#define o_fc            0x138
+#define o_FF            0x139
+#define o_FI            0x140
+#define o_FS            0x141
+#define o_h2            0x142
+#define o_ic            0x143
+#define o_jj            0x144
+#define o_kf            0x145
+#define o_la            0x146
+#define o_lf            0x147
+#define o_lF            0x148
+#define o_li            0x149
+#define o_ll            0x150
+#define o_lu            0x151
+#define o_mm            0x152
+#define o_MM            0x153
+#define o_MV            0x154
+#define o_nw            0x155
+#define o_p0            0x156
+#define o_pa            0x157
+#define o_pn            0x158
+#define o_pp            0x159
+#define o_ps            0x160
+#define o_pt            0x161
+#define o_pu            0x162
+#define o_RE            0x163
+#define o_sb            0x164
+#define o_sc            0x165
+#define o_sC            0x166
+#define o_sd            0x167
+#define o_sf            0x168
+#define o_sF            0x169
+#define o_si            0x170
+#define o_SI            0x171
+#define o_so            0x172
+#define o_sp            0x173
+#define o_sP            0x174
+#define o_ss            0x175
+#define o_SS            0x176
+#define o_st            0x177
+#define o_ST            0x178
+#define o_su            0x179
+#define o_sU            0x180
+#define o_sv            0x181
+#define o_td            0x182
+#define o_tn            0x183
+#define o_tt            0x184
+#define o_TT            0x185
+#define o_TU            0x186
+#define o_TV            0x187
+#define o_UD            0x188
+#define o_UE            0x189
+#define o_UL            0x190
+#define o_UN            0x191
+#define o_US            0x192
+#define o_UT            0x193
+#define o_ve            0x194
+#define o_vq            0x195
+#define o_VV            0x196
+#define o_wl            0x197
+#define o_ws            0x198
+#define o_ww            0x199
+#define o_yy            0x200
+#define o_z64           0x201
+#define o_zc            0x202
+#define o_zz            0x203
+#define o_atat          0x204
+#define o_vn            0x205
+#define o_et            0x206
+#define o_exex          0x207
 
 
 /* the below is mainly from the old main command line
@@ -6346,7 +6471,10 @@ struct option_struct far options[] = {
 #endif
 #ifdef UNIX_APPLE
     {"as", "sequester",   o_NO_VALUE,       o_NEGATABLE,     o_as, "sequester AppleDouble files in __MACOSX"},
-#endif
+# ifdef APPLE_XATTR
+    {"ax", "apple-ext-attr", o_REQUIRED_VALUE, o_NOT_NEGATABLE, o_ax, "Exclude Apple extended attribute"},
+# endif /* def APPLE_XATTR */
+#endif /* def UNIX_APPLE */
 #ifdef CMS_MVS
     {"B",  "binary",      o_NO_VALUE,       o_NOT_NEGATABLE, 'B',  "binary"},
 #endif /* CMS_MVS */
@@ -6582,14 +6710,21 @@ struct option_struct far options[] = {
   };
 
 
-
-#ifndef USE_ZIPMAIN
-int main(argc, argv)
+#ifndef NO_PROTO
+#  ifndef USE_ZIPMAIN
+int main(int argc, char **argv)
+#  else
+int zipmain(int argc, char **argv)
+#  endif
 #else
+#  ifndef USE_ZIPMAIN
+int main(argc, argv)
+#  else
 int zipmain(argc, argv)
-#endif
+#  endif
 int argc;               /* number of tokens in command line */
 char **argv;            /* command line tokens */
+#endif
 /* Add, update, freshen, or delete zip entries in a zip file.  See the
    command help in help() above. */
 {
@@ -6684,7 +6819,7 @@ char **argv;            /* command line tokens */
   set_locale();
 
   /* Keeping copy of this comment here for historical reasons. */
-  
+
   /* For Unix, we either need to be working in some UTF-8 environment or we
      need help elsewise to see all file system paths available to us,
      otherwise paths not supported in the current character set won't be seen
@@ -6724,7 +6859,7 @@ char **argv;            /* command line tokens */
      do all that.  For instance, the handling of surrogates.  Best to leave
      converting Windows wide strings to UTF-8 to Windows.)  has_win32_wide()
      is used to determine if the Windows port supports wide characters.
-     
+
      Note that paths displayed in a Windows command prompt window will likely
      be escaped.  If a Unicode supporting font is loaded (like Lucida Console)
      and the code page is set to UTF-8 (chcp 65001), then most Western
@@ -6743,7 +6878,7 @@ char **argv;            /* command line tokens */
      (double byte character set) environment that seems to mirror somewhat
      Windows wide functionality, but this is reported to be insufficient.  IBM
      support is still rough and untested.
-     
+
      AIX will support the UTF-8 locale, but it is an optional feature, so one
      must do a test to see if it is present.  Some specific testing is needed
      and is being worked on.
@@ -7452,14 +7587,14 @@ char **argv;            /* command line tokens */
     env_argv[0] = argv[0];
     env_argv[1] = NULL;
     env_argc = 1;
-    
+
     /* Get options from environment. */
     envargs(&env_argc, &env_argv, "ZIPOPT", "ZIP");
 
     /* Get Win32 wide command line converted to UTF-8. */
     utf8_argv = get_win32_utf8_argv();
     utf8_argc = arg_countz(utf8_argv);
-    
+
 #if 0
     printf("{2}\n");
 #endif
@@ -7587,7 +7722,7 @@ char **argv;            /* command line tokens */
     if (value && (MAX_OPTION_VALUE_SIZE) &&
         strlen(value) > (MAX_OPTION_VALUE_SIZE)) {
       sprintf(errbuf, "command line argument larger than %d - truncated: ",
-              MAX_OPTION_VALUE_SIZE); 
+              MAX_OPTION_VALUE_SIZE);
       zipwarn(errbuf, value);
       value[MAX_OPTION_VALUE_SIZE] = '\0';
     }
@@ -7803,6 +7938,12 @@ char **argv;            /* command line tokens */
           else
             sequester = 1;
           break;
+# ifdef APPLE_XATTR
+        case o_ax:
+          /* Exclude Apple extended attribute. */
+          apl_dbl_xattr_ignore_add( value);
+          break;
+# endif /* def APPLE_XATTR */
 #endif /* UNIX_APPLE */
 
         case 'b':   /* Specify path for temporary file */
@@ -7991,7 +8132,7 @@ char **argv;            /* command line tokens */
           break;
 #endif
 
-		    case o_cs:  /* calc CRC32 */
+        case o_cs:  /* calc CRC32 */
           calc_crc32 = 1;
           break;
 
@@ -9529,7 +9670,7 @@ char **argv;            /* command line tokens */
   if (calc_crc32) {
     unsigned long checksum;
     int ret;
-    
+
     ret = CalcCrc32File(zipfile, &checksum);
 
     zfprintf(mesg, "%08x\n", checksum);
@@ -9636,7 +9777,7 @@ char **argv;            /* command line tokens */
   /* Show method-level suffix lists. */
   if (show_suffixes)
   {
-    char level_str[ 8];
+    char level_str[12];
     char *suffix_str;
     int any = 0;
 
@@ -9945,13 +10086,39 @@ char **argv;            /* command line tokens */
         sprintf(errbuf, "improper line in backup control file at line %d", i);
         ZIPERR(ZE_BACKUP, errbuf);
       }
+
+      /* Issue with GCC 7 */
+      /* Possibly a false positive so silence for now -pmqs */
+      #if defined(__GNUC__) && __GNUC__ == 7
+      #  pragma GCC diagnostic push
+      #  pragma GCC diagnostic ignored "-Wstringop-overflow"
+      #endif
+
       strcpy(prefix, linebuf);
+
+      #if defined(__GNUC__) && __GNUC__ == 7
+      #  pragma GCC diagnostic pop
+      #endif
+
       prefix_len = colon + 2;
       if (prefix_len < linebuf_len) {
         sprintf(errbuf, "improper line in backup control file at line %d", i);
         ZIPERR(ZE_BACKUP, errbuf);
       }
+
+      /* This one is an issue with gcc-10 */
+      /* Possibly a false positive so silence for now -pmqs */
+      #if defined(__GNUC__) && __GNUC__ == 10
+      #  pragma GCC diagnostic push
+      #  pragma GCC diagnostic ignored "-Wstringop-overflow"
+      #endif
+
       prefix[prefix_len] = '\0';
+
+      #if defined(__GNUC__) && __GNUC__ == 10
+      #  pragma GCC diagnostic pop
+      #endif
+
       for (j = 0; j < prefix_len; j++) prefix[j] = tolower(prefix[j]);
 
       if (strmatch(prefix, "full: ", CASE_INS, ENTIRE_STRING)) {
@@ -10464,7 +10631,7 @@ char **argv;            /* command line tokens */
           ZIPERR(ZE_CRYPT, "AES128 password too short");
         }
       }
-    
+
       if ((e = malloc(MAX_PWLEN+2)) == NULL) {
         ZIPERR(ZE_MEM, "was verifying encryption password (1)");
       }
@@ -10669,7 +10836,7 @@ char **argv;            /* command line tokens */
     cd_only = 1;
   }
 #endif
-  
+
   if (have_out && in_path && namecmp(in_path, out_path) == 0) {
     sprintf(errbuf, "--out path must be different from in path: %s", out_path);
     ZIPERR(ZE_PARMS, errbuf);
@@ -11628,7 +11795,7 @@ char **argv;            /* command line tokens */
     /* if -u or -f with no args, do all, but, when present, apply filters */
     for (z = zfiles; z != NULL; z = z->nxt) {
 #ifdef UNICODE_SUPPORT_WIN32
-      char *uzname = wchar_to_utf8_string(z->znamew); 
+      char *uzname = wchar_to_utf8_string(z->znamew);
       z->mark = pcount ? filter(uzname, filter_match_case) : 1;
       free(uzname);
 #else
@@ -12129,7 +12296,7 @@ char **argv;            /* command line tokens */
 
 #if 0
           WIN32_FILE_ATTRIBUTE_DATA    fileInfo;
- 
+
           if(GetFileAttributesEx(f->name, 0, &fileInfo))
           {
             usize = fileInfo.nFileSizeLow;
@@ -12879,7 +13046,7 @@ char **argv;            /* command line tokens */
         strcpy(e, "entry");
       else
         strcpy(e, "entries");
-      
+
       if (bytes == 1)
         strcpy(b, "byte");
       else
@@ -13503,7 +13670,7 @@ char **argv;            /* command line tokens */
           sprintf(errbuf, "was zipping %s", z->name);
           ZIPERR(r, errbuf);
         }
-        
+
         if (filesync && z->current)
         {
           /* if filesync if entry matches OS just copy */
@@ -13536,7 +13703,7 @@ char **argv;            /* command line tokens */
           }
           */
         } /* filesync && z->current */
-        
+
         if (r == ZE_OPEN || r == ZE_MISS || r == ZE_SKIP || r == ZE_SAME)
         {
           o = 1;
@@ -14905,7 +15072,7 @@ char **argv;            /* command line tokens */
         }
 
         new_read = (int)strlen(new_zcomment + new_zcomlen);
-      
+
         if (comment_from_tty) {
           /* If the first line is empty or just a newline, keep current comment */
           if (new_zcomlen == 0 &&
@@ -15464,8 +15631,12 @@ char **argv;            /* command line tokens */
 #  endif
 # endif /* ndef VMS */
 
+#ifndef NO_PROTO
+USER_PROGRESS_CLASS void user_progress( int arg)
+#else
 USER_PROGRESS_CLASS void user_progress( arg)
-int arg;
+  int arg;
+#endif
 {
   /* VMS Ctrl/T automatically puts out a line like:
    * ALP::_FTA24: 07:59:43 ZIP       CPU=00:00:59.08 PF=2320 IO=52406 MEM=333

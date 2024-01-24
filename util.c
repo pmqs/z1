@@ -1,7 +1,7 @@
 /*
   util.c
 
-  Copyright (c) 1990-2019 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-02 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -79,8 +79,12 @@ local int count_args OF((char *s));
    This solves problems with negative 32-bit offsets, even on small-file
    products.
 */
+#ifndef NO_PROTO
+int fseekable( FILE *fp)
+#else
 int fseekable( fp)
-FILE *fp;
+  FILE *fp;
+#endif
 {
     zoff_t x;
 
@@ -103,8 +107,12 @@ FILE *fp;
 # define ESCAPE_CHR '\\'
 #endif /* def VMS [else] */
 
+#ifndef NO_PROTO
+char *isshexp(ZCONST char *p)
+#else
 char *isshexp(p)
-ZCONST char *p;         /* candidate sh expression */
+  ZCONST char *p;         /* candidate sh expression */
+#endif
 /* If p is a sh expression, a pointer to the first special character is
    returned.  Otherwise, NULL is returned. */
 {
@@ -277,10 +285,14 @@ int cs;                 /* flag: force case-sensitive matching */
 #endif /* UNICODE_SUPPORT_WIN32 */
 
 
+#ifndef NO_PROTO
+local int recmatch(ZCONST char *p, ZCONST char *s, int cs)
+#else
 local int recmatch(p, s, cs)
-ZCONST char *p;         /* sh pattern to match */
-ZCONST char *s;         /* string to match it to */
-int cs;                 /* flag: force case-sensitive matching */
+  ZCONST char *p;         /* sh pattern to match */
+  ZCONST char *s;         /* string to match it to */
+  int cs;                 /* flag: force case-sensitive matching */
+#endif
 /* Recursively compare the sh pattern p with the string s and return 1 if
    they match, and 0 or 2 if they don't or if there is a syntax error in the
    pattern.  This routine recurses on itself no deeper than the number of
@@ -492,10 +504,14 @@ int cs;                 /* flag: force case-sensitive matching */
 }
 
 
+#ifndef NO_PROTO
+int shmatch(ZCONST char *p, ZCONST char *s, int cs)
+#else
 int shmatch(p, s, cs)
-ZCONST char *p;         /* sh pattern to match */
-ZCONST char *s;         /* string to match it to */
-int cs;                 /* force case-sensitive match if TRUE */
+  ZCONST char *p;         /* sh pattern to match */
+  ZCONST char *s;         /* string to match it to */
+  int cs;                 /* force case-sensitive match if TRUE */
+#endif
 /* Compare the sh pattern p with the string s and return true if they match,
    false if they don't or if there is a syntax error in the pattern. */
 {
@@ -569,11 +585,15 @@ int cs;                 /* force case-sensitive match if TRUE */
 #endif /* DOS || WIN32 */
 
 
+#ifndef NO_PROTO
+zvoid far **search(ZCONST zvoid *b, ZCONST zvoid far **a, extent n, int (*cmp) OF((ZCONST zvoid *, ZCONST zvoid far *)))
+#else
 zvoid far **search(b, a, n, cmp)
-ZCONST zvoid *b;        /* pointer to value to search for */
-ZCONST zvoid far **a;   /* table of pointers to values, sorted */
-extent n;               /* number of pointers in a[] */
-int (*cmp) OF((ZCONST zvoid *, ZCONST zvoid far *)); /* comparison function */
+  ZCONST zvoid *b;        /* pointer to value to search for */
+  ZCONST zvoid far **a;   /* table of pointers to values, sorted */
+  extent n;               /* number of pointers in a[] */
+  int (*cmp) OF((ZCONST zvoid *, ZCONST zvoid far *)); /* comparison function */
+#endif
 
 /* Search for b in the pointer list a[0..n-1] using the compare function
    cmp(b, c) where c is an element of a[i] and cmp() returns negative if
@@ -671,8 +691,12 @@ void init_upper()
 #endif /* ?MSDOS16 */
 
 
+#ifndef NO_PROTO
+int namecmp(ZCONST char *string1, ZCONST char *string2)
+#else
 int namecmp(string1, string2)
   ZCONST char *string1, *string2;
+#endif
 /* Compare the two strings ignoring case, and correctly taking into
  * account national language characters. For operating systems with
  * case sensitive file names, this function is equivalent to strcmp.
@@ -765,8 +789,12 @@ char *str_oem_to_iso(dst, src)
 
 char *___tmp_ptr;
 
+#ifndef NO_PROTO
+int lastchar(ZCONST char *ptr)
+#else
 int lastchar(ptr)
     ZCONST char *ptr;
+#endif
 {
     ZCONST char *oldptr = ptr;
     while(*ptr != '\0'){
@@ -776,9 +804,13 @@ int lastchar(ptr)
     return (int)(unsigned)*oldptr;
 }
 
+#ifndef NO_PROTO
+unsigned char *zmbschr(ZCONST unsigned char *str, unsigned int c)
+#else
 unsigned char *zmbschr(str, c)
     ZCONST unsigned char *str;
     unsigned int c;
+#endif
 {
     while(*str != '\0'){
         if (*str == c) {return (unsigned char *)str;}
@@ -787,9 +819,13 @@ unsigned char *zmbschr(str, c)
     return NULL;
 }
 
+#ifndef NO_PROTO
+unsigned char *zmbsrchr(ZCONST unsigned char *str, unsigned int c)
+#else
 unsigned char *zmbsrchr(str, c)
     ZCONST unsigned char *str;
     unsigned int c;
+#endif
 {
     unsigned char *match = NULL;
     while(*str != '\0'){
@@ -816,11 +852,15 @@ unsigned char *zmbsrchr(str, c)
  |     to make the action of the code less obscure.
  ****************************************************************/
 
+#ifndef NO_PROTO
+void envargs(int *Pargc, char ***Pargv, char *envstr, char *envstr2)
+#else
 void envargs(Pargc, Pargv, envstr, envstr2)
     int *Pargc;
     char ***Pargv;
     char *envstr;
     char *envstr2;
+#endif
 {
     char *envptr;                     /* value returned by getenv */
     char *bufptr;                     /* copy of env info */
@@ -918,8 +958,12 @@ void envargs(Pargc, Pargv, envstr, envstr2)
     *Pargc = argc;
 }
 
+#ifndef NO_PROTO
+local int count_args(char *s)
+#else
 local int count_args(s)
 char *s;
+#endif
 {
     int count = 0;
     char ch;
@@ -977,9 +1021,13 @@ char *s;
  *    in the new list replaces the original "argc" (pointed to by
  *    "argcp").
  */
+#ifndef NO_PROTO
+void expand_args(int *argcp, char ***argvp)
+#else
 void expand_args(argcp, argvp)
       int *argcp;
       char ***argvp;
+#endif
 {
 #ifdef DOS
 
@@ -1060,9 +1108,13 @@ int printnames()
  * Unlike in set_file_type(), however, the speed depends on the buffer size,
  * so the optimal implementation is different.
  */
+#ifndef NO_PROTO
+int is_text_buf(ZCONST char *buf_ptr, size_t buf_size)
+#else
 int is_text_buf(buf_ptr, buf_size)
     ZCONST char *buf_ptr;
     size_t buf_size;
+#endif
 {
     int result = 0;
     size_t i;
@@ -1131,10 +1183,14 @@ int is_text_buf(buf_ptr, buf_size)
 
 /* Format a zoff_t value in a cylindrical buffer set. */
 
+#ifndef NO_PROTO
+char *zip_fzofft( zoff_t val, char *pre, char *post)
+#else
 char *zip_fzofft( val, pre, post)
   zoff_t val;
   char *pre;
   char *post;
+#endif
 {
     /* Storage cylinder. */
     static char fzofft_buf[ FZOFFT_NUM][ FZOFFT_LEN];
@@ -1180,10 +1236,14 @@ char *zip_fzofft( val, pre, post)
 /* Format a uzoff_t value in a cylindrical buffer set. */
 /* Added to support uzoff_t type.  12/29/04 */
 
+#ifndef NO_PROTO
+char *zip_fuzofft( uzoff_t val, char *pre, char *post)
+#else
 char *zip_fuzofft( val, pre, post)
   uzoff_t val;
   char *pre;
   char *post;
+#endif
 {
     /* Storage cylinder. */
     static char fuzofft_buf[ FZOFFT_NUM][ FZOFFT_LEN];
@@ -1229,9 +1289,13 @@ char *zip_fuzofft( val, pre, post)
 /* Display number to a stream
    5/15/05 EG */
 
+#ifndef NO_PROTO
+int DisplayNumString(FILE *file, uzoff_t i)
+#else
 int DisplayNumString(file, i)
   FILE *file;
   uzoff_t i;
+#endif
 {
   char tempstrg[100];
   int j;
@@ -1252,8 +1316,12 @@ int DisplayNumString(file, i)
 /* Read numbers with trailing size multiplier (like 10M) and return number.
    10/30/04 EG */
 
+#ifndef NO_PROTO
+uzoff_t ReadNumString( char * numstring )
+#else
 uzoff_t ReadNumString( numstring )
   char *numstring;
+#endif
 {
   zoff_t num = 0;
   char multchar = ' ';
@@ -1319,9 +1387,13 @@ uzoff_t ReadNumString( numstring )
    returns the characters written or -1 if error.
    10/30/04 EG */
 
+#ifndef NO_PROTO
+int WriteNumString( uzoff_t num, char *outstring )
+#else
 int WriteNumString( num, outstring )
   uzoff_t num;
   char *outstring;
+#endif
 {
   int mult;
   int written = 0;
@@ -1575,7 +1647,7 @@ int get_flags (char *instring, option_flag *flags[])
 #else
 int get_flags (instring, flags)
   char *instring;
-  option_flag flags[];
+  option_flag *flags[];
 #endif
 {
   int cnt = 0;
@@ -1667,12 +1739,12 @@ int get_flags (instring, flags)
 void free_flags (option_flag *flags[])
 #else
 void free_flags (flags)
-  option_flag flags[];
+  option_flag *flags[];
 #endif
 {
   int i;
   option_flag *flags_array;
-  
+
   if (flags == NULL) {
     return;
   }

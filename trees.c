@@ -1,7 +1,7 @@
 /*
   trees.h - Zip 3
 
-  Copyright (c) 1990-2016 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -473,9 +473,13 @@ local void copy_block     OF((char *buf, unsigned len, int header));
  * location of the internal file attribute (ascii/binary) and method
  * (DEFLATE/STORE).
  */
+#ifndef NO_PROTO
+void ct_init(ush *attr, int *method)
+#else
 void ct_init(attr, method)
     ush  *attr;   /* pointer to internal file attribute */
     int  *method; /* pointer to compression method */
+#endif
 {
     int n;        /* iterates over tree elements */
     int bits;     /* bit counter */
@@ -604,9 +608,13 @@ local void init_block()
  * when the heap property is re-established (each father smaller than its
  * two sons).
  */
+#ifndef NO_PROTO
+local void pqdownheap(ct_data near *tree, int k)
+#else
 local void pqdownheap(tree, k)
     ct_data near *tree;  /* the tree to restore */
     int k;               /* node to move down */
+#endif
 {
     int v = heap[k];
     int j = k << 1;  /* left son of k */
@@ -640,8 +648,12 @@ local void pqdownheap(tree, k)
  *     The length opt_len is updated; static_len is also updated if stree is
  *     not null.
  */
+#ifndef NO_PROTO
+local void gen_bitlen(tree_desc near *desc)
+#else
 local void gen_bitlen(desc)
     tree_desc near *desc; /* the tree descriptor */
+#endif
 {
     ct_data near *tree  = desc->dyn_tree;
     int near *extra     = desc->extra_bits;
@@ -725,9 +737,13 @@ local void gen_bitlen(desc)
  * OUT assertion: the field code is set for all tree elements of non
  *     zero code length.
  */
+#ifndef NO_PROTO
+local void gen_codes (ct_data near *tree, int max_code)
+#else
 local void gen_codes (tree, max_code)
     ct_data near *tree;        /* the tree to decorate */
     int max_code;              /* largest code with non zero frequency */
+#endif
 {
     ush next_code[MAX_BITS+1]; /* next code value for each bit length */
     ush code = 0;              /* running code value */
@@ -766,8 +782,12 @@ local void gen_codes (tree, max_code)
  *     and corresponding code. The length opt_len is updated; static_len is
  *     also updated if stree is not null. The field max_code is set.
  */
+#ifndef NO_PROTO
+local void build_tree(tree_desc near *desc)
+#else
 local void build_tree(desc)
     tree_desc near *desc; /* the tree descriptor */
+#endif
 {
     ct_data near *tree   = desc->dyn_tree;
     ct_data near *stree  = desc->static_tree;
@@ -853,9 +873,13 @@ local void build_tree(desc)
  * counts. (The contribution of the bit length codes will be added later
  * during the construction of bl_tree.)
  */
+#ifndef NO_PROTO
+local void scan_tree (ct_data near *tree, int max_code)
+#else
 local void scan_tree (tree, max_code)
     ct_data near *tree; /* the tree to be scanned */
     int max_code;       /* and its largest code of non zero frequency */
+#endif
 {
     int n;                     /* iterates over all tree elements */
     int prevlen = -1;          /* last emitted length */
@@ -897,9 +921,13 @@ local void scan_tree (tree, max_code)
  * Send a literal or distance tree in compressed form, using the codes in
  * bl_tree.
  */
+#ifndef NO_PROTO
+local void send_tree (ct_data near *tree, int max_code)
+#else
 local void send_tree (tree, max_code)
     ct_data near *tree; /* the tree to be scanned */
     int max_code;       /* and its largest code of non zero frequency */
+#endif
 {
     int n;                     /* iterates over all tree elements */
     int prevlen = -1;          /* last emitted length */
@@ -980,8 +1008,12 @@ local int build_bl_tree()
  * lengths of the bit length codes, the literal tree and the distance tree.
  * IN assertion: lcodes >= 257, dcodes >= 1, blcodes >= 4.
  */
+#ifndef NO_PROTO
+local void send_all_trees(int lcodes, int dcodes, int blcodes)
+#else
 local void send_all_trees(lcodes, dcodes, blcodes)
     int lcodes, dcodes, blcodes; /* number of codes for each tree */
+#endif
 {
     int rank;                    /* index in bl_order */
 
@@ -1015,10 +1047,15 @@ local void send_all_trees(lcodes, dcodes, blcodes)
  * returns the total compressed length (in bytes) for the file so far.
  */
 /* zip64 support 08/29/2003 R.Nausedat */
+#ifndef NO_PROTO
+uzoff_t flush_block(char *buf, ulg stored_len, int eof)
+#else
 uzoff_t flush_block(buf, stored_len, eof)
     char *buf;        /* input block, or NULL if too old */
     ulg stored_len;   /* length of input block */
+
     int eof;          /* true if this is the last block for a file */
+#endif
 {
     ulg opt_lenb, static_lenb; /* opt_len and static_len in bytes */
     int max_blindex;  /* index of last bit length code of non zero freq */
@@ -1145,9 +1182,13 @@ uzoff_t flush_block(buf, stored_len, eof)
  * Save the match info and tally the frequency counts. Return true if
  * the current block must be flushed.
  */
+#ifndef NO_PROTO
+int ct_tally (int dist, int lc)
+#else
 int ct_tally (dist, lc)
     int dist;  /* distance of matched string */
     int lc;    /* match length-MIN_MATCH or unmatched char (if dist==0) */
+#endif
 {
     l_buf[last_lit++] = (uch)lc;
     if (dist == 0) {
@@ -1198,9 +1239,13 @@ int ct_tally (dist, lc)
 /* ===========================================================================
  * Send the block data compressed using the given Huffman trees
  */
+#ifndef NO_PROTO
+local void compress_block(ct_data near *ltree, ct_data near *dtree)
+#else
 local void compress_block(ltree, dtree)
     ct_data near *ltree; /* literal tree */
     ct_data near *dtree; /* distance tree */
+#endif
 {
     unsigned dist;      /* distance of matched string */
     int lc;             /* match length or unmatched char (if dist == 0) */
@@ -1304,10 +1349,14 @@ local void set_file_type()
 /* ===========================================================================
  * Initialize the bit string routines.
  */
+#ifndef NO_PROTO
+void bi_init (char *tgt_buf, unsigned tgt_size, int flsh_allowed)
+#else
 void bi_init (tgt_buf, tgt_size, flsh_allowed)
     char *tgt_buf;
     unsigned tgt_size;
     int flsh_allowed;
+#endif
 {
     out_buf = tgt_buf;
     out_size = tgt_size;
@@ -1326,9 +1375,13 @@ void bi_init (tgt_buf, tgt_size, flsh_allowed)
  * Send a value on a given number of bits.
  * IN assertion: length <= 16 and value fits in length bits.
  */
+#ifndef NO_PROTO
+local void send_bits(int value, int length)
+#else
 local void send_bits(value, length)
     int value;  /* value to send */
     int length; /* number of bits */
+#endif
 {
 #ifdef DEBUG
     Tracevv((stderr," l %2d v %4x ", length, value));
@@ -1354,9 +1407,13 @@ local void send_bits(value, length)
  * method would use a table)
  * IN assertion: 1 <= len <= 15
  */
+#ifndef NO_PROTO
+local unsigned bi_reverse(unsigned code, int len)
+#else
 local unsigned bi_reverse(code, len)
     unsigned code; /* the value to invert */
     int len;       /* its bit length */
+#endif
 {
     register unsigned res = 0;
     do {
@@ -1428,10 +1485,14 @@ local void bi_windup()
  *
  * 2006-03-06 EG, CS
  */
+#ifndef NO_PROTO
+local void copy_block(char *block, unsigned len, int header)
+#else
 local void copy_block(block, len, header)
     char *block;  /* the input data */
     unsigned len; /* its length */
     int header;   /* true if block header must be written */
+#endif
 {
     bi_windup();              /* align on byte boundary */
 

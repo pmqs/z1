@@ -1,7 +1,7 @@
 /*
   globals.c - Zip 3.1
 
-  Copyright (c) 1990-2023 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -30,8 +30,8 @@ int dispose = 0;        /* 1=remove files after put in zip file */
 int pathput = 1;        /* 1=store path with name */
 int nul_term_names = 0; /* 1=getnam() reads NUL terminated names */
 #ifdef UNIX_APPLE
-int data_fork_only = 0; /* 1=no AppleDouble supplement file. */
-int sequester = 0;      /* 1=sequester AppleDouble files in __MACOSX. */
+int data_fork_only = 0; /* 1=No AppleDouble supplement file. */
+int sequester = 0;      /* 1=Sequester AppleDouble files in __MACOSX. */
 #endif
 #ifdef RISCOS
 int scanimage = 1;      /* 1=scan through image files */
@@ -198,9 +198,15 @@ uzoff_t total_cd_total_entries; /* num of entries across all archives */
 
 #ifdef UNIX_APPLE
 int sort_apple_double = 1;    /* 1=sort Zip added "._" files after primary files */
-#else
+
+# ifdef APPLE_XATTR
+char **apl_dbl_xattr_ignore = NULL;    /* Names of ext attrs to ignore. */
+int apl_dbl_xattr_ignore_cnt = 0;      /* Number of ext attrs to ignore. */
+# endif /* def APPLE_XATTR */
+
+#else /* def UNIX_APPLE */
 int sort_apple_double = 0;    /* 1=sort Zip added "._" files after primary files */
-#endif
+#endif /* def UNIX_APPLE */
 int sort_apple_double_all = 0;/* 1=ignore AppleDouble zflag and sort all "._" files */
 
 int linkput = 0;              /* 1=store symbolic links as such (-y) */

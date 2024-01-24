@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 1990-2015 Info-ZIP.  All rights reserved.
+  Copyright (c) 1990-2024 Info-ZIP.  All rights reserved.
 
   See the accompanying file LICENSE, version 2009-Jan-2 or later
   (the contents of which are also included in zip.h) for terms of use.
@@ -80,8 +80,12 @@ extern void bz_internal_error OF((int bzerrcode));
  * BZ_NO_STDIO), required to handle fatal internal bug-type errors of
  * the bzip2 library.
  */
+#ifndef NO_PROTO
+void bz_internal_error(int bzerrcode)
+#else
 void bz_internal_error(bzerrcode)
     int bzerrcode;
+#endif
 {
     sprintf(errbuf, "fatal error (code %d) in bzip2 library", bzerrcode);
     ziperr(ZE_LOGIC, errbuf);
