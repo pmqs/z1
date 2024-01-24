@@ -109,7 +109,7 @@ jobs:
     - name: Update Package Repository for stretch
       if: matrix.compiler.stretch
       run: |
-        sudo add-apt-repository "deb http://deb.debian.org/debian stretch main"
+        add-apt-repository "deb http://deb.debian.org/debian stretch main"
 
 
 
@@ -122,7 +122,7 @@ jobs:
       run: ${{ matrix.compiler.name }} -v
 
     - name: Display uname
-      run:
+      run: |
         uname -a
         uname -m
 
