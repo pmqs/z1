@@ -8,15 +8,15 @@ on:
 
 jobs:
   configure:
-    name: ${{ matrix.compiler.name }} + ${{ matrix.arch }} + ${{ matrix.compiler.debian }}
+    name: ${{ matrix.compiler.name }} + ${{ matrix.arch }} + ${{ matrix.compiler.tag }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
 
       matrix:
-        arch:
-        - amd64
-        # - i386
+        # arch:
+        # - amd64
+        # # - i386
 
         compiler:
 
@@ -97,7 +97,8 @@ jobs:
 
 
     container:
-      image: ${{ matrix.arch }}/${{ matrix.compiler.tag }}
+      image: ${{ matrix.compiler.tag }}
+    #   image: ${{ matrix.arch }}/${{ matrix.compiler.tag }}
 
     steps:
 
