@@ -8,7 +8,7 @@ on:
 
 jobs:
   configure:
-    name: ${{ matrix.compiler.name }}+ ${{ matrix.arch }} + ${{ matrix.compiler.debian }}
+    name: ${{ matrix.compiler.name }} + ${{ matrix.arch }} + ${{ matrix.compiler.debian }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -20,58 +20,79 @@ jobs:
 
         compiler:
 
-        - debian: experimental
-          name: gcc
-        - debian: experimental
-          name: clang
+        # - name: gcc
+        #   debian: experimental
+        # - name: clang
+        #   debian: experimental
 
 
 
-        # - debian: trixie
-        #   name: gcc-13
-        # - debian: bookworm-slim
-        #   name: gcc-12
-        # - debian: bookworm-slim
-        #   name: gcc-11
-        # - debian: bullseye-slim
-        #   name: gcc-10
-        # - debian: bullseye-slim
-        #   name: gcc-9
-        # - debian: buster-slim
-        #   name: gcc-8
-        # - debian: buster-slim
-        #   name: gcc-7
-        - debian: buster-slim
-          name: gcc-6
-        - debian: buster-slim
-          name: gcc-5
-        - debian: buster-slim
-          name: gcc-4
 
-        # - debian: trixie
-        #   name: clang-17
-        # - debian: bookworm-slim
-        #   name: clang-16
-        # - debian: bookworm-slim
-        #   name: clang-15
-        # - debian: bookworm-slim
-        #   name: clang-14
-        # - debian: bookworm-slim
-        #   name: clang-13
-        # # - debian: bullseye-slim
-        # #   name: clang-12
-        # - debian: bullseye-slim
-        #   name: clang-11
-        # # - debian: bullseye-slim
-        # #   name: clang-10
-        # - debian: bullseye-slim
-        #   name: clang-9
-        # # - debian: bookworm-slim
-        # #   name: clang-8
-        # - debian: buster-slim
-        #   name: clang-7
-        # # - debian: bullseye-slim
-        # #   name: clang-6
+        # WORKING
+        # - name: gcc-13
+        #   debian: trixie
+        # - name: gcc-12
+        #   debian: bookworm-slim
+        # - name: gcc-11
+        #   debian: bookworm-slim
+        # - name: gcc-10
+        #   debian: bullseye-slim
+        # - name: gcc-9
+        #   debian: bullseye-slim
+        # - name: gcc-8
+        #   debian: buster-slim
+        # - name: gcc-7
+        #   debian: buster-slim
+
+
+        - name: gcc-6
+          debian: buster-slim
+          stretch: true
+
+        - name: gcc-5
+          debian: buster-slim
+          stretch: true
+
+        - name: gcc-4
+          debian: buster-slim
+          stretch: true
+
+
+        - name: clang-17
+          debian: trixie
+
+        - name: clang-16
+          debian: bookworm-slim
+
+        - name: clang-15
+          debian: bookworm-slim
+
+        - name: clang-14
+          debian: bookworm-slim
+
+        - name: clang-13
+          debian: bookworm-slim
+
+        # - name: clang-12
+        #   debian: bullseye-slim
+
+        - name: clang-11
+          debian: bullseye-slim
+
+          # - name: clang-10
+          #   debian: bullseye-slim
+
+        - name: clang-9
+          debian: bullseye-slim
+
+        # - name: clang-8
+        #  debian: bookworm-slim
+
+        - name: clang-7
+          debian: buster-slim
+
+          # - name: clang-6
+          #   debian: bullseye-slim
 
 
 
@@ -85,6 +106,13 @@ jobs:
     #   with:
         # show-progress: 'false'
 
+    - name: Update Package Repository for stretch
+      if: matrix.compiler.stretch
+      run: |
+        sudo add-apt-repository "deb http://deb.debian.org/debian stretch main"
+
+
+
     - name: Install packages
       run: |
         apt-get update -qq
@@ -94,11 +122,13 @@ jobs:
       run: ${{ matrix.compiler.name }} -v
 
     - name: Display uname
-      run: uname -a
+      run:
+        uname -a
+        uname -m
 
     - name: configure (unix/Makefile)
       run: |
-        make -f unix/Makefile generic CC=${{ matrix.compiler.name }} LOCAL_ZIP="-Werror" ${{ matrix.opts }}
+        make -j2 -f unix/Makefile generic CC=${{ matrix.compiler.name }} LOCAL_ZIP="-Werror" ${{ matrix.opts }}
         cat flags
 
     - name: Run zip -v
@@ -107,7 +137,7 @@ jobs:
 
     # - name: build (unix/Makefile)
     #   run: |
-    #         make -f unix/Makefile generic
+    #         make -j2 -f unix/Makefile generic
 
     # - name: Run zip -v
     #   run: ./zip -v
