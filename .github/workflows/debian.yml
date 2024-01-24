@@ -45,58 +45,51 @@ jobs:
         #   debian: buster
 
 
-        - name: gcc-6
-          debian: buster
-          repo: stretch
-
-        - name: gcc-5
-          debian: buster
-          repo: stretch
-
-        - name: gcc-4
-          debian: buster
-          repo: stretch
 
 
+
+        # WORKING
         # - name: clang-17
         #   debian: trixie
-
         # - name: clang-16
         #   debian: bookworm
-
         # - name: clang-15
         #   debian: bookworm
-
         # - name: clang-14
         #   debian: bookworm
-
         # - name: clang-13
         #   debian: bookworm
-
-        - name: clang-12
-          debian: bullseye
-          repo: stretch
-
         # - name: clang-11
         #   debian: bullseye
-
-        - name: clang-10
-          debian: bullseye
-          repo: stretch
-
         # - name: clang-9
         #   debian: bullseye
-
-        - name: clang-8
-          debian: bookworm
-          repo: stretch
-
         # - name: clang-7
         #   debian: buster
 
+
+        # NOT WORKING
+
+        - name: gcc-6
+          debian: eol:stretch
+
+        - name: gcc-5
+          debian: eol:stretch
+
+        - name: gcc-4
+          debian: eol:stretch
+
+        - name: clang-12
+          debian: eol:stretch
+
+        - name: clang-10
+          debian: eol:stretch
+
+
+        - name: clang-8
+          debian: eol:stretch
+
         - name: clang-6
-          debian: bullseye
-          repo: stretch
+          debian: eol:stretch
 
 
 
@@ -113,6 +106,8 @@ jobs:
     - name: Install packages
       if: matrix.compiler.repo
       run: |
+
+        echo "deb http://archive.debian.org/debian stretch main contrib non-free" > /etc/apt/sources.list
         echo "deb http://archive.debian.org/debian-archive/ oldstable main contrib non-free" >> /etc/apt/sources.list
         echo "deb-src http://archive.debian.org/debian-archive/ oldstable main contrib non-free" >> /etc/apt/sources.list
 

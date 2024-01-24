@@ -22,16 +22,16 @@ jobs:
 
         compiler:
           # - [
-          #     [ name: gcc-13, cmd: gcc-13,  package: gcc-13,  osver: 22.04, lunar: true],
+          #     [ name: gcc-13, cmd: gcc-13,  package: gcc-13,  osver: 22.04, repo: lunar],
           #     [ name: gcc-12, cmd: gcc-12,  package: gcc-12,  osver: 22.04             ],
           #     [ name: gcc-11, cmd: gcc-11,  package: gcc-11,  osver: 22.04             ],
           #     [ name: gcc-10, cmd: gcc-10,  package: gcc-10,  osver: 22.04             ],
           #     [ name: gcc-9,  cmd: gcc-9,   package: gcc-9,   osver: 20.04             ],
           #     [ name: gcc-8,  cmd: gcc-8,   package: gcc-8,   osver: 20.04             ],
           #     [ name: gcc-7,  cmd: gcc-7,   package: gcc-7,   osver: 20.04             ],
-          #     [ name: gcc-6,  cmd: gcc-6,   package: gcc-6,   osver: 20.04, bionic: true],
-          #     [ name: gcc-5,  cmd: gcc-5,   package: gcc-5,   osver: 20.04, bionic: true],
-          #     [ name: gcc-4,  cmd: gcc-4.7, package: gcc-4.7, osver: 20.04, bionic: true],
+          #     [ name: gcc-6,  cmd: gcc-6,   package: gcc-6,   osver: 20.04, repo: bionic],
+          #     [ name: gcc-5,  cmd: gcc-5,   package: gcc-5,   osver: 20.04, repo: bionic],
+          #     [ name: gcc-4,  cmd: gcc-4.7, package: gcc-4.7, osver: 20.04, repo: bionic],
           #     ]
 
           # GCC Compilers
@@ -39,13 +39,13 @@ jobs:
         #   cmd: gcc-13
         #   package: gcc-13
         #   osver: 22.04
-        #   lunar: true
+        #   repo: lunar
 
         # - name: gcc-12
         #   cmd: gcc-12
         #   package: gcc-12
         #   osver: 22.04
-        #   lunar: true
+        #   repo: lunar
 
         - name: gcc-11
           cmd: gcc-11
@@ -76,19 +76,19 @@ jobs:
         #   cmd: gcc-6
         #   package: gcc-6
         #   osver: 20.04
-        #   bionic: true
+        #   repo: bionic
 
         # - name: gcc-5
         #   cmd: gcc-5
         #   package: gcc-5
         #   osver: 20.04
-        #   bionic: true
+        #   repo: bionic
 
         # - name: gcc-4
         #   cmd: gcc-4.8
         #   package: gcc-4.8
         #   osver: 20.04
-        #   bionic: true
+        #   repo: bionic
 
           # CLANG Compilers
 
@@ -96,19 +96,19 @@ jobs:
           cmd: clang-17
           package: clang-17
           osver: 22.04
-          lunar: true
+          repo: lunar
 
         # - name: clang-16
         #   cmd: clang-16
         #   package: clang-16
         #   osver: 22.04
-        #   lunar: true
+        #   repo: lunar
 
         # - name: clang-15
         #   cmd: clang-15
         #   package: clang-15
         #   osver: 22.04
-        #   lunar: true
+        #   repo: lunar
 
         # - name: clang-14
         #   cmd: clang-14
@@ -159,19 +159,19 @@ jobs:
         #   cmd: clang-5.0
         #   package: clang-5.0
         #   osver: 20.04
-        #   bionic: true
+        #   repo: bionic
 
         # - name: clang-4
         #   cmd: clang-4.0
         #   package: clang-4.0
         #   osver: 20.04
-        #   bionic: true
+        #   repo: bionic
 
         # - name: clang-3
         #   cmd: clang
         #   package: clang-3.3
         #   osver: 20.04
-        #   trusty: true
+        #   repo: trusty
 
 
     steps:
@@ -186,51 +186,19 @@ jobs:
       #
       # add-apt-repository is slow, so only trigger it when needed
 
-    - name: Update Package Repository for 20.04
-      if: matrix.trusty
+    - name: Update Package Repository
+      if: matrix.compiler.repo
       run: |
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty main"
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty universe"
-
-    # - name: Update Package Repository for 20.04
-    #   if: matrix.trusty-updates
-    #   run: |
-    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty-updates main"
-    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu trusty-updates universe"
-
-    # - name: Update Package Repository for 20.04
-    #   if: matrix.xenial
-    #   run: |
-    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial main"
-    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial universe"
-
-    # - name: Update Package Repository for 20.04
-    #   if: matrix.xenial-updates
-    #   run: |
-    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial-updates main"
-    #     sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu xenial-updates universe"
-
-
-    - name: Update Package Repository for 20.04
-      if: matrix.compiler.bionic
-      run: |
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu bionic main"
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu bionic universe"
-
-    - name: Update Package Repository for 22.04
-      if: matrix.compiler.lunar
-      run: |
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu lunar main"
-        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu lunar universe"
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu $(( matrix.compiler.repo )) main"
+        sudo add-apt-repository "deb http://azure.archive.ubuntu.com/ubuntu $(( matrix.compiler.repo )) universe"
 
       # https://apt.llvm.org/
-    - name: Update Package Repository for 22.04 + clang=17
+    - name: Install clang=17
       if:  matrix.compiler.name == 'clang-17'
       run: |
         wget https://apt.llvm.org/llvm.sh
         chmod u+x llvm.sh
         echo | sudo ./llvm.sh 17
-
 
     - name: Install packages
       run: |
