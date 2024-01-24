@@ -32,67 +32,71 @@ jobs:
         # - name: gcc-13
         #   debian: trixie
         # - name: gcc-12
-        #   debian: bookworm-slim
+        #   debian: bookworm
         # - name: gcc-11
-        #   debian: bookworm-slim
+        #   debian: bookworm
         # - name: gcc-10
-        #   debian: bullseye-slim
+        #   debian: bullseye
         # - name: gcc-9
-        #   debian: bullseye-slim
+        #   debian: bullseye
         # - name: gcc-8
-        #   debian: buster-slim
+        #   debian: buster
         # - name: gcc-7
-        #   debian: buster-slim
+        #   debian: buster
 
 
         - name: gcc-6
-          debian: buster-slim
+          debian: buster
           stretch: true
 
         - name: gcc-5
-          debian: buster-slim
+          debian: buster
           stretch: true
 
         - name: gcc-4
-          debian: buster-slim
+          debian: buster
           stretch: true
 
 
-        - name: clang-17
-          debian: trixie
+        # - name: clang-17
+        #   debian: trixie
 
-        - name: clang-16
-          debian: bookworm-slim
+        # - name: clang-16
+        #   debian: bookworm
 
-        - name: clang-15
-          debian: bookworm-slim
+        # - name: clang-15
+        #   debian: bookworm
 
-        - name: clang-14
-          debian: bookworm-slim
+        # - name: clang-14
+        #   debian: bookworm
 
-        - name: clang-13
-          debian: bookworm-slim
+        # - name: clang-13
+        #   debian: bookworm
 
-        # - name: clang-12
-        #   debian: bullseye-slim
+        - name: clang-12
+          debian: bullseye
+          stretch: true
 
-        - name: clang-11
-          debian: bullseye-slim
+        # - name: clang-11
+        #   debian: bullseye
 
-          # - name: clang-10
-          #   debian: bullseye-slim
+        - name: clang-10
+          debian: bullseye
+          stretch: true
 
-        - name: clang-9
-          debian: bullseye-slim
+        # - name: clang-9
+        #   debian: bullseye
 
-        # - name: clang-8
-        #  debian: bookworm-slim
+        - name: clang-8
+          debian: bookworm
+          stretch: true
 
-        - name: clang-7
-          debian: buster-slim
+        # - name: clang-7
+        #   debian: buster
 
-          # - name: clang-6
-          #   debian: bullseye-slim
+        - name: clang-6
+          debian: bullseye
+          stretch: true
 
 
 
