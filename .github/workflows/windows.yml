@@ -1,0 +1,59 @@
+name: C Standard
+
+# Compile with as many C standars as possible.
+# The worflow is setup to fail on any compilation warnings.
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+
+
+    msvc:
+        name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
+        runs-on: ${{ matrix.os.value }}
+        strategy:
+          fail-fast: false
+          matrix:
+            os:
+              - name: Windows
+                value: windows-latest
+
+            compiler:
+              - cl
+
+            # arch:
+            #   - name: 32-bit
+            #     value: -A Win32
+
+            #   - name: 64-bit
+            #     value: -A x64
+
+            # builder:
+            #   - cmake
+
+            # std:
+            #   - name: default
+            #     value: ""
+
+            #   - name: C11
+            #     value: /std:c11
+
+            #   - name: C17
+            #     value: /std:c17
+
+            #   - name: latest
+            #     value: /std:clatest
+
+        steps:
+
+        - name: Checkout repository
+          uses: actions/checkout@v4
+          with:
+            show-progress: 'false'
+
+        - name: Generate project files (cmake)
+          run: |
+            cl /help
