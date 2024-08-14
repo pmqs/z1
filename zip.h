@@ -116,6 +116,10 @@ typedef unsigned long ulg;      /* unsigned 32-bit value */
 #  include "zlib.h"
 #endif
 
+#ifndef NO_STDINT
+#  include <stdint.h>
+#endif
+
 #if defined(UNIX) && defined(__APPLE__)
 # define UNIX_APPLE
 #endif
@@ -2307,7 +2311,13 @@ void     bi_init      OF((char *, unsigned int, int));
 # define wide_to_mb_default_string "_"
 
   /* wide character type */
+# ifndef NO_STDINT
+  typedef uint32_t zwchar;
+# else
+/* WARNING -- the use of unsigned int for zwchar below assumes it is 4 bytes */
+/* That is not portable]*/
   typedef unsigned long zwchar;
+# endif /* NO_STDLIB */
 
   /* UNICODE_SUPPORT now requires support of PROTOTYPES
    *
@@ -2371,7 +2381,7 @@ void     bi_init      OF((char *, unsigned int, int));
   char *local_to_display_string(char *);
 
   /* convert wide character to escape string */
-  char *wide_char_to_escape_string(unsigned long);
+  char *wide_char_to_escape_string(zwchar);
 
   zwchar *escapes_to_wide_string(zwchar *);
   char *escapes_to_utf8_string(char *escaped_string);

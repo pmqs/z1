@@ -2016,8 +2016,8 @@ int main()
    2011/09/02 [AD] Comment out: Problem reported to IBM
                    - Over-optimized trivial program fails during printf()
    */
-  printf("  s.st_uid is %u bytes\n", sizeof(s.st_uid));
-  printf("  s.st_gid is %u bytes\n", sizeof(s.st_gid));
+  printf("  s.st_uid is %u bytes\n", (unsigned)sizeof(s.st_uid));
+  printf("  s.st_gid is %u bytes\n", (unsigned)sizeof(s.st_gid));
 #endif
 
   /* See if have 16-bit UID. */
@@ -2281,7 +2281,7 @@ int main()
 
   /* Get wchar string. */
   wsize = mbstowcs(wchar_string, "foo", 3);
-  wchar_string[wsize] = (wchar_t) NULL;
+  wchar_string[wsize] = L'\0';
 
   /* Make sure we have everything we need for wide support. */
   wco = towupper(wc);
@@ -2296,8 +2296,8 @@ int main()
   printf("  No __STDC_ISO_10646__ encoding\n");
   return 1;
 #else
-  printf("  UCS encoding:  __STDC_ISO_10646__ = %d (yyyymm)\n",
-    __STDC_ISO_10646__);
+  printf("  UCS encoding:  __STDC_ISO_10646__ = %u (yyyymm)\n",
+    (unsigned)__STDC_ISO_10646__);
   return 2;
 #endif
 }
@@ -2469,7 +2469,7 @@ int main()
   outp = outbuf_2;
   outbytesleft = OUTBUF_SIZE;
 
-  printf("  Test 2:  input string (Greek) (length %d):  '%s'\n", inbytesleft, inbuf_2);
+  printf("  Test 2:  input string (Greek) (length %d):  '%s'\n", (int)inbytesleft, inbuf_2);
   printf("           Converting %s to %s\n", fromcode_2, tocode_2);
 
   cd = iconv_open(tocode_2, fromcode_2);
@@ -2571,7 +2571,7 @@ _EOF_
         have_iconv=1
       else
         # That failed, so try linking with libiconv.
-        $CC_TST $LFLAGS1 -liconv -o conftest conftest.o >/dev/null 2>/dev/null
+        $CC_TST $LFLAGS1 -o conftest conftest.o  -liconv >/dev/null 2>/dev/null
         status=$?
         if [ $status -eq 0 ]; then
           echo "  Have iconv - requires lib."
@@ -2580,7 +2580,8 @@ _EOF_
         fi
       fi
       if [ $have_iconv -eq 1 ]; then
-        LCUTF8=`locale -a | grep -iE "UTF-?8$" | head -1`
+        # Solaris default grep doesn't support the '-E' option so use egrep instead
+        LCUTF8=`locale -a | egrep -i 'UTF-?8$' | head -1`
         if [ -z "$LCUTF8" ]; then
           echo "  No UTF8 locale found, generate one and re-run."
           status=1
@@ -3017,7 +3018,10 @@ fi
 # Check for readlink().
 # - Dynix/ptx 1.3 needed this.
 echon 'Check for readlink()...'
-echo "int main(){ return readlink(); }" > conftest.c
+cat > conftest.c << _EOF_
+int readlink(void);
+int main(){ return readlink(); }
+_EOF_
 $CC_TST $CFLAGS -o conftest conftest.c >/dev/null 2>/dev/null
 status=$?
 if [ $status -eq 0 ]; then

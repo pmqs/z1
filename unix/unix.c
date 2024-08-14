@@ -804,6 +804,10 @@ int procname(n, caseflag)
 #endif /* UNICODE_SUPPORT */
 
       free((zvoid *)p);
+#ifdef FTS_SUPPORT
+      fts_close(tree);
+#endif
+
       return m ? ZE_MISS : ZE_OK;
 
 #if 0

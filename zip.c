@@ -6631,7 +6631,7 @@ struct option_struct far options[] = {
     {"su", "show-unicode", o_NO_VALUE,      o_NEGATABLE,     o_su, "as -sf but also show escaped Unicode"},
     {"sU", "show-only-unicode", o_NO_VALUE, o_NEGATABLE,     o_sU, "as -sf but only show escaped Unicode"},
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(ATARI)
-    {"S",  "",            o_NO_VALUE,       o_NOT_NEGATABLE, 'S',  "include system and hidden"},
+    {"S",  "system-hidden",o_NO_VALUE,       o_NOT_NEGATABLE, 'S',  "include system and hidden"},
 #endif /* MSDOS || OS2 || WIN32 || ATARI */
     {"SI", "rename-stdin",o_REQUIRED_VALUE, o_NOT_NEGATABLE, o_SI, "rename stdin from \"-\" to this"},
 #ifdef SKIP_SCAN
@@ -6688,8 +6688,8 @@ struct option_struct far options[] = {
     {"Y", "encryption-method", o_REQUIRED_VALUE, o_NOT_NEGATABLE, 'Y', "set encryption method"},
 #endif /* def IZ_CRYPT_ANY */
     {"z",  "archive-comment", o_OPT_EQ_VALUE, o_NOT_NEGATABLE, 'z',  "ask for archive comment, z= provide comment"},
-    {"zc", "show-zipfile-comment", o_NO_VALUE,o_NOT_NEGATABLE, o_zc, "output zipfile comment"},
-    {"zz", "comment-file", o_REQUIRED_VALUE, o_NOT_NEGATABLE, o_zz,  "read archive comment from file"},
+    {"zc", "show-archive-comment", o_NO_VALUE,o_NOT_NEGATABLE, o_zc, "output zipfile comment"},
+    {"zz", "archive-comment-file", o_REQUIRED_VALUE, o_NOT_NEGATABLE, o_zz,  "read archive comment from file"},
     {"Z",  "compression-method", o_REQUIRED_VALUE, o_NOT_NEGATABLE, 'Z', "compression method"},
 #if defined(MSDOS) || defined(OS2) || defined( VMS)
     {"$",  "volume-label", o_NO_VALUE,      o_NOT_NEGATABLE, '$',  "store volume label"},
@@ -8297,11 +8297,18 @@ char **argv;            /* command line tokens */
           break;
         case o_EA:
           ZIPERR(ZE_PARMS, "-EA (extended attributes) not yet implemented");
-#ifdef ETWODD_SUPPORT
         case o_et:      /* Encrypt Traditional without data descriptor. */
-          etwodd = 1;
+#ifdef ETWODD_SUPPORT
+          if (encryption_method == NO_ENCRYPTION || encryption_method == TRADITIONAL_ENCRYPTION) {
+            etwodd = 1;
+            encryption_method = TRADITIONAL_ENCRYPTION ;
+          }
+          if (key == NULL)
+            key_needed = 1;
+#else /* def ETWODD_SUPPORT */
+          ZIPERR(ZE_PARMS, "encryption (-et) not supported");
+#endif /* def ETWODD_SUPPORT [else] */
           break;
-#endif
         case 'F':   /* fix the zip file */
 #if defined(ZIPLIB) || defined(ZIPDLL)
           ZIPERR(ZE_PARMS, "-F not yet supported for LIB or DLL");
@@ -8872,7 +8879,7 @@ char **argv;            /* command line tokens */
             if (dt == DT_BAD)
             {
               ZIPERR(ZE_PARMS,
-         "invalid date/time for -tt:  use mmddyyyy or [yyyy-mm-dd][:HH:MM[:SS]]");
+         "invalid date/time for -tt:  use mmddyyyy or [yyyy-mm-dd][(T|:)HH:MM[:SS]]");
             }
             after = dt;
           }
@@ -9214,6 +9221,9 @@ char **argv;            /* command line tokens */
                      strmatch("AES1", value, CASE_INS, ENTIRE_STRING)) {
               zipwarn("encryption method ambiguous: ", value);
             }
+#    ifdef ETWODD_SUPPORT
+          etwodd = 0;
+#    endif /* def ETWODD_SUPPORT */
 # else
             free(value);
             ZIPERR(ZE_PARMS,
@@ -9472,6 +9482,7 @@ char **argv;            /* command line tokens */
             force_zip64 = 0;
           } else {
             force_zip64 = 1;
+            zip64_archive = 1;
           }
           break;
 #endif
@@ -9687,6 +9698,21 @@ char **argv;            /* command line tokens */
   if (show_what_doing) {
     sdmessage("sd: Command line read", "");
   }
+
+#ifdef ETWODD_SUPPORT
+  if (use_descriptors && etwodd) {
+    /* Choice here is
+     *  1. bomb out with message saying you can't have etwodd & fd at athe same time
+     *  2. warn about the combination and disable etwodd
+     *
+     *  Code below goes for the second option
+     */
+
+    zipwarn("--etwodd option ignored when --force-descriptors is enabled",  "");
+    etwodd = 0;
+  }
+
+#endif /* def ETWODD_SUPPORT */
 
   strcpy(errbuf, "");
   if (purposely_corrupt_loc_crc || purposely_corrupt_cen_crc) {
@@ -10992,6 +11018,13 @@ char **argv;            /* command line tokens */
     if (!s) {
       /* file from stdin */
 
+#ifdef ETWODD_SUPPORT
+        if (etwodd ) {
+          /* file from stdin and etwodd not allowed */
+          ZIPERR(ZE_PARMS, "can't use -et (--etwodd) with input from stdin");
+        }
+#endif
+
       /* Add stdin ("-") to the member list. */
       if ((r = procname("-", 0)) != ZE_OK) {
         if (r == ZE_MISS) {
@@ -11967,7 +12000,7 @@ char **argv;            /* command line tokens */
   PrintStatProgress("Getting file information ...");
 #endif
   diag("stating marked entries");
-  Trace((stderr, "zip diagnostic: zfiles=%u\n", (unsigned)zfiles));
+  Trace((stderr, "zip diagnostic: zfiles=%p\n", zfiles));
   k = 0;                        /* Initialize marked count */
   scan_started = 0;
   scan_count   = 0;
@@ -12345,7 +12378,7 @@ char **argv;            /* command line tokens */
       ulg tfm;
 
       if (!(display_bytes || display_est_to_go || display_zip_rate ||
-            show_files) && (zcount == 0))
+            show_files) && (fcount == 0))
         /* We skip getting the file info (time, size...) to avoid the
            performance penalty, as we don't need it in these cases.
            Perhaps there are other cases where we don't need to stat. */

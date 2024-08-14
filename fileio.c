@@ -120,10 +120,10 @@ local void display_dot_char(int chr);
 #ifdef UNICODE_SUPPORT
 local int utf8_char_bytes OF((ZCONST char *utf8));
 local long ucs4_char_from_utf8 OF((ZCONST char **utf8 ));
-local int utf8_from_ucs4_char OF((char *utf8buf, ulg ch));
-local int utf8_to_ucs4_string OF((ZCONST char *utf8, ulg *usc4buf,
+local int utf8_from_ucs4_char OF((char *utf8buf, zwchar ch));
+local int utf8_to_ucs4_string OF((ZCONST char *utf8, zwchar *usc4buf,
                                   int buflen));
-local int ucs4_string_to_utf8 OF((ZCONST ulg *ucs4, char *utf8buf,
+local int ucs4_string_to_utf8 OF((ZCONST zwchar *ucs4, char *utf8buf,
                                   int buflen));
 #if 0
   local int utf8_chars OF((ZCONST char *utf8));
@@ -728,7 +728,6 @@ int proc_archive_name(n, caseflag)
                z->mark ? "in" : "ex", z->oname);
         m = 0;
       }
-      free(pw);
 #else
       if (MATCH(p, z->iname, caseflag))
       {
@@ -740,6 +739,9 @@ int proc_archive_name(n, caseflag)
       }
 #endif
     }
+#ifdef UNICODE_SUPPORT_WIN32
+    free(pw);
+#endif
 #ifdef UNICODE_SUPPORT
     /* also check escaped Unicode names */
     for (z = zfiles; z != NULL; z = z->nxt) {
@@ -5133,11 +5135,11 @@ local long ucs4_char_from_utf8(utf8)
  * or -1 if ch is too large to represent.  utf8buf must have room for 6 bytes.
  */
 #ifndef NO_PROTO
-local int utf8_from_ucs4_char(char *utf8buf, ulg ch)
+local int utf8_from_ucs4_char(char *utf8buf, zwchar ch)
 #else
 local int utf8_from_ucs4_char(utf8buf, ch)
   char *utf8buf;
-  ulg ch;
+  zwchar ch;
 #endif
 {
   int trailing = 0;
@@ -5176,11 +5178,11 @@ local int utf8_from_ucs4_char(utf8buf, ch)
  * Return UCS count.  Now returns int so can return -1.
  */
 #ifndef NO_PROTO
-local int utf8_to_ucs4_string(ZCONST char *utf8, ulg *ucs4buf, int buflen)
+local int utf8_to_ucs4_string(ZCONST char *utf8, zwchar *ucs4buf, int buflen)
 #else
 local int utf8_to_ucs4_string(utf8, ucs4buf, buflen)
   ZCONST char *utf8;
-  ulg *ucs4buf;
+  zwchar *ucs4buf;
   int buflen;
 #endif
 {
@@ -5208,10 +5210,10 @@ local int utf8_to_ucs4_string(utf8, ucs4buf, buflen)
  *
  */
 #ifndef NO_PROTO
-local int ucs4_string_to_utf8(ZCONST ulg *ucs4, char *utf8buf, int buflen)
+local int ucs4_string_to_utf8(ZCONST zwchar *ucs4, char *utf8buf, int buflen)
 #else
 local int ucs4_string_to_utf8(ucs4, utf8buf, buflen)
-  ZCONST ulg *ucs4;
+  ZCONST zwchar *ucs4;
   char *utf8buf;
   int buflen;
 #endif
@@ -6101,6 +6103,7 @@ wchar_t *utf8_to_wchar_string(ZCONST char *utf8_string)
     char *tocode   = "WCHAR_T";
 
     char *inp;
+    char *inp_start;
     char *outp;
 
     utf8_string_len = strlen(utf8_string);
@@ -6115,7 +6118,7 @@ wchar_t *utf8_to_wchar_string(ZCONST char *utf8_string)
     coutbuf = (char *)outbuf;
     strcpy(coutbuf, "z\0y\0\0\0");
 
-    inp = string_dup(utf8_string, "utf8_to_wchar_string", NO_FLUFF);
+    inp_start = inp = string_dup(utf8_string, "utf8_to_wchar_string", NO_FLUFF);
     outp = coutbuf;
 
     inbytesleft = utf8_string_len;
@@ -6132,7 +6135,11 @@ wchar_t *utf8_to_wchar_string(ZCONST char *utf8_string)
 
     close_result = iconv_close(cd);
 
-    free(inp);
+    free(inp_start);
+
+    /* Terminate the output string.  */
+    if (outbytesleft >= sizeof (wchar_t))
+      *((wchar_t *) outp) = L'\0';
 
     if (iconv_result == (size_t)-1) {
       zperror("iconv");

@@ -563,9 +563,13 @@ int longest_match(cur_match)
 /* ===========================================================================
  * Check that the match at match_start is indeed a match.
  */
+#ifndef NO_PROTO
+local void check_match(IPos start, IPos match, int length)
+#else
 local void check_match(start, match, length)
     IPos start, match;
     int length;
+#endif
 {
     /* check that the match is indeed a match */
     if (memcmp((char*)window + match,

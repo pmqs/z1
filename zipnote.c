@@ -870,8 +870,9 @@ char **argv;                  /* command line tokens */
          (a[0] != MARK || strcmp(a + 1, MARKZ)))
   {                                     /* while input and not file comment */
     if (a[0] != MARK || a[1] != ' ') {  /* better be "@ name" */
-      zipwarn("expected '@ name', found:  ", "");
+      zipwarn_nonl("expected '@ name', found:  ", "");
       print_utf8(a);
+      zipmessage_nl("\n", NO_NL);
       ziperr(ZE_NOTE, "unexpected input");
     }
     while (z != NULL && strcmp(a + 2, z->zname)

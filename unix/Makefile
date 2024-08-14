@@ -1081,19 +1081,19 @@ $(PROD)/manout:
 # where the expected newline was not generated.
 
 $(DOC_ZIP):   man/man1/zip.1
-	man -M ` pwd `/man zip    | $(COL) -bx | uniq | expand > $@
+	MANWIDTH=80 LANG=C man -M ` pwd `/man zip    | $(COL) -bx | uniq | expand > $@
 	@echo ''
 
 $(DOC_CLOAK): man/man1/zipcloak.1
-	man -M ` pwd `/man zipcloak | $(COL) -bx | uniq | expand > $@
+	MANWIDTH=80 LANG=C man -M ` pwd `/man zipcloak | $(COL) -bx | uniq | expand > $@
 	@echo ''
 
 $(DOC_NOTE):  man/man1/zipnote.1
-	man -M ` pwd `/man zipnote  | $(COL) -bx | uniq | expand > $@
+	MANWIDTH=80 LANG=C man -M ` pwd `/man zipnote  | $(COL) -bx | uniq | expand > $@
 	@echo ''
 
 $(DOC_SPLIT): man/man1/zipsplit.1
-	man -M ` pwd `/man zipsplit | $(COL) -bx | uniq | expand > $@
+	MANWIDTH=80 LANG=C man -M ` pwd `/man zipsplit | $(COL) -bx | uniq | expand > $@
 	@echo ''
 
 
@@ -1203,7 +1203,7 @@ $(PROD)/flags_bz: $(PROD)/flags
 #----------------------------------------------------------------------------
 
 clean:
-	@if unix/unsafe_prod.sh "$(PROD)"; then \
+	@if sh unix/unsafe_prod.sh "$(PROD)"; then \
           echo "Won't clean absolute (/x) or rising (../) PROD: $(PROD)"; \
         else \
           echo "rm -f \"$(PROD)\"/*.o \"$(PROD)\"/*.a $(ZIP_PPGMS)"; \

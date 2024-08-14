@@ -1618,6 +1618,18 @@ Restart_As_Binary:
           * descriptor to hold the CRC is not standard, but is readable
           * by various utilities out there.  We do it this way to avoid
           * reading a file more than once and to support streaming.
+          *
+          * Note that setting the CRC to a non-zero value conflicts with
+          * appnote 6.3.10 section 4.4.4
+          *
+          *  Bit 3: If this bit is set, the fields crc-32, compressed
+          *     size and uncompressed size are set to zero in the
+          *     local header.  The correct values are put in the
+          *     data descriptor immediately following the compressed
+          *     data.  (Note: PKZIP version 2.04g for DOS only
+          *     recognizes this bit for method 8 compression, newer
+          *     versions of PKZIP recognize this bit for any
+          *     compression method.)
           */
         z->crc = z->tim << 16;
       }
@@ -2408,7 +2420,8 @@ zfprintf( stderr, " Done.          crc = %08x .\n", crc);
     z->siz = 0;
     z->len = 0;
     z->how = STORE;
-    z->ver = 20;  /* AppNote requires version 2.0 for a directory */
+    if (z->ver < 20)
+      z->ver = 20; /* AppNote requires version 2.0 for a directory */
 /* SMSd. */
 #if 0
 /* Following no longer needed? */
