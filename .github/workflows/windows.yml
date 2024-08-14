@@ -31,7 +31,7 @@ jobs:
         - name: Run msbuild
           run: |
             msbuild zip.sln 
-          working-directory: win32/vc17
+          working-directory: win32\vc17
 
             # msbuild zip.sln -t:rebuild -property:OutDir=c:\develop\windows-bin\ -p:Configuration=Debug -p:EnableASAN=true
 
