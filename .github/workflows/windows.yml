@@ -1,54 +1,28 @@
-name: C Standard
+name: Windows Visual Studio (cl)
 
-# Compile with as many C standars as possible.
-# The worflow is setup to fail on any compilation warnings.
+
 
 on:
   workflow_dispatch:
-  push:
-  pull_request:
+  # push:
+  # pull_request:
 
 jobs:
 
 
     msvc:
-        name: ${{ matrix.os.name }} ${{ matrix.compiler }} ${{ matrix.arch.name }} ${{ matrix.std.name }}  ${{ matrix.builder }}
+        name: Windows Visual Studio
         runs-on: ${{ matrix.os.value }}
         strategy:
           fail-fast: false
-          matrix:
-            os:
-              - name: Windows
-                value: windows-latest
-
-            compiler:
-              - cl
-
-            # arch:
-            #   - name: 32-bit
-            #     value: -A Win32
-
-            #   - name: 64-bit
-            #     value: -A x64
-
-            # builder:
-            #   - cmake
-
-            # std:
-            #   - name: default
-            #     value: ""
-
-            #   - name: C11
-            #     value: /std:c11
-
-            #   - name: C17
-            #     value: /std:c17
-
-            #   - name: latest
-            #     value: /std:clatest
-
+  
         steps:
 
+        - name: Add msbuild to PATH
+          uses: microsoft/setup-msbuild@v2
+          with:
+            vs-version: 17
+          
         - name: Checkout repository
           uses: actions/checkout@v4
           with:
@@ -56,4 +30,8 @@ jobs:
 
         - name: Generate project files (cmake)
           run: |
-            cl /help
+            msbuild zip.sln 
+          working-directory: win32/vc17
+
+            # msbuild zip.sln -t:rebuild -property:OutDir=c:\develop\windows-bin\ -p:Configuration=Debug -p:EnableASAN=true
+
