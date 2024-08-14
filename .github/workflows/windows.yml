@@ -12,7 +12,7 @@ jobs:
 
     msvc:
         name: Windows Visual Studio
-        runs-on: ${{ matrix.os.value }}
+        runs-on: windows-latest
         strategy:
           fail-fast: false
   
@@ -28,7 +28,7 @@ jobs:
           with:
             show-progress: 'false'
 
-        - name: Generate project files (cmake)
+        - name: Run msbuild
           run: |
             msbuild zip.sln 
           working-directory: win32/vc17
