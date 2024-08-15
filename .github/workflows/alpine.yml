@@ -1,0 +1,71 @@
+name: Alpine
+
+# Note - adding NO_ASM to the build for now. 32-bit build cores otherwise.
+# See https://github.com/info-zip/zip-demo/issues/19
+
+# Set to manual execution only for now.
+on:
+  workflow_dispatch:
+  # push:
+  # pull_request:
+
+jobs:
+  configure:
+    name: ${{ matrix.arch }} + ${{ matrix.compiler }} ${{ matrix.opts }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+
+        arch:
+        - i386
+        - amd64
+
+        compiler:
+        - gcc
+        - clang
+
+        opts:
+          - ""
+          - "IZ_ZLIB=/tmp IZ_BZIP2=/tmp"
+          - "NO_AES_WG=1 NO_IZ_BZIP2=1 NO_LZMA=1 NO_PPMD=1 NO_NAT_ICONV=1 NO_ICONV=1 NO_UNICODE_SUPPORT=1"
+
+    container:
+      image: ${{ matrix.arch }}/alpine
+
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        show-progress: 'false'
+
+    - name: Install packages
+      run: |
+        apk update
+        apk add build-base zlib-dev bzip2-dev ${{ matrix.compiler }}
+
+    - name: Display ${{ matrix.compiler }} version
+      run: ${{ matrix.compiler }} -v
+
+    - name: configure (unix/Makefile)
+      run: |
+        make -f unix/Makefile flags CC=${{ matrix.compiler }} LOCAL_ZIP="-Werror -DNO_ASM" ${{ matrix.opts }}
+        cat flags
+
+    - name: build (unix/Makefile)
+      run: |
+            make -f unix/Makefile generic
+
+    - name: Run zip -v
+      run: ./zip -v
+
+    - name: Run zipcloak -v
+      run: ./zipcloak -v
+
+    - name: Run zipnote -v
+      run: ./zipnote -v
+
+    - name: Run zipsplit -v
+      run: ./zipsplit -v
+
