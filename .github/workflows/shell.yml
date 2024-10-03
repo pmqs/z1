@@ -9,11 +9,7 @@ jobs:
     runs-on: ubuntu-22.04
     name: Start a freebsd shell
     steps:
-    - name: step 2
-      shell: perl
-      run: |
-          print("hello world\n");
-          
+         
     - uses: vmactions/cf-tunnel@v0
       id: tunnel
       with:
@@ -54,3 +50,9 @@ jobs:
           pwd
           echo "this is step 2"
      
+    - name: step 3
+      shell: msys2-shell.sh {0}
+      run: |
+          cd $GITHUB_WORKSPACE;
+          pwd
+          echo "this is step 3"
